@@ -7,7 +7,7 @@ import com.hy.domain.*;
 import com.hy.repository.*;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.ByteBuffer;
@@ -24,7 +24,10 @@ import static com.hy.biz.MessageParsing.util.DataTypeConverter.hexStringToByteAr
 import static com.hy.biz.MessageParsing.util.DateTimeUtil.parseDateTimeToInst;
 
 
-@Service
+/**
+ * MessageParser 负责解析设备上传的数据，并执行相应地入库、响应等操作
+ */
+@Component
 @Transactional
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 public class MessageParser {
@@ -45,13 +48,13 @@ public class MessageParser {
         this.deviceFaultRepository = deviceFaultRepository;
         this.deviceStatusRepository = deviceStatusRepository;
         this.deviceRepository = deviceRepository;
-    }
-
-    static {
         registerMessageClass();
     }
 
-    private static void registerMessageClass() {
+    /**
+     * Registers all message classes in the MESSAGE_MAP.
+     */
+    private void registerMessageClass() {
         MESSAGE_MAP.put(MONITORING_DATA_REPORT + ":" + TRAVELLING_WAVE_CURRENT, TravellingWaveCurrentMessage.class);
         MESSAGE_MAP.put(MONITORING_DATA_REPORT + ":" + FAULT_CURRENT, FaultCurrentMessage.class);
         MESSAGE_MAP.put(MONITORING_DATA_REPORT + ":" + FAULT_VOLTAGE, FaultVoltageMessage.class);
@@ -62,6 +65,12 @@ public class MessageParser {
         MESSAGE_MAP.put(WORK_STATUS_REPORT + ":" + DEVICE_STATUS, DeviceStatusMessage.class);
     }
 
+    /**
+     * @description       Parses the command data from the device.
+     * @param dateTime    the date and time when the message was received.
+     * @param commandData the command data in hexadecimal format.
+     * @param deviceCode  the device code.
+     */
     public void parse(byte[] dateTime, String commandData, String deviceCode) {
         String[] commandSplit = commandData.split(",");
         int index = 0;
@@ -92,6 +101,9 @@ public class MessageParser {
         buffer.get(messageContent);
         parseMessageContent(messageContent, specificMessage, dateTime, deviceCode);
         buffer.getShort(); // Skip checksum
+        if (buffer.hasRemaining()) {
+            System.out.println("Buffer has remain: " + buffer.remaining());
+        }
 
     }
 
@@ -118,9 +130,9 @@ public class MessageParser {
         } else if (specificMessage instanceof WorkingConditionMessage) {
             handleWorkingConditionMessage((WorkingConditionMessage) specificMessage, buffer, deviceCode);
         } else if (specificMessage instanceof DeviceFaultMessage) {
-            handleDeviceFaultMessage((DeviceFaultMessage) specificMessage, buffer);
+            handleDeviceFaultMessage((DeviceFaultMessage) specificMessage, buffer, deviceCode);
         } else if (specificMessage instanceof DeviceStatusMessage) {
-            handleDeviceStatusMessage((DeviceStatusMessage) specificMessage, buffer);
+            handleDeviceStatusMessage((DeviceStatusMessage) specificMessage, buffer, deviceCode);
         } else if (specificMessage instanceof WaveDataMessage) {
             handleWaveData((WaveDataMessage) specificMessage, buffer);
         } else {
@@ -149,13 +161,14 @@ public class MessageParser {
         message.setReserved(reserved);
 
         DeviceInfo deviceInfo = new DeviceInfo();
+        deviceInfo.setDeviceId(deviceRepository.findDeviceIdByCode(deviceCode));
         deviceInfo.setTerminalName(byteArrayToString(message.getMonitoringTerminalName()));
         deviceInfo.setTerminalType(byteArrayToString(message.getMonitoringTerminalModel()));
         deviceInfo.setTerminalEdition(String.valueOf(message.getMonitoringTerminalInfoVersion()));
         deviceInfo.setProducer(byteArrayToString(message.getManufacturer()));
+        deviceInfo.setProducerCode(byteArrayToString(message.getFactoryNumber()));
         deviceInfo.setProducerTime(String.valueOf(message.getProductionDate()));
         deviceInfo.setCollectionTime(parseDateTimeToInst(dateTime));
-        deviceInfo.setDevice(deviceRepository.findDeviceByIdAndDeletedFalse(Long.parseLong(deviceCode)));
 
         deviceInfoRepository.save(deviceInfo);
     }
@@ -174,7 +187,7 @@ public class MessageParser {
         message.setReserved(reserved);
 
         WorkStatus workStatus = new WorkStatus();
-        workStatus.setDevice(deviceRepository.findDeviceByIdAndDeletedFalse(Long.parseLong(deviceCode)));
+        workStatus.setDeviceId(deviceRepository.findDeviceIdByCode(deviceCode));
         workStatus.setCollectionTime(parseDateTimeToInst(message.getUploadTime()));
         workStatus.setDeviceTemperature((float) message.getDeviceTemperature());
         workStatus.setLineCurrent((float) message.getCurrentEffectiveValue());
@@ -182,7 +195,7 @@ public class MessageParser {
         workStatusRepository.save(workStatus);
     }
 
-    private void handleDeviceFaultMessage(DeviceFaultMessage message, ByteBuffer buffer) {
+    private void handleDeviceFaultMessage(DeviceFaultMessage message, ByteBuffer buffer, String deviceCode) {
         byte[] time = new byte[TIME_LENGTH];
         buffer.get(time);
         message.setFaultDataCollectionTime(time);
@@ -192,13 +205,14 @@ public class MessageParser {
         message.setDeviceFaultInfo(info);
 
         DeviceFault deviceFault = new DeviceFault();
+        deviceFault.setDeviceId(deviceRepository.findDeviceIdByCode(deviceCode));
         deviceFault.setCollectionTime(parseDateTimeToInst(message.getFaultDataCollectionTime()));
         deviceFault.setFaultDescribe(byteArrayToString(message.getDeviceFaultInfo()));
 
         deviceFaultRepository.save(deviceFault);
     }
 
-    private void handleDeviceStatusMessage(DeviceStatusMessage message, ByteBuffer buffer) {
+    private void handleDeviceStatusMessage(DeviceStatusMessage message, ByteBuffer buffer, String deviceCode) {
         byte[] time = new byte[TIME_LENGTH];
         buffer.get(time);
         message.setDataCollectionUploadTime(time);
@@ -217,19 +231,26 @@ public class MessageParser {
         message.setDeviceSignalStrength(buffer.getShort());
         message.setGpsLatitude(buffer.getFloat());
         message.setGpsLongitude(buffer.getFloat());
-        System.out.println(message);
+
         DeviceStatus deviceStatus = new DeviceStatus();
         deviceStatus.setCollectionTime(parseDateTimeToInst(message.getDataCollectionUploadTime()));
-        deviceStatus.setDeviceId(ByteBuffer.wrap(message.getIdNumber()).getLong());
+        deviceStatus.setDeviceId(deviceRepository.findDeviceIdByCode(deviceCode));
         deviceStatus.setSolarChargeCurrent((int) message.getSolarChargingCurrent());
+        deviceStatus.setPhasePowerCurrent((int) message.getPhasePowerCurrent());
+        deviceStatus.setWorkVoltage((int) message.getDeviceWorkingVoltage());
+        deviceStatus.setWorkCurrent((int) message.getDeviceWorkingCurrent());
         deviceStatus.setBatteryVoltage((int) message.getBatteryVoltage());
-        deviceStatus.setSignalStrength((int) message.getDeviceSignalStrength());
+        deviceStatus.setReserved((int) message.getReserved());
+        deviceStatus.setSolarPanelAVoltage((int) message.getSolarPanelAVoltage());
+        deviceStatus.setSolarPanelBVoltage((int) message.getSolarPanelBVoltage());
+        deviceStatus.setSolarPanelCVoltage((int) message.getSolarPanelCVoltage());
+        deviceStatus.setPhasePowerVoltage((int) message.getPhasePowerVoltage());
         deviceStatus.setChipTemperature((int) message.getChipTemperature());
         deviceStatus.setMainboardTemperature((int) message.getMainBoardTemperature());
-        deviceStatus.setWorkCurrent((int) message.getDeviceWorkingCurrent());
-        deviceStatus.setWorkVoltage((int) message.getDeviceWorkingVoltage());
+        deviceStatus.setSignalStrength((int) message.getDeviceSignalStrength());
+        deviceStatus.setGpsLatitude((int) message.getGpsLatitude());
+        deviceStatus.setGpsLongitude((int) message.getGpsLongitude());
 
-        System.out.println(deviceStatus);
         deviceStatusRepository.save(deviceStatus);
     }
 

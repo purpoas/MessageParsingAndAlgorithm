@@ -9,10 +9,10 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
- * @package: com.hy.idds.biz.MessageParsing.util
- * @description:
- * @author: shiwentao
- * @create: 2023-04-23 17:13
+ * @package com.hy.idds.biz.MessageParsing.util
+ * @description
+ * @author shiwentao
+ * @create 2023-04-23 17:13
  **/
 public class DateTimeUtil {
     public static String parseDateTimeToStr(byte[] rawData) {

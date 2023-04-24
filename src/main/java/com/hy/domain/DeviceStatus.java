@@ -1,8 +1,7 @@
 package com.hy.domain;
 
 import com.google.common.base.Objects;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import javax.persistence.*;
@@ -14,7 +13,9 @@ import java.io.Serializable;
  *
  * @author Dylan
  */
-@Data
+@Getter
+@Setter
+@ToString
 @NoArgsConstructor
 @Entity
 @Table(name = "device_status")
@@ -33,35 +34,22 @@ public class DeviceStatus extends AbstractDeviceDataEntity<DeviceStatus> impleme
     private Integer solarChargeCurrent;
 
     /**
-     * 太阳能充电电压
+     * 相线取电电流
      */
-    @Column(name = "solar_charge_voltage")
-    private Integer solarChargeVoltage;
-
-
-    /**
-     * 感应取电电流
-     */
-    @Column(name = "power_collect_current")
-    private Integer powerCollectCurrent;
-
-    /**
-     * 感应取电电压
-     */
-    @Column(name = "power_collect_voltage")
-    private Integer powerCollectVoltage;
-
-    /**
-     * 设备工作电流
-     */
-    @Column(name = "work_current")
-    private Integer workCurrent;
+    @Column(name = "phase_power_current")
+    private Integer phasePowerCurrent;
 
     /**
      * 设备工作电压
      */
     @Column(name = "work_voltage")
     private Integer workVoltage;
+
+    /**
+     * 设备工作电流
+     */
+    @Column(name = "work_current")
+    private Integer workCurrent;
 
 
     /**
@@ -71,10 +59,30 @@ public class DeviceStatus extends AbstractDeviceDataEntity<DeviceStatus> impleme
     private Integer batteryVoltage;
 
     /**
-     * 电池电量
+     * 保留位
      */
-    @Column(name = "battery_charge")
-    private Float batteryCharge;
+    @Column(name = "reserved")
+    private Integer reserved;
+
+    /**
+     * 太阳能板A路电压
+     */
+    private Integer solarPanelAVoltage;
+
+    /**
+     * 太阳能板A路电压
+     */
+    private Integer solarPanelBVoltage;
+
+    /**
+     * 太阳能板A路电压
+     */
+    private Integer solarPanelCVoltage;
+
+    /**
+     * 相线取电电压
+     */
+    private Integer phasePowerVoltage;
 
     /**
      *
@@ -94,6 +102,16 @@ public class DeviceStatus extends AbstractDeviceDataEntity<DeviceStatus> impleme
      */
     @Column(name = "signal_strength")
     private Integer signalStrength;
+
+    /**
+     * GPS纬度
+     */
+    private Integer gpsLatitude;
+
+    /**
+     * GPS经度
+     */
+    private Integer gpsLongitude;
 
 
     @Override

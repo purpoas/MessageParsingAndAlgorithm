@@ -17,6 +17,8 @@ import java.util.List;
 
 @Repository
 public interface DeviceRepository extends JpaRepository<Device,Long>, JpaSpecificationExecutor<Device> {
+    @Query("select d.id from device d where d.code = :deviceCode")
+    Long findDeviceIdByCode(@Param(value = "deviceCode") String deviceCode);
     Device findDeviceByCodeAndDeletedFalse(String code);
 
     Device findDeviceByPoleIdAndNameAndDeletedFalse(Long id,String name);

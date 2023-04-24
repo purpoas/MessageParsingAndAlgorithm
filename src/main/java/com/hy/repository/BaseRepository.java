@@ -6,7 +6,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.NoRepositoryBean;
 
-import javax.annotation.Nullable;
 import java.io.Serializable;
 
 /**
@@ -16,5 +15,5 @@ import java.io.Serializable;
  */
 @NoRepositoryBean
 public interface BaseRepository<T, ID extends Serializable> extends JpaRepository<T, ID> {
-    Slice<T> findAllSliced(@Nullable Specification<T> var1, Pageable var2);
+    Slice<T> findAllSliced( Specification<T> var1, Pageable var2);
 }

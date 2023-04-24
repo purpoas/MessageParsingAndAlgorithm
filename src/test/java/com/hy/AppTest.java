@@ -2,19 +2,19 @@ package com.hy;
 
 import com.hy.biz.MessageParsing.MessageParser;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 @SpringBootTest
 class AppTest {
-    private final MessageParser parser;
 
-    AppTest(MessageParser parser) {
-        this.parser = parser;
-    }
+    @Autowired
+    private MessageParser parser;
 
     @Test
     @Transactional
@@ -29,6 +29,15 @@ class AppTest {
         byte[] dateTime = buffer.array();
 
         parser.parse(dateTime, data, deviceCode);
+    }
+
+    @Test
+    void randomTest() {
+        byte[] data = new byte[2];
+        data[0] = 85;
+        data[1] = 102;
+        ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.BIG_ENDIAN);
+        System.out.println(buffer.getShort());
     }
 
 }

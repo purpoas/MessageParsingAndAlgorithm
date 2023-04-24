@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -15,6 +16,7 @@ import java.util.Collection;
  *
  * @author Dylan
  */
+@Repository
 public interface DeviceStatusRepository extends JpaRepository<DeviceStatus, Long>, JpaSpecificationExecutor<DeviceStatus> {
 
     Slice<DeviceStatus> findByDeviceIdInAndCollectionTimeBetween(Collection<Long> deviceIds, Instant startTime, Instant endTime, Pageable pageable);

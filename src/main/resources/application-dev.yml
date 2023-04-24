@@ -1,21 +1,40 @@
 server:
-  port: 3031
+  port: 8080
 spring:
   application:
-    name: HyNrDataResovler
-  redis:
-    #    host: 127.0.0.1
-    host: 192.168.0.19
-    port: 6379
-    database: 0  # default db index
-    timeout: 0
-    password:
-    lettuce:
-      pool:
-        max-active: 200
-        max-wait: 10000
-        max-idle: 20
-        min-idle: 2
+    name: HyIddsDataResolver
+  datasource:
+    url: jdbc:mysql://localhost:3306/idds?serverTimezone=GMT%2B8&useUnicode=true&characterEncoding=utf8&useSSL=false
+    username: root
+    password: 19980512
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      data-source-properties:
+        cachePrepStmts: true
+        prepStmtCacheSize: 250
+        prepStmtCacheSqlLimit: 2048
+        useServerPrepStmts: true
+      maximumPoolSize: 20
+      minimumIdle: 5
+      idleTimeout: 120000
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
+    show-sql: true
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      timeout: 0
+      password:
+      database: 0  # default db index
+      lettuce:
+        pool:
+          max-active: 200
+          max-wait: 10000
+          max-idle: 20
+          min-idle: 2
 hy:
   async: # 异步任务配置，推送微信、短信的任务处理
     pool: # 处理线程池配置

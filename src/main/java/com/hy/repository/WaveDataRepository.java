@@ -1,6 +1,7 @@
 package com.hy.repository;
 
 import com.hy.domain.WaveData;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
@@ -10,6 +11,6 @@ import org.springframework.stereotype.Repository;
  * @author Dylan
  */
 @Repository
-public interface WaveDataRepository extends BaseRepository<WaveData, Long>, JpaSpecificationExecutor<WaveData> {
+public interface WaveDataRepository extends JpaRepository<WaveData, Long>, JpaSpecificationExecutor<WaveData> {
     WaveData findByCode(String code);
 }

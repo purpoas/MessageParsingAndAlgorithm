@@ -4,10 +4,10 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 /**
- * @package: com.hy.idds.biz.MessageParsing.util
- * @description:
- * @author: shiwentao
- * @create: 2023-04-23 17:16
+ * @package com.hy.idds.biz.MessageParsing.util
+ * @description
+ * @author shiwentao
+ * @create 2023-04-23 17:16
  **/
 public class DataTypeConverter {
     public static byte[] hexStringToByteArray(String data) {

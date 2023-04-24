@@ -20,10 +20,7 @@ import java.util.Set;
 @Getter
 @Setter
 @ToString
-@RequiredArgsConstructor
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 public class Device implements Serializable {
     private static final long serialVersionUID = 1L;
