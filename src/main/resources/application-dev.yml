@@ -1,0 +1,35 @@
+server:
+  port: 3031
+spring:
+  application:
+    name: HyNrDataResovler
+  redis:
+    #    host: 127.0.0.1
+    host: 192.168.0.19
+    port: 6379
+    database: 0  # default db index
+    timeout: 0
+    password:
+    lettuce:
+      pool:
+        max-active: 200
+        max-wait: 10000
+        max-idle: 20
+        min-idle: 2
+hy:
+  async: # 异步任务配置，推送微信、短信的任务处理
+    pool: # 处理线程池配置
+      core-pool-size: 2
+      max-pool-size: 16
+      queue-capacity: 128
+      keep-alive-seconds: 60
+  dataQueue:
+    queue-capacity: 2000
+    dfm-data: hydfm:dataTaskQueue
+    dfm-data-bak: hydfm:dataBackupTaskQueue
+    dfm-data-unkown: hydfm:dataUnknownTaskQueue
+  database:
+    driver: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/middle_nr?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8&useSSL=false
+    username: root
+    password:
