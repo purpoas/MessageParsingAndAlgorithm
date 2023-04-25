@@ -2,26 +2,23 @@ package com.hy.biz.MessageParsing;
 
 import com.hy.biz.MessageParsing.entity.*;
 import com.hy.biz.MessageParsing.exception.MessageParserException;
-import com.hy.biz.MessageParsing.util.DateTimeUtil;
 import com.hy.domain.*;
 import com.hy.repository.*;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.HashMap;
 import java.util.Map;
 
-import static com.hy.biz.MessageParsing.constants.FrameType.MONITORING_DATA_REPORT;
-import static com.hy.biz.MessageParsing.constants.FrameType.WORK_STATUS_REPORT;
 import static com.hy.biz.MessageParsing.constants.MessageConstants.*;
-import static com.hy.biz.MessageParsing.constants.MessageType.*;
 import static com.hy.biz.MessageParsing.util.DataTypeConverter.byteArrayToString;
 import static com.hy.biz.MessageParsing.util.DataTypeConverter.hexStringToByteArray;
 import static com.hy.biz.MessageParsing.util.DateTimeUtil.parseDateTimeToInst;
+import static com.hy.biz.MessageParsing.util.DateTimeUtil.parseDateTimeToStr;
 
 
 /**
@@ -31,8 +28,12 @@ import static com.hy.biz.MessageParsing.util.DateTimeUtil.parseDateTimeToInst;
 @Transactional
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 public class MessageParser {
-    private static final ByteOrder BYTE_ORDER = ByteOrder.BIG_ENDIAN;
-    private static final Map<String, Class<? extends BaseMessage>> MESSAGE_MAP = new HashMap<>();
+    private final ByteOrder BYTE_ORDER = ByteOrder.BIG_ENDIAN;
+    private final Map<String, Class<? extends BaseMessage>> MESSAGE_MAP = MessageClassRegistry.getMessageMap();
+
+    @Value("${hy.constant.frequency-sample-rate}")
+    private Long FREQUENCY_SAMPLE_RATE;
+
     private final WaveDataRepository waveDataRepository;
     private final DeviceInfoRepository deviceInfoRepository;
     private final WorkStatusRepository workStatusRepository;
@@ -48,21 +49,6 @@ public class MessageParser {
         this.deviceFaultRepository = deviceFaultRepository;
         this.deviceStatusRepository = deviceStatusRepository;
         this.deviceRepository = deviceRepository;
-        registerMessageClass();
-    }
-
-    /**
-     * Registers all message classes in the MESSAGE_MAP.
-     */
-    private void registerMessageClass() {
-        MESSAGE_MAP.put(MONITORING_DATA_REPORT + ":" + TRAVELLING_WAVE_CURRENT, TravellingWaveCurrentMessage.class);
-        MESSAGE_MAP.put(MONITORING_DATA_REPORT + ":" + FAULT_CURRENT, FaultCurrentMessage.class);
-        MESSAGE_MAP.put(MONITORING_DATA_REPORT + ":" + FAULT_VOLTAGE, FaultVoltageMessage.class);
-        MESSAGE_MAP.put(WORK_STATUS_REPORT + ":" + HEARTBEAT, HeartBeatMessage.class);
-        MESSAGE_MAP.put(WORK_STATUS_REPORT + ":" + BASIC_INFO, BasicInfoMessage.class);
-        MESSAGE_MAP.put(WORK_STATUS_REPORT + ":" + WORKING_CONDITION, WorkingConditionMessage.class);
-        MESSAGE_MAP.put(WORK_STATUS_REPORT + ":" + DEVICE_FAULT, DeviceFaultMessage.class);
-        MESSAGE_MAP.put(WORK_STATUS_REPORT + ":" + DEVICE_STATUS, DeviceStatusMessage.class);
     }
 
     /**
@@ -89,25 +75,21 @@ public class MessageParser {
             throw new IllegalArgumentException(ILLEGAL_HEADER_ERROR);
         }
 
-        byte[] idNumber = new byte[ID_LENGTH];
-        buffer.get(idNumber);
+        buffer.get(new byte[ID_LENGTH]);
         byte frameType = buffer.get();
         byte messageType = buffer.get();
         String key = frameType + ":" + messageType;
-        BaseMessage specificMessage = createSpecificMessage(key, idNumber, messageType);
+        BaseMessage specificMessage = createSpecificMessage(key, deviceCode, messageType);
 
         short messageLength = buffer.getShort();
         byte[] messageContent = new byte[messageLength];
         buffer.get(messageContent);
         parseMessageContent(messageContent, specificMessage, dateTime, deviceCode);
         buffer.getShort(); // Skip checksum
-        if (buffer.hasRemaining()) {
-            System.out.println("Buffer has remain: " + buffer.remaining());
-        }
 
     }
 
-    private BaseMessage createSpecificMessage(String key, byte[] idNumber, byte messageType) {
+    private BaseMessage createSpecificMessage(String key, String deviceCode, byte messageType) {
         Class<? extends BaseMessage> messageClass = MESSAGE_MAP.get(key);
         BaseMessage specificMessage;
         try {
@@ -115,7 +97,7 @@ public class MessageParser {
         } catch (InstantiationException | IllegalAccessException e) {
             throw new MessageParserException("无法从 MESSAGE_MAP 中创建对应的报文实体类", e);
         }
-        specificMessage.setIdNumber(idNumber);
+        specificMessage.setIdNumber(deviceCode.getBytes());
         specificMessage.setMessageType(messageType);
         return specificMessage;
     }
@@ -294,8 +276,8 @@ public class MessageParser {
         waveData.setType((int) waveDataMessage.getMessageType());
         waveData.setCode(null); // Set appropriate code
         waveData.setLength((long) waveDataMessage.getDataPacketLength());
-        waveData.setHeadTime(DateTimeUtil.parseDateTimeToStr(waveDataMessage.getWaveStartTime()));
-        waveData.setSampleRate(null); // Set appropriate sample rate
+        waveData.setHeadTime(parseDateTimeToStr(waveDataMessage.getWaveStartTime()));
+        waveData.setSampleRate(FREQUENCY_SAMPLE_RATE); // Set appropriate sample rate
         waveData.setThreshold(null); // Set appropriate threshold
         waveData.setRelaFlag(null); // Set appropriate relaFlag
         waveData.setData(byteArrayToString(waveDataMessage.getWaveData()));
