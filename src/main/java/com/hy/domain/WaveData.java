@@ -66,7 +66,7 @@ public class WaveData extends AbstractDeviceDataEntity<WaveData> implements Seri
     private Integer threshold;
 
     /**
-     * 故障性质
+     * 故障性质：0-其他 1-雷击 2-涌流 3-重合闸 4-扰动 5-分闸
      */
     @Column(name = "rela_flag")
     private Integer relaFlag;

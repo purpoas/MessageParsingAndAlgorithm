@@ -1,5 +1,6 @@
 package com.hy.biz.MessageParsing.entity;
 
+import com.hy.biz.MessageParsing.util.GSONUtil;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -12,4 +13,10 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class HeartBeatMessage extends BaseMessage {
+
+    @Override
+    public String toString() {
+        return GSONUtil.getInstance().toJson(this);
+    }
+
 }

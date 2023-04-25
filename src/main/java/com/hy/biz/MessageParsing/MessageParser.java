@@ -2,11 +2,11 @@ package com.hy.biz.MessageParsing;
 
 import com.hy.biz.MessageParsing.entity.*;
 import com.hy.biz.MessageParsing.exception.MessageParserException;
+import com.hy.config.HYConfigProperty;
 import com.hy.domain.*;
 import com.hy.repository.*;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,10 +30,7 @@ import static com.hy.biz.MessageParsing.util.DateTimeUtil.parseDateTimeToStr;
 public class MessageParser {
     private final ByteOrder BYTE_ORDER = ByteOrder.BIG_ENDIAN;
     private final Map<String, Class<? extends BaseMessage>> MESSAGE_MAP = MessageClassRegistry.getMessageMap();
-
-    @Value("${hy.constant.frequency-sample-rate}")
-    private Long FREQUENCY_SAMPLE_RATE;
-
+    private final HYConfigProperty hyConfigProperty;
     private final WaveDataRepository waveDataRepository;
     private final DeviceInfoRepository deviceInfoRepository;
     private final WorkStatusRepository workStatusRepository;
@@ -42,7 +39,8 @@ public class MessageParser {
     private final DeviceRepository deviceRepository;
     private WaveData waveData;
 
-    public MessageParser(WaveDataRepository waveDataRepository, DeviceInfoRepository deviceInfoRepository, WorkStatusRepository workStatusRepository, DeviceFaultRepository deviceFaultRepository, DeviceStatusRepository deviceStatusRepository, DeviceRepository deviceRepository) {
+    public MessageParser(HYConfigProperty hyConfigProperty, WaveDataRepository waveDataRepository, DeviceInfoRepository deviceInfoRepository, WorkStatusRepository workStatusRepository, DeviceFaultRepository deviceFaultRepository, DeviceStatusRepository deviceStatusRepository, DeviceRepository deviceRepository) {
+        this.hyConfigProperty = hyConfigProperty;
         this.waveDataRepository = waveDataRepository;
         this.deviceInfoRepository = deviceInfoRepository;
         this.workStatusRepository = workStatusRepository;
@@ -58,34 +56,33 @@ public class MessageParser {
      * @param deviceCode  the device code.
      */
     public void parse(byte[] dateTime, String commandData, String deviceCode) {
-        String[] commandSplit = commandData.split(",");
-        int index = 0;
-
-        while (index < commandSplit.length) {
-            processMessage(commandSplit[index], dateTime, deviceCode);
-            index++;
-        }
+        processMessage(commandData, dateTime, deviceCode);
     }
 
     private void processMessage(String hexString, byte[] dateTime, String deviceCode) {
         byte[] command = hexStringToByteArray(hexString);
         ByteBuffer buffer = ByteBuffer.wrap(command).order(BYTE_ORDER);
 
-        if (buffer.getShort() != HEADER) {
-            throw new IllegalArgumentException(ILLEGAL_HEADER_ERROR);
+        while (buffer.hasRemaining()) {
+            if (buffer.getShort() != HEADER) {
+                throw new IllegalArgumentException(ILLEGAL_HEADER_ERROR);
+            }
+
+            buffer.get(new byte[ID_LENGTH]);
+            byte frameType = buffer.get();
+            byte messageType = buffer.get();
+            String key = frameType + ":" + messageType;
+            BaseMessage specificMessage = createSpecificMessage(key, deviceCode, messageType);
+
+            short messageLength = buffer.getShort();
+            byte[] messageContent = new byte[messageLength];
+            buffer.get(messageContent);
+            parseMessageContent(messageContent, specificMessage, dateTime, deviceCode);
+            buffer.getShort(); // Skip checksum
+            if (!(specificMessage instanceof WaveDataMessage) && buffer.hasRemaining()) {
+                throw new MessageParserException(UNPARSED_DATA_ERROR);
+            }
         }
-
-        buffer.get(new byte[ID_LENGTH]);
-        byte frameType = buffer.get();
-        byte messageType = buffer.get();
-        String key = frameType + ":" + messageType;
-        BaseMessage specificMessage = createSpecificMessage(key, deviceCode, messageType);
-
-        short messageLength = buffer.getShort();
-        byte[] messageContent = new byte[messageLength];
-        buffer.get(messageContent);
-        parseMessageContent(messageContent, specificMessage, dateTime, deviceCode);
-        buffer.getShort(); // Skip checksum
 
     }
 
@@ -95,7 +92,7 @@ public class MessageParser {
         try {
             specificMessage = messageClass.newInstance();
         } catch (InstantiationException | IllegalAccessException e) {
-            throw new MessageParserException("无法从 MESSAGE_MAP 中创建对应的报文实体类", e);
+            throw new MessageParserException(UNSUPPORTED_DATA_TYPE_ERROR, e);
         }
         specificMessage.setIdNumber(deviceCode.getBytes());
         specificMessage.setMessageType(messageType);
@@ -106,6 +103,7 @@ public class MessageParser {
         ByteBuffer buffer = ByteBuffer.wrap(messageContent).order(BYTE_ORDER);
 
         if (specificMessage instanceof HeartBeatMessage) {
+            //todo
             System.out.println(specificMessage);
         } else if (specificMessage instanceof BasicInfoMessage) {
             handleBasicInfoMessage((BasicInfoMessage) specificMessage, buffer, dateTime, deviceCode);
@@ -116,9 +114,9 @@ public class MessageParser {
         } else if (specificMessage instanceof DeviceStatusMessage) {
             handleDeviceStatusMessage((DeviceStatusMessage) specificMessage, buffer, deviceCode);
         } else if (specificMessage instanceof WaveDataMessage) {
-            handleWaveData((WaveDataMessage) specificMessage, buffer);
+            handleWaveData((WaveDataMessage) specificMessage, buffer, dateTime);
         } else {
-            throw new MessageParserException("未知报文签名");
+            throw new MessageParserException(ILLEGAL_MESSAGE_SIGNATURE_ERROR);
         }
     }
 
@@ -236,7 +234,7 @@ public class MessageParser {
         deviceStatusRepository.save(deviceStatus);
     }
 
-    private void handleWaveData(WaveDataMessage message, ByteBuffer buffer) {
+    private void handleWaveData(WaveDataMessage message, ByteBuffer buffer, byte[] dateTime) {
         message.setDataPacketLength(buffer.getShort());
         byte[] wave = new byte[message.getDataPacketLength()];
         buffer.get(wave);
@@ -257,7 +255,7 @@ public class MessageParser {
 
         if (segmentNumber == 1) {
             waveData = new WaveData();
-            setWaveDataProperties(waveData, message);
+            setWaveDataProperties(waveData, message, dateTime);
             if (dataPacketNumber == 1) {
                 waveDataRepository.save(waveData);
             }
@@ -272,16 +270,27 @@ public class MessageParser {
         }
     }
 
-    private void setWaveDataProperties(WaveData waveData, WaveDataMessage waveDataMessage) {
+    private void setWaveDataProperties(WaveData waveData, WaveDataMessage waveDataMessage, byte[] dateTime) {
+        waveData.setCollectionTime(parseDateTimeToInst(dateTime));
         waveData.setType((int) waveDataMessage.getMessageType());
-        waveData.setCode(null); // Set appropriate code
+
+        waveData.setCode(hyConfigProperty.getConstant().getSupplierCode()); // Set appropriate code
+
         waveData.setLength((long) waveDataMessage.getDataPacketLength());
         waveData.setHeadTime(parseDateTimeToStr(waveDataMessage.getWaveStartTime()));
-        waveData.setSampleRate(FREQUENCY_SAMPLE_RATE); // Set appropriate sample rate
-        waveData.setThreshold(null); // Set appropriate threshold
-        waveData.setRelaFlag(null); // Set appropriate relaFlag
+        waveData.setSampleRate(hyConfigProperty.getConstant().getTravelSampRate());
+        waveData.setThreshold(hyConfigProperty.getConstant().getTravelThreshold());
+
+        Integer relafalg = parseRelaFalg();
+        waveData.setRelaFlag(relafalg);
+
         waveData.setData(byteArrayToString(waveDataMessage.getWaveData()));
         waveData.setRemark(byteArrayToString(waveDataMessage.getReserved()));
+    }
+
+    //todo 需结合算法
+    private Integer parseRelaFalg() {
+        return 1;
     }
 
     private void appendWaveData(WaveData waveData, WaveDataMessage waveDataMessage) {

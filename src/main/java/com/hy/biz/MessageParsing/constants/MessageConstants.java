@@ -30,11 +30,10 @@ public final class MessageConstants {
     /**
      * 异常
      */
-    public static final String ILLEGAL_MESSAGE_SIGNATURE_ERROR = "非法报文签名: ";
+    public static final String ILLEGAL_MESSAGE_SIGNATURE_ERROR = "非法报文签名";
     public static final String ILLEGAL_HEADER_ERROR = "非法报文头";
     public static final String UNPARSED_DATA_ERROR = "部分数据未被解析";
     public static final String UNSUPPORTED_DATA_TYPE_ERROR = "不支持该数据类型";
-    public static final String ILLEGAL_WAVEDATA_TYPE = "未知波形数据";
 
     private MessageConstants() {}
 }
