@@ -40,6 +40,7 @@ public class WaveData extends AbstractDeviceDataEntity<WaveData> implements Seri
      */
     @Column(name = "code")
     private String code;
+
     /**
      * 波形长度
      */

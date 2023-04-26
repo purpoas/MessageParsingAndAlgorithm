@@ -24,7 +24,7 @@ spring:
     show-sql: true
   data:
     redis:
-      host: 127.0.0.1
+      host: 172.16.16.132
       port: 6379
       timeout: 0
       password:
@@ -58,7 +58,7 @@ hy:
     frequency-threshold: 500
     travel-max-threshold: 5500
     frequency-max-threshold: 10000
-    travel-samp-rate: 2000000
+    travel-sample-rate: 2000000
     frequency-sample-rate: 3300
     speed: 0.29                 #默认单位 m/ns
     accident-file-path: "D:\\C365\\accident.txt"   #存储事故ID文件位置
