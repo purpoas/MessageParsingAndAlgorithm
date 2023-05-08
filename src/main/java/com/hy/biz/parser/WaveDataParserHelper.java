@@ -5,6 +5,7 @@ import com.hy.config.HyConfigProperty;
 import com.hy.domain.WaveData;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.Arrays;
 
 import static com.hy.biz.parser.util.TypeConverter.byteArrToStr;
@@ -25,7 +26,7 @@ public class WaveDataParserHelper {
     }
 
     protected void setWaveDataProperties(WaveData waveData, WaveDataMessage message, long timeStamp, String deviceCode) {
-        waveData.setCollectionTime(parseDateTimeToInst(timeStamp));
+        waveData.setCollectionTime(Instant.ofEpochMilli(timeStamp));
         byte frameType = message.getFrameType();
         byte messageType = message.getMessageType();
         waveData.setType((int) messageType);

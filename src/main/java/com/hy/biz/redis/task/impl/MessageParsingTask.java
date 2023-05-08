@@ -1,7 +1,8 @@
-package com.hy.biz.redis.task;
+package com.hy.biz.redis.task.impl;
 
 import com.hy.biz.parser.MessageParser;
 import com.hy.biz.parser.entity.dto.MessageDTO;
+import com.hy.biz.redis.task.Task;
 import org.springframework.data.redis.core.RedisTemplate;
 
 /**
@@ -26,10 +27,10 @@ public class MessageParsingTask extends Task {
 
     @Override
     public void run() {
-        boolean flag = messageParser.parse(messageDTO.getTimeStamp(),
+        Object entitySaved = messageParser.parse(messageDTO.getTimeStamp(),
                 messageDTO.getData().getCommand(),
                 messageDTO.getDeviceCode());
-        if (!flag)
+        if (entitySaved != null)
             removeFromRedisList(redisTemplate, dataBakQueue);
     }
 

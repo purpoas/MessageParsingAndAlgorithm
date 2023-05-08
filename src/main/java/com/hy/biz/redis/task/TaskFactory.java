@@ -2,6 +2,7 @@ package com.hy.biz.redis.task;
 
 import com.hy.biz.parser.MessageParser;
 import com.hy.biz.parser.entity.dto.MessageDTO;
+import com.hy.biz.redis.task.impl.MessageParsingTask;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 

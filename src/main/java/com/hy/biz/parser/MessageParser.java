@@ -1,6 +1,5 @@
 package com.hy.biz.parser;
 
-import com.google.gson.JsonObject;
 import com.hy.biz.parser.entity.*;
 import com.hy.biz.parser.exception.MessageParsingException;
 import com.hy.domain.*;
@@ -17,9 +16,7 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Map;
 
-import static com.hy.biz.parser.constants.FrameType.CONTROL_ACK_REPORT;
 import static com.hy.biz.parser.constants.MessageConstants.*;
-import static com.hy.biz.parser.constants.MessageType.PARAMETER_READING;
 import static com.hy.biz.parser.util.DateTimeUtil.parseDateTimeToInst;
 import static com.hy.biz.parser.util.DateTimeUtil.parseDateToStr;
 import static com.hy.biz.parser.util.TypeConverter.byteArrToStr;
@@ -29,8 +26,11 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 
 /**
- * MessageParser 负责解析设备上传的数据，并执行相应的入库、响应等操作
- */
+ * @author shiwentao
+ * @package com.hy.biz.parser
+ * @description 解析器：用于解析 Redis 阻塞队列中的报文数据
+ * @create 2023-05-08 16:12
+ **/
 @Component
 @Transactional
 @Slf4j
@@ -61,12 +61,12 @@ public class MessageParser {
      * @param timeStamp   报文被接收到的时间戳
      * @param commandData 十六进制的报文内容
      * @param deviceCode  设备编号
-     * @return 被持久化的报文实体类
-     * @description 暴露在外的解析通用方法，负责被调用
+     * @return            是否解析成功
+     * @description       暴露在外的解析方法，用于被调用
      */
-    public boolean parse(long timeStamp, String commandData, String deviceCode) {
+    public Object parse(long timeStamp, String commandData, String deviceCode) {
         ByteBuffer buffer = ByteBuffer.wrap(hexStringToByteArray(commandData)).order(BIG_ENDIAN);
-        boolean flag = false;
+        Object entitySaved = null;
 
         while (buffer.hasRemaining()) {
             if (buffer.getShort() != HEADER) {
@@ -83,20 +83,18 @@ public class MessageParser {
             if (MESSAGE_MAP.containsKey(key)) {
                 BaseMessage specificMessage = createSpecificMsg(key, deviceCode, frameType, messageType);
 
-                flag = parseMessageContent(messageContent, specificMessage, timeStamp, deviceCode);
+                entitySaved = parseMessageContent(messageContent, specificMessage, timeStamp, deviceCode);
 
                 buffer.getShort(); // Skip checksum
 
                 if (!(specificMessage instanceof WaveDataMessage) && buffer.hasRemaining()) {
                     throw new MessageParsingException(UNPARSED_DATA_ERROR);
                 }
-            } else if (frameType == CONTROL_ACK_REPORT && messageType == PARAMETER_READING) {
-                flag = parseParamReadingMsg(messageContent, timeStamp, deviceCode);
             }
 
         }
 
-        return flag;
+        return entitySaved;
     }
 
     /**
@@ -118,6 +116,7 @@ public class MessageParser {
         specificMessage.setIdNumber(deviceCode.getBytes());
         specificMessage.setFrameType(frameType);
         specificMessage.setMessageType(messageType);
+
         return specificMessage;
     }
 
@@ -129,13 +128,12 @@ public class MessageParser {
      * @return 被持久化的报文实体类
      * @description 该方法根据收到的报文类型，调用负责解析该类型的解析方法
      */
-    private boolean parseMessageContent(byte[] messageContent, BaseMessage specificMessage, long timeStamp, String deviceCode) {
+    private Object parseMessageContent(byte[] messageContent, BaseMessage specificMessage, long timeStamp, String deviceCode) {
         ByteBuffer buffer = ByteBuffer.wrap(messageContent).order(BIG_ENDIAN);
 
         switch (specificMessage.getClass().getSimpleName()) {
             case "HeartBeatMessage":
                 log.info("收到心跳数据");
-                return true;
             case "BasicInfoMessage":
                 return handleBasicInfoMessage((BasicInfoMessage) specificMessage, buffer, timeStamp, deviceCode);
             case "WorkingConditionMessage":
@@ -151,7 +149,7 @@ public class MessageParser {
         }
     }
 
-    private boolean handleBasicInfoMessage(BasicInfoMessage message, ByteBuffer buffer, long timeStamp, String deviceCode) {
+    private Object handleBasicInfoMessage(BasicInfoMessage message, ByteBuffer buffer, long timeStamp, String deviceCode) {
 
         byte[] terminalName = new byte[MONITORING_TERMINAL_NAME_LENGTH];
         buffer.get(terminalName);
@@ -187,11 +185,10 @@ public class MessageParser {
         deviceInfo.setCollectionTime(Instant.ofEpochMilli(timeStamp));
 
 
-        deviceInfoRepository.save(deviceInfo);
-        return true;
+        return deviceInfoRepository.save(deviceInfo);
     }
 
-    private boolean handleWorkingConditionMessage(WorkingConditionMessage message, ByteBuffer buffer, long timeStamp, String deviceCode) {
+    private Object handleWorkingConditionMessage(WorkingConditionMessage message, ByteBuffer buffer, long timeStamp, String deviceCode) {
 
         byte[] time = new byte[TIME_LENGTH];
         buffer.get(time);
@@ -210,11 +207,10 @@ public class MessageParser {
         workStatus.setDeviceTemperature((float) message.getDeviceTemperature());
         workStatus.setLineCurrent((float) message.getCurrentEffectiveValue());
 
-        workStatusRepository.save(workStatus);
-        return true;
+        return workStatusRepository.save(workStatus);
     }
 
-    private boolean handleDeviceFaultMessage(DeviceFaultMessage message, ByteBuffer buffer, String deviceCode) {
+    private Object handleDeviceFaultMessage(DeviceFaultMessage message, ByteBuffer buffer, String deviceCode) {
         byte[] time = new byte[TIME_LENGTH];
         buffer.get(time);
         message.setFaultDataCollectionTime(time);
@@ -228,11 +224,10 @@ public class MessageParser {
         deviceFault.setCollectionTime(parseDateTimeToInst(message.getFaultDataCollectionTime()));
         deviceFault.setFaultDescribe(byteArrToStr(message.getDeviceFaultInfo()));
 
-        deviceFaultRepository.save(deviceFault);
-        return true;
+        return deviceFaultRepository.save(deviceFault);
     }
 
-    private boolean handleDeviceStatusMessage(DeviceStatusMessage message, ByteBuffer buffer, String deviceCode) {
+    private Object handleDeviceStatusMessage(DeviceStatusMessage message, ByteBuffer buffer, String deviceCode) {
         byte[] time = new byte[TIME_LENGTH];
         buffer.get(time);
         message.setDataCollectionUploadTime(time);
@@ -271,11 +266,10 @@ public class MessageParser {
         deviceStatus.setGpsLatitude((int) message.getGpsLatitude());
         deviceStatus.setGpsLongitude((int) message.getGpsLongitude());
 
-        deviceStatusRepository.save(deviceStatus);
-        return true;
+        return deviceStatusRepository.save(deviceStatus);
     }
 
-    private boolean handleWaveData(WaveDataMessage message, ByteBuffer buffer, long timeStamp, String deviceCode) {
+    private Object handleWaveData(WaveDataMessage message, ByteBuffer buffer, long timeStamp, String deviceCode) {
         message.setDataPacketLength(buffer.getShort());
         byte[] wave = new byte[message.getDataPacketLength()];
         log.info("这段报文的波形数据长度： {}", message.getDataPacketLength());
@@ -305,47 +299,7 @@ public class MessageParser {
             waveDataParserHelper.appendWaveData(waveData, message);
         }
 
-        waveDataRepository.save(waveData);
-        return true;
-    }
-
-    private boolean parseParamReadingMsg(byte[] messageContent, long timeStamp, String deviceCode) {
-        ByteBuffer buffer = ByteBuffer.wrap(messageContent).order(BIG_ENDIAN);
-        byte stat = buffer.get();
-        String status;
-
-        switch (stat) {
-            case MESSAGE_STATUS_SUCCESS:
-                status = "success";
-                break;
-            case MESSAGE_STATUS_FAILURE:
-                status = "failure";
-                break;
-            default:
-                throw new MessageParsingException("Invalid message status: " + stat);
-        }
-
-        JsonObject paramReadingMsg = new JsonObject();
-        paramReadingMsg.addProperty("status", status);
-        paramReadingMsg.addProperty("timeStamp", Instant.ofEpochMilli(timeStamp).toString());
-        paramReadingMsg.addProperty("deviceId", Long.toString(deviceRepository.findDeviceIdByCode(deviceCode)));
-
-        short paramNum = buffer.getShort();
-        JsonObject params = new JsonObject();
-
-        for (int i = 0; i < paramNum; i++) {
-            short paramId = buffer.getShort();
-            int paramContent = buffer.getInt();
-
-            String paramIdStr = String.format("param%d", paramId);
-            String paramContentStr = Integer.toString(paramContent);
-
-            params.addProperty(paramIdStr, paramContentStr);
-        }
-
-        paramReadingMsg.add("param", params);
-
-        return true;
+        return waveDataRepository.save(waveData);
     }
 
 }

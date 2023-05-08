@@ -1,10 +1,8 @@
 package com.hy.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hy.biz.parser.MessageParser;
+import com.hy.biz.parser.SubscribedMessageParser;
 import com.hy.biz.redis.subscriber.StateChannelSubscriber;
-import com.hy.repository.DeviceOnlineStatusRepository;
-import com.hy.repository.DeviceRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -19,17 +17,13 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
  **/
 @Configuration
 public class RedisMessageListenerConfig {
-    private final MessageParser messageParser;
+    private final SubscribedMessageParser subscribedMessageParser;
     private final HyConfigProperty hyConfigProperty;
-    private final DeviceOnlineStatusRepository deviceOnlineStatusRepository;
-    private final DeviceRepository deviceRepository;
     private final ObjectMapper mapper;
 
-    public RedisMessageListenerConfig(MessageParser messageParser, HyConfigProperty hyConfigProperty, DeviceOnlineStatusRepository deviceOnlineStatusRepository, DeviceRepository deviceRepository, ObjectMapper mapper) {
-        this.messageParser = messageParser;
+    public RedisMessageListenerConfig(HyConfigProperty hyConfigProperty, SubscribedMessageParser subscribedMessageParser, ObjectMapper mapper) {
+        this.subscribedMessageParser = subscribedMessageParser;
         this.hyConfigProperty = hyConfigProperty;
-        this.deviceOnlineStatusRepository = deviceOnlineStatusRepository;
-        this.deviceRepository = deviceRepository;
         this.mapper = mapper;
     }
 
@@ -43,7 +37,7 @@ public class RedisMessageListenerConfig {
 
     @Bean
     StateChannelSubscriber stateChannelSubscriber() {
-        return new StateChannelSubscriber(messageParser, deviceOnlineStatusRepository, deviceRepository, mapper);
+        return new StateChannelSubscriber(subscribedMessageParser, mapper);
     }
 
 }
