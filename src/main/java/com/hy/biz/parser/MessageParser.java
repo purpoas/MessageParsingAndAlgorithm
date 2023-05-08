@@ -1,25 +1,31 @@
 package com.hy.biz.parser;
 
+import com.google.gson.JsonObject;
 import com.hy.biz.parser.entity.*;
-import com.hy.biz.parser.exception.MessageParserException;
-import com.hy.config.HyConfigProperty;
+import com.hy.biz.parser.exception.MessageParsingException;
 import com.hy.domain.*;
 import com.hy.repository.*;
-import com.hy.web.HeartBeatController;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import java.time.Instant;
 import java.util.Map;
 
+import static com.hy.biz.parser.constants.FrameType.CONTROL_ACK_REPORT;
 import static com.hy.biz.parser.constants.MessageConstants.*;
-import static com.hy.biz.parser.util.DataTypeConverter.*;
+import static com.hy.biz.parser.constants.MessageType.PARAMETER_READING;
 import static com.hy.biz.parser.util.DateTimeUtil.parseDateTimeToInst;
-import static com.hy.biz.parser.util.DateTimeUtil.parseDateTimeToStr;
-import static io.netty.util.internal.StringUtil.byteToHexString;
+import static com.hy.biz.parser.util.DateTimeUtil.parseDateToStr;
+import static com.hy.biz.parser.util.TypeConverter.byteArrToStr;
+import static com.hy.biz.parser.util.TypeConverter.hexStringToByteArray;
+import static java.nio.ByteOrder.BIG_ENDIAN;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 
 /**
@@ -27,44 +33,40 @@ import static io.netty.util.internal.StringUtil.byteToHexString;
  */
 @Component
 @Transactional
+@Slf4j
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 public class MessageParser {
-    private final ByteOrder BYTE_ORDER = ByteOrder.BIG_ENDIAN;
     private final Map<String, Class<? extends BaseMessage>> MESSAGE_MAP = MessageClassRegistry.getMessageMap();
-    private final HyConfigProperty hyConfigProperty;
+    private final WaveDataParserHelper waveDataParserHelper;
+    private WaveData waveData;
+
     private final WaveDataRepository waveDataRepository;
     private final DeviceInfoRepository deviceInfoRepository;
     private final WorkStatusRepository workStatusRepository;
     private final DeviceFaultRepository deviceFaultRepository;
     private final DeviceStatusRepository deviceStatusRepository;
     private final DeviceRepository deviceRepository;
-    private final HeartBeatController heartBeatController;
-    private WaveData waveData;
 
-    public MessageParser(HyConfigProperty hyConfigProperty, WaveDataRepository waveDataRepository, DeviceInfoRepository deviceInfoRepository, WorkStatusRepository workStatusRepository, DeviceFaultRepository deviceFaultRepository, DeviceStatusRepository deviceStatusRepository, DeviceRepository deviceRepository, HeartBeatController heartBeatController) {
-        this.hyConfigProperty = hyConfigProperty;
+    public MessageParser(WaveDataParserHelper waveDataParserHelper, WaveDataRepository waveDataRepository, DeviceInfoRepository deviceInfoRepository, WorkStatusRepository workStatusRepository, DeviceFaultRepository deviceFaultRepository, DeviceStatusRepository deviceStatusRepository, DeviceRepository deviceRepository) {
+        this.waveDataParserHelper = waveDataParserHelper;
         this.waveDataRepository = waveDataRepository;
         this.deviceInfoRepository = deviceInfoRepository;
         this.workStatusRepository = workStatusRepository;
         this.deviceFaultRepository = deviceFaultRepository;
         this.deviceStatusRepository = deviceStatusRepository;
         this.deviceRepository = deviceRepository;
-        this.heartBeatController = heartBeatController;
     }
 
     /**
-     * @description       Parses the command data from the device.
-     * @param dateTime    the date and time when the message was received.
-     * @param commandData the command data in hexadecimal format.
-     * @param deviceCode  the device code.
+     * @param timeStamp   报文被接收到的时间戳
+     * @param commandData 十六进制的报文内容
+     * @param deviceCode  设备编号
+     * @return 被持久化的报文实体类
+     * @description 暴露在外的解析通用方法，负责被调用
      */
-    public void parse(byte[] dateTime, String commandData, String deviceCode) {
-        processMessage(commandData, dateTime, deviceCode);
-    }
-
-    private void processMessage(String hexString, byte[] dateTime, String deviceCode) {
-        byte[] command = hexStringToByteArray(hexString);
-        ByteBuffer buffer = ByteBuffer.wrap(command).order(BYTE_ORDER);
+    public boolean parse(long timeStamp, String commandData, String deviceCode) {
+        ByteBuffer buffer = ByteBuffer.wrap(hexStringToByteArray(commandData)).order(BIG_ENDIAN);
+        boolean flag = false;
 
         while (buffer.hasRemaining()) {
             if (buffer.getShort() != HEADER) {
@@ -74,57 +76,82 @@ public class MessageParser {
             buffer.get(new byte[ID_LENGTH]);
             byte frameType = buffer.get();
             byte messageType = buffer.get();
+
             String key = frameType + ":" + messageType;
-            BaseMessage specificMessage = createSpecificMessage(key, deviceCode, messageType);
-
-            short messageLength = buffer.getShort();
-            byte[] messageContent = new byte[messageLength];
+            byte[] messageContent = new byte[buffer.getShort()];
             buffer.get(messageContent);
-            parseMessageContent(messageContent, specificMessage, dateTime, deviceCode);
-            buffer.getShort(); // Skip checksum
+            if (MESSAGE_MAP.containsKey(key)) {
+                BaseMessage specificMessage = createSpecificMsg(key, deviceCode, frameType, messageType);
 
-            if (!(specificMessage instanceof WaveDataMessage) && buffer.hasRemaining()) {
-                throw new MessageParserException(UNPARSED_DATA_ERROR);
+                flag = parseMessageContent(messageContent, specificMessage, timeStamp, deviceCode);
+
+                buffer.getShort(); // Skip checksum
+
+                if (!(specificMessage instanceof WaveDataMessage) && buffer.hasRemaining()) {
+                    throw new MessageParsingException(UNPARSED_DATA_ERROR);
+                }
+            } else if (frameType == CONTROL_ACK_REPORT && messageType == PARAMETER_READING) {
+                flag = parseParamReadingMsg(messageContent, timeStamp, deviceCode);
             }
+
         }
 
+        return flag;
     }
 
-    private BaseMessage createSpecificMessage(String key, String deviceCode, byte messageType) {
+    /**
+     * @param key         报文签名
+     * @param deviceCode  设备编码
+     * @param messageType 报文类型
+     * @return 具体报文实体类
+     * @description 该方法通过报文签名key，在 MESSAGE_MAP 中找到对应的报文实体类，并进行创建初始化
+     */
+    private BaseMessage createSpecificMsg(String key, String deviceCode, byte frameType, byte messageType) {
         Class<? extends BaseMessage> messageClass = MESSAGE_MAP.get(key);
         BaseMessage specificMessage;
         try {
             specificMessage = messageClass.newInstance();
         } catch (InstantiationException | IllegalAccessException e) {
-            throw new MessageParserException(UNSUPPORTED_DATA_TYPE_ERROR, e);
+            throw new MessageParsingException(UNSUPPORTED_DATA_TYPE_ERROR, e);
         }
+
         specificMessage.setIdNumber(deviceCode.getBytes());
+        specificMessage.setFrameType(frameType);
         specificMessage.setMessageType(messageType);
         return specificMessage;
     }
 
-    private void parseMessageContent(byte[] messageContent, BaseMessage specificMessage, byte[] dateTime, String deviceCode) {
-        ByteBuffer buffer = ByteBuffer.wrap(messageContent).order(BYTE_ORDER);
+    /**
+     * @param messageContent  报文内容
+     * @param specificMessage 具体报文类型
+     * @param timeStamp       时间戳
+     * @param deviceCode      设备编码
+     * @return 被持久化的报文实体类
+     * @description 该方法根据收到的报文类型，调用负责解析该类型的解析方法
+     */
+    private boolean parseMessageContent(byte[] messageContent, BaseMessage specificMessage, long timeStamp, String deviceCode) {
+        ByteBuffer buffer = ByteBuffer.wrap(messageContent).order(BIG_ENDIAN);
 
-        if (specificMessage instanceof HeartBeatMessage) {
-            //todo
-            heartBeatController.heartBeat();
-        } else if (specificMessage instanceof BasicInfoMessage) {
-            handleBasicInfoMessage((BasicInfoMessage) specificMessage, buffer, dateTime, deviceCode);
-        } else if (specificMessage instanceof WorkingConditionMessage) {
-            handleWorkingConditionMessage((WorkingConditionMessage) specificMessage, buffer, deviceCode);
-        } else if (specificMessage instanceof DeviceFaultMessage) {
-            handleDeviceFaultMessage((DeviceFaultMessage) specificMessage, buffer, deviceCode);
-        } else if (specificMessage instanceof DeviceStatusMessage) {
-            handleDeviceStatusMessage((DeviceStatusMessage) specificMessage, buffer, deviceCode);
-        } else if (specificMessage instanceof WaveDataMessage) {
-            handleWaveData((WaveDataMessage) specificMessage, buffer, dateTime, deviceCode);
-        } else {
-            throw new MessageParserException(ILLEGAL_MESSAGE_SIGNATURE_ERROR);
+        switch (specificMessage.getClass().getSimpleName()) {
+            case "HeartBeatMessage":
+                log.info("收到心跳数据");
+                return true;
+            case "BasicInfoMessage":
+                return handleBasicInfoMessage((BasicInfoMessage) specificMessage, buffer, timeStamp, deviceCode);
+            case "WorkingConditionMessage":
+                return handleWorkingConditionMessage((WorkingConditionMessage) specificMessage, buffer, timeStamp, deviceCode);
+            case "DeviceFaultMessage":
+                return handleDeviceFaultMessage((DeviceFaultMessage) specificMessage, buffer, deviceCode);
+            case "DeviceStatusMessage":
+                return handleDeviceStatusMessage((DeviceStatusMessage) specificMessage, buffer, deviceCode);
+            case "WaveDataMessage":
+                return handleWaveData((WaveDataMessage) specificMessage, buffer, timeStamp, deviceCode);
+            default:
+                throw new MessageParsingException(ILLEGAL_MESSAGE_SIGNATURE_ERROR);
         }
     }
 
-    private void handleBasicInfoMessage(BasicInfoMessage message, ByteBuffer buffer, byte[] dateTime, String deviceCode) {
+    private boolean handleBasicInfoMessage(BasicInfoMessage message, ByteBuffer buffer, long timeStamp, String deviceCode) {
 
         byte[] terminalName = new byte[MONITORING_TERMINAL_NAME_LENGTH];
         buffer.get(terminalName);
@@ -136,7 +163,9 @@ public class MessageParser {
         byte[] manufacturer = new byte[MANUFACTURER_LENGTH];
         buffer.get(manufacturer);
         message.setManufacturer(manufacturer);
-        message.setProductionDate(buffer.getFloat());
+        byte[] date = new byte[SIMPLE_DATE_LENGTH];
+        buffer.get(date);
+        message.setProductionDate(date);
         byte[] serialNumber = new byte[FACTORY_SERIAL_NUMBER_LENGTH];
         buffer.get(serialNumber);
         message.setFactoryNumber(serialNumber);
@@ -146,18 +175,23 @@ public class MessageParser {
 
         DeviceInfo deviceInfo = new DeviceInfo();
         deviceInfo.setDeviceId(deviceRepository.findDeviceIdByCode(deviceCode));
-        deviceInfo.setTerminalName(byteArrayToHexString(message.getMonitoringTerminalName()));
-        deviceInfo.setTerminalType(byteArrayToHexString(message.getMonitoringTerminalModel()));
-        deviceInfo.setTerminalEdition(floatToHexString(message.getMonitoringTerminalInfoVersion()));
-        deviceInfo.setProducer(byteArrayToHexString(message.getManufacturer()));
-        deviceInfo.setProducerCode(byteArrayToHexString(message.getFactoryNumber()));
-        deviceInfo.setProducerTime(floatToHexString(message.getProductionDate()));
-        deviceInfo.setCollectionTime(parseDateTimeToInst(dateTime));
+        deviceInfo.setTerminalName(byteArrToStr(message.getMonitoringTerminalName()));
+        deviceInfo.setTerminalType(byteArrToStr(message.getMonitoringTerminalModel()));
+        deviceInfo.setTerminalEdition(
+                new BigDecimal(String.valueOf(message.getMonitoringTerminalInfoVersion()))
+                        .setScale(4, RoundingMode.HALF_UP)
+                        .toString());
+        deviceInfo.setProducer(byteArrToStr(message.getManufacturer()));
+        deviceInfo.setProducerCode(Long.toString(ByteBuffer.wrap(message.getFactoryNumber()).order(LITTLE_ENDIAN).getLong()));
+        deviceInfo.setProductionDate(parseDateToStr(message.getProductionDate()));
+        deviceInfo.setCollectionTime(Instant.ofEpochMilli(timeStamp));
+
 
         deviceInfoRepository.save(deviceInfo);
+        return true;
     }
 
-    private void handleWorkingConditionMessage(WorkingConditionMessage message, ByteBuffer buffer, String deviceCode) {
+    private boolean handleWorkingConditionMessage(WorkingConditionMessage message, ByteBuffer buffer, long timeStamp, String deviceCode) {
 
         byte[] time = new byte[TIME_LENGTH];
         buffer.get(time);
@@ -172,14 +206,15 @@ public class MessageParser {
 
         WorkStatus workStatus = new WorkStatus();
         workStatus.setDeviceId(deviceRepository.findDeviceIdByCode(deviceCode));
-        workStatus.setCollectionTime(parseDateTimeToInst(message.getUploadTime()));
-        workStatus.setDeviceTemperature(shortToFloat(message.getDeviceTemperature()));
-        workStatus.setLineCurrent(shortToFloat(message.getCurrentEffectiveValue()));
+        workStatus.setCollectionTime(Instant.ofEpochMilli(timeStamp));
+        workStatus.setDeviceTemperature((float) message.getDeviceTemperature());
+        workStatus.setLineCurrent((float) message.getCurrentEffectiveValue());
 
         workStatusRepository.save(workStatus);
+        return true;
     }
 
-    private void handleDeviceFaultMessage(DeviceFaultMessage message, ByteBuffer buffer, String deviceCode) {
+    private boolean handleDeviceFaultMessage(DeviceFaultMessage message, ByteBuffer buffer, String deviceCode) {
         byte[] time = new byte[TIME_LENGTH];
         buffer.get(time);
         message.setFaultDataCollectionTime(time);
@@ -191,12 +226,13 @@ public class MessageParser {
         DeviceFault deviceFault = new DeviceFault();
         deviceFault.setDeviceId(deviceRepository.findDeviceIdByCode(deviceCode));
         deviceFault.setCollectionTime(parseDateTimeToInst(message.getFaultDataCollectionTime()));
-        deviceFault.setFaultDescribe(byteArrayToHexString(message.getDeviceFaultInfo()));
+        deviceFault.setFaultDescribe(byteArrToStr(message.getDeviceFaultInfo()));
 
         deviceFaultRepository.save(deviceFault);
+        return true;
     }
 
-    private void handleDeviceStatusMessage(DeviceStatusMessage message, ByteBuffer buffer, String deviceCode) {
+    private boolean handleDeviceStatusMessage(DeviceStatusMessage message, ByteBuffer buffer, String deviceCode) {
         byte[] time = new byte[TIME_LENGTH];
         buffer.get(time);
         message.setDataCollectionUploadTime(time);
@@ -219,36 +255,41 @@ public class MessageParser {
         DeviceStatus deviceStatus = new DeviceStatus();
         deviceStatus.setCollectionTime(parseDateTimeToInst(message.getDataCollectionUploadTime()));
         deviceStatus.setDeviceId(deviceRepository.findDeviceIdByCode(deviceCode));
-        deviceStatus.setSolarChargeCurrent(shortToInt(message.getSolarChargingCurrent()));
-        deviceStatus.setPhasePowerCurrent(shortToInt(message.getPhasePowerCurrent()));
-        deviceStatus.setWorkVoltage(shortToInt(message.getDeviceWorkingVoltage()));
-        deviceStatus.setWorkCurrent(shortToInt(message.getDeviceWorkingCurrent()));
-        deviceStatus.setBatteryVoltage(shortToInt(message.getBatteryVoltage()));
-        deviceStatus.setReserved(byteToInt(message.getReserved()));
-        deviceStatus.setSolarPanelAVoltage(shortToInt(message.getSolarPanelAVoltage()));
-        deviceStatus.setSolarPanelBVoltage(shortToInt(message.getSolarPanelBVoltage()));
-        deviceStatus.setSolarPanelCVoltage(shortToInt(message.getSolarPanelCVoltage()));
-        deviceStatus.setPhasePowerVoltage(shortToInt(message.getPhasePowerVoltage()));
-        deviceStatus.setChipTemperature(shortToInt(message.getChipTemperature()));
-        deviceStatus.setMainboardTemperature(shortToInt(message.getMainBoardTemperature()));
-        deviceStatus.setSignalStrength(shortToInt(message.getDeviceSignalStrength()));
-        deviceStatus.setGpsLatitude(floatToInt(message.getGpsLatitude()));
-        deviceStatus.setGpsLongitude(floatToInt(message.getGpsLongitude()));
+        deviceStatus.setSolarChargeCurrent((int) message.getSolarChargingCurrent());
+        deviceStatus.setPhasePowerCurrent((int) message.getPhasePowerCurrent());
+        deviceStatus.setWorkVoltage((int) message.getDeviceWorkingVoltage());
+        deviceStatus.setWorkCurrent((int) message.getDeviceWorkingCurrent());
+        deviceStatus.setBatteryVoltage((int) message.getBatteryVoltage());
+        deviceStatus.setReserved((int) message.getReserved());
+        deviceStatus.setSolarPanelAVoltage((int) message.getSolarPanelAVoltage());
+        deviceStatus.setSolarPanelBVoltage((int) message.getSolarPanelBVoltage());
+        deviceStatus.setSolarPanelCVoltage((int) message.getSolarPanelCVoltage());
+        deviceStatus.setPhasePowerVoltage((int) message.getPhasePowerVoltage());
+        deviceStatus.setChipTemperature((int) message.getChipTemperature());
+        deviceStatus.setMainboardTemperature((int) message.getMainBoardTemperature());
+        deviceStatus.setSignalStrength((int) message.getDeviceSignalStrength());
+        deviceStatus.setGpsLatitude((int) message.getGpsLatitude());
+        deviceStatus.setGpsLongitude((int) message.getGpsLongitude());
 
         deviceStatusRepository.save(deviceStatus);
+        return true;
     }
 
-    private void handleWaveData(WaveDataMessage message, ByteBuffer buffer, byte[] dateTime, String deviceCode) {
+    private boolean handleWaveData(WaveDataMessage message, ByteBuffer buffer, long timeStamp, String deviceCode) {
         message.setDataPacketLength(buffer.getShort());
         byte[] wave = new byte[message.getDataPacketLength()];
+        log.info("这段报文的波形数据长度： {}", message.getDataPacketLength());
         buffer.get(wave);
         message.setWaveData(wave);
         byte[] waveStartTime = new byte[TIME_LENGTH];
         buffer.get(waveStartTime);
         message.setWaveStartTime(waveStartTime);
         message.setWaveDataLength(buffer.getShort());
+        log.info("波形数据总长度： {}", message.getWaveDataLength());
         message.setSegmentNumber(buffer.get());
+        log.info("当前报文段号： {}", message.getSegmentNumber());
         message.setDataPacketNumber(buffer.get());
+        log.info("总报文段数： {}", message.getDataPacketNumber());
         int remaining = buffer.remaining();
         byte[] reserved = new byte[remaining];
         buffer.get(reserved);
@@ -259,62 +300,52 @@ public class MessageParser {
 
         if (segmentNumber == 1) {
             waveData = new WaveData();
-            setWaveDataProperties(waveData, message, dateTime, deviceCode);
-            if (dataPacketNumber == 1) {
-                waveDataRepository.save(waveData);
-            }
-        } else {
-            if (segmentNumber < dataPacketNumber) {
-                appendWaveData(waveData, message);
-            }
-            if (segmentNumber == dataPacketNumber) {
-                appendWaveData(waveData, message);
-                waveDataRepository.save(waveData);
-            }
+            waveDataParserHelper.setWaveDataProperties(waveData, message, timeStamp, deviceCode);
+        } else if (segmentNumber <= dataPacketNumber) {
+            waveDataParserHelper.appendWaveData(waveData, message);
         }
+
+        waveDataRepository.save(waveData);
+        return true;
     }
 
-    private void setWaveDataProperties(WaveData waveData, WaveDataMessage message, byte[] dateTime, String deviceCode) {
-        waveData.setCollectionTime(parseDateTimeToInst(dateTime));
-        byte messageType = message.getMessageType();
-        waveData.setType(byteToInt(messageType));
+    private boolean parseParamReadingMsg(byte[] messageContent, long timeStamp, String deviceCode) {
+        ByteBuffer buffer = ByteBuffer.wrap(messageContent).order(BIG_ENDIAN);
+        byte stat = buffer.get();
+        String status;
 
-        String waveDataCode = generateWaveDataCode(dateTime, byteToHexString(messageType), deviceCode);
-        waveData.setCode(waveDataCode);
+        switch (stat) {
+            case MESSAGE_STATUS_SUCCESS:
+                status = "success";
+                break;
+            case MESSAGE_STATUS_FAILURE:
+                status = "failure";
+                break;
+            default:
+                throw new MessageParsingException("Invalid message status: " + stat);
+        }
 
-        waveData.setLength(shortToLong(message.getWaveDataLength()));
-        waveData.setHeadTime(parseDateTimeToStr(message.getWaveStartTime()));
-        waveData.setSampleRate(hyConfigProperty.getConstant().getTravelSampleRate());
-        waveData.setThreshold(hyConfigProperty.getConstant().getTravelThreshold());
+        JsonObject paramReadingMsg = new JsonObject();
+        paramReadingMsg.addProperty("status", status);
+        paramReadingMsg.addProperty("timeStamp", Instant.ofEpochMilli(timeStamp).toString());
+        paramReadingMsg.addProperty("deviceId", Long.toString(deviceRepository.findDeviceIdByCode(deviceCode)));
 
-        int relafalg = parseRelaFalg();
-        waveData.setRelaFlag(relafalg);
+        short paramNum = buffer.getShort();
+        JsonObject params = new JsonObject();
 
-        waveData.setData(byteArrayToHexString(message.getWaveData()));
-        waveData.setRemark(byteArrayToHexString(message.getReserved()));
-    }
+        for (int i = 0; i < paramNum; i++) {
+            short paramId = buffer.getShort();
+            int paramContent = buffer.getInt();
 
-    public static String generateWaveDataCode(byte[] dateTime, String messageType, String deviceCode) {
-        String ymd = String.format("20%02d%02d%02d", dateTime[0] & 0xFF, dateTime[1] & 0xFF, dateTime[2] & 0xFF);
-        String hms = String.format("%02d%02d%02d", dateTime[3] & 0xFF, dateTime[4] & 0xFF, dateTime[5] & 0xFF);
-        String ns = String.format("%03d%03d%03d",
-                ((dateTime[6] & 0xFF) << 8) + (dateTime[7] & 0xFF),
-                ((dateTime[8] & 0xFF) << 8) + (dateTime[9] & 0xFF),
-                ((dateTime[10] & 0xFF) << 8) + (dateTime[11] & 0xFF)
-        );
+            String paramIdStr = String.format("param%d", paramId);
+            String paramContentStr = Integer.toString(paramContent);
 
-        return String.format("W%s-%s-%s-%s-%s", ymd, hms, ns, messageType, deviceCode);
-    }
+            params.addProperty(paramIdStr, paramContentStr);
+        }
 
+        paramReadingMsg.add("param", params);
 
-
-    //todo 需结合算法
-    private Integer parseRelaFalg() {
-        return 1;
-    }
-
-    private void appendWaveData(WaveData waveData, WaveDataMessage waveDataMessage) {
-        waveData.setData(waveData.getData() + byteArrayToHexString(waveDataMessage.getWaveData()));
+        return true;
     }
 
 }

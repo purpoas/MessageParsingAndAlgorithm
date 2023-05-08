@@ -6,12 +6,12 @@ package com.hy.biz.parser.exception;
  * @author shiwentao
  * @create 2023-04-19 13:34
  **/
-public class MessageParserException extends RuntimeException {
-    public MessageParserException(String message) {
+public class MessageParsingException extends RuntimeException {
+    public MessageParsingException(String message) {
         super(message);
     }
 
-    public MessageParserException(String message, Throwable cause) {
+    public MessageParsingException(String message, Throwable cause) {
         super(message, cause);
     }
 }

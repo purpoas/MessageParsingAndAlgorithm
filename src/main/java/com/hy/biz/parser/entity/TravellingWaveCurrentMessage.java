@@ -10,7 +10,7 @@ import lombok.EqualsAndHashCode;
  * @create 2023-04-21 10:19
  **/
 @Data
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 public class TravellingWaveCurrentMessage extends WaveDataMessage {
 }
 

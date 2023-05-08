@@ -1,12 +1,12 @@
 package com.hy.biz.redis.consumer.impl;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.hy.biz.parser.MessageParser;
 import com.hy.biz.redis.consumer.RedisConsumer;
+import com.hy.biz.redis.task.TaskFactory;
 import com.hy.biz.redis.task.TaskQueue;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import javax.annotation.PreDestroy;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 /**
@@ -17,14 +17,13 @@ import java.util.concurrent.ThreadFactory;
  **/
 public class RedisConsumerImpl extends RedisConsumer {
 
-    public RedisConsumerImpl(MessageParser messageParser, TaskQueue taskQueue, String workingQueue, String backupQueue, RedisTemplate<String, String> redisTemplate) {
-        super(messageParser, taskQueue, workingQueue, backupQueue, redisTemplate);
+    public RedisConsumerImpl(TaskQueue taskQueue, TaskFactory taskFactory, String workingQueue, String backupQueue, int queueCapacity, RedisTemplate<String, String> redisTemplate) {
+        super(taskQueue, taskFactory, workingQueue, backupQueue, queueCapacity, redisTemplate);
     }
 
-    public void start() {
-        final ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("redis-consumer-dfm").build();
-        super.start(threadFactory);
+    public void executeCommand() {
+        final ThreadFactory threadFactory = Executors.defaultThreadFactory();
+        super.executeCommand(threadFactory);
     }
 
     @PreDestroy

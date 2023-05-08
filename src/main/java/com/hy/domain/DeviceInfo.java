@@ -1,6 +1,7 @@
 package com.hy.domain;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
@@ -8,11 +9,14 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import javax.persistence.*;
 import java.time.Instant;
 
-@Entity(name = "device_info")
+@Entity
+@Table(name = "device_info")
 @Setter
 @Getter
+@NoArgsConstructor
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 public class DeviceInfo {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -35,8 +39,8 @@ public class DeviceInfo {
     @Column(name = "producer_code")
     private String producerCode;
 
-    @Column(name = "producer_time")
-    private String producerTime;
+    @Column(name = "production_date")
+    private String productionDate;
 
     @Column(name = "collection_time")
     private Instant collectionTime;

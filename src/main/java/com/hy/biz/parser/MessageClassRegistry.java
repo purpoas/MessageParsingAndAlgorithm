@@ -6,8 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.hy.biz.parser.constants.FrameType.MONITORING_DATA_REPORT;
-import static com.hy.biz.parser.constants.FrameType.WORK_STATUS_REPORT;
+import static com.hy.biz.parser.constants.FrameType.*;
 import static com.hy.biz.parser.constants.MessageType.*;
 
 /**
@@ -38,7 +37,7 @@ public class MessageClassRegistry {
         MESSAGE_MAP.put(WORK_STATUS_REPORT + ":" + DEVICE_STATUS, DeviceStatusMessage.class);
     }
 
-    public static Map<String, Class<? extends BaseMessage>> getMessageMap() {
+    protected static Map<String, Class<? extends BaseMessage>> getMessageMap() {
         return UNMODIFIABLE_MESSAGE_MAP;
     }
 

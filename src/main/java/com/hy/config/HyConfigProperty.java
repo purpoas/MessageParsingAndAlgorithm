@@ -2,7 +2,7 @@ package com.hy.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * @package com.hy.config
@@ -11,33 +11,29 @@ import org.springframework.stereotype.Component;
  * @create 2023-04-25 10:56
  **/
 
-@Component
+@Configuration
 @ConfigurationProperties(prefix = "hy")
 @Data
 public class HyConfigProperty {
 
-    private final DataQueueConfig dataQueue = new DataQueueConfig();  //消息队列配置
+    private final DataQueue dataQueue = new DataQueue();                    //Redis配置
 
-    private final Constant constant = new Constant();                 // 基础配置
+    private final Constant constant = new Constant();                       // 基础配置
 
     @Data
-    public static class DataQueueConfig {
+    public static class DataQueue {
         /**
-         * task queue capacity
+         * redis消息队列
          */
-        private Integer queueCapacity = 5000;
-        private Integer coreThreadSize = 5;
+        private String dnmData;
+        private Integer queueCapacity;
+        private String dnmDataBak;
+        private String dnmDataUnknown;
 
         /**
-         * cq data queue
+         * redis订阅通知
          */
-        private String iddsData = "idds:dataTaskQueue";
-
-        /**
-         * cq data backup queue
-         */
-        private String iddsDataBak = "idds:dataBackupTaskQueue";
-        private String iddsDataUnknown = "idds:dataUnknownTaskQueue";
+        private String dnmTopicChannel;
     }
 
     @Data

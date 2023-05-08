@@ -1,11 +1,12 @@
 package com.hy.biz.redis.consumer;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hy.biz.parser.MessageParser;
 import com.hy.biz.parser.entity.dto.MessageDTO;
-import com.hy.biz.redis.task.MessageParsingTask;
 import com.hy.biz.redis.task.Task;
+import com.hy.biz.redis.task.TaskFactory;
 import com.hy.biz.redis.task.TaskQueue;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 
@@ -16,33 +17,48 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
+@Slf4j
 public abstract class RedisConsumer {
-    private final MessageParser messageParser;
     private final TaskQueue taskQueue;
-    private final String workingQueue;
-    private final String backupQueue;
+    private final TaskFactory taskFactory;
+    private final String dataQueue;
+    private final String dataBakQueue;
+    private final int queueCapacity;
     private final RedisTemplate<String, String> redisTemplate;
-    private volatile boolean threadStopped = false;
-    private ExecutorService executorService;
-    private static final long REDIS_LS_MAX_SIZE = 5000L;
 
-    protected RedisConsumer(MessageParser messageParser, TaskQueue taskQueue, String workingQueue, String backupQueue,
-                            RedisTemplate<String, String> redisTemplate) {
-        this.messageParser = messageParser;
+    private final AtomicBoolean threadStopped = new AtomicBoolean(false);
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private ExecutorService executorService;
+
+    protected RedisConsumer(TaskQueue taskQueue, TaskFactory taskFactory, String dataQueue, String dataBakQueue, int queueCapacity, RedisTemplate<String, String> redisTemplate) {
         this.taskQueue = taskQueue;
-        this.workingQueue = workingQueue;
-        this.backupQueue = backupQueue;
+        this.taskFactory = taskFactory;
+        this.dataQueue = dataQueue;
+        this.dataBakQueue = dataBakQueue;
+        this.queueCapacity = queueCapacity;
         this.redisTemplate = redisTemplate;
     }
 
-    private void process() {
-        long startPosition = 0L;
-        long endPosition = REDIS_LS_MAX_SIZE - 1;
+    protected void executeCommand(ThreadFactory threadFactory) {
+        AtomicInteger counter = new AtomicInteger();
+        executorService = Executors.newSingleThreadExecutor(runnable -> {
+            Thread thread = threadFactory.newThread(runnable);
+            thread.setName("idds-message-consumer-thread-" + counter.getAndIncrement());
+            return thread;
+        });
+        executorService.execute(this::command);
+    }
+
+    private void command() {
+        int startPosition = 0;
+        int endPosition = queueCapacity - 1;
 
         processBackupQueue(startPosition, endPosition);
 
-        while (!threadStopped) {
+        while (!threadStopped.get()) {
             processWorkingQueue();
         }
     }
@@ -50,29 +66,24 @@ public abstract class RedisConsumer {
     private void processBackupQueue(long startPosition, long endPosition) {
         while (true) {
             try {
-                List<String> previousTasks = redisTemplate.opsForList().range(backupQueue, startPosition, endPosition);
+                Optional<List<String>> unresolvedTasks = Optional.ofNullable(redisTemplate.opsForList().range(dataBakQueue, startPosition, endPosition));
 
-                if (previousTasks == null || previousTasks.isEmpty()) {
-                    break;
-                }
+                if (unresolvedTasks.isPresent()) {
+                    if (unresolvedTasks.get().isEmpty())
+                        break;
+                    else {
+                        Optional<Long> count = Optional.ofNullable(redisTemplate.opsForList().rightPushAll(dataQueue, unresolvedTasks.get()));
 
-                Optional<Long> optionalCount = Optional.ofNullable(redisTemplate.opsForList().rightPushAll(workingQueue, previousTasks));
-
-                if (optionalCount.isPresent()) {
-                    long count = optionalCount.get();
-                    if (count > 0) {
-                        if (count < endPosition) {
-                            endPosition = count;
+                        if (count.isPresent()) {
+                            if (count.get() > 0) {
+                                Long backupQueueSize = redisTemplate.opsForList().size(dataBakQueue);
+                                assert backupQueueSize != null;
+                                redisTemplate.opsForList().trim(dataBakQueue, count.get(), backupQueueSize);
+                            }
                         }
-
-                        Optional<Long> optionalBackupQueueSize = Optional.ofNullable(redisTemplate.opsForList().size(backupQueue));
-
-                        if (optionalBackupQueueSize.isPresent()) {
-                            long backupQueueSize = optionalBackupQueueSize.get();
-                            redisTemplate.opsForList().trim(backupQueue, endPosition - 1, backupQueueSize);
-                        }
-
                     }
+                } else {
+                    log.error("unresolvedTasks 为 null");
                 }
             } catch (OutOfMemoryError e) {
                 e.printStackTrace();
@@ -82,30 +93,26 @@ public abstract class RedisConsumer {
     }
 
     private void processWorkingQueue() {
-        try {
-            String message = redisTemplate.opsForList().rightPopAndLeftPush(workingQueue, backupQueue, Duration.ofSeconds(10));
+        String message = redisTemplate.opsForList().rightPopAndLeftPush(dataQueue, dataBakQueue, Duration.ofSeconds(10));
 
-            if (StringUtils.isNotBlank(message)) {
-                ObjectMapper objectMapper = new ObjectMapper();
-                MessageDTO messageDTO = objectMapper.readValue(message, MessageDTO.class);
-                Task task = new MessageParsingTask(messageParser, messageDTO);
-
-                taskQueue.putTask(task);
+        if (StringUtils.isNotBlank(message)) {
+            MessageDTO messageDTO;
+            try {
+                messageDTO = objectMapper.readValue(message, MessageDTO.class);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
             }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+            Task task = taskFactory.createTask(message, messageDTO, dataBakQueue);
 
-    protected void start(ThreadFactory threadFactory) {
-        executorService = Executors.newSingleThreadExecutor(threadFactory);
-        executorService.execute(this::process);
-        executorService.shutdown();
+            taskQueue.putTask(task);
+        }
+
     }
 
     protected void stop() {
-        this.threadStopped = true;
+        this.threadStopped.set(true);
         if (executorService != null) {
+            executorService.shutdownNow();
             try {
                 if (!executorService.awaitTermination(1, TimeUnit.SECONDS)) {
                     executorService.shutdownNow();

@@ -10,10 +10,13 @@ import org.springframework.data.redis.core.RedisTemplate;
  * @create 2023-04-26 10:54
  **/
 public abstract class Task implements Runnable {
+
     protected String message;
-    protected void removeFromRedisList(RedisTemplate<String, String> redisTemplate, String backupKey) {
-        if (StringUtils.isNotBlank(backupKey)) {
-            redisTemplate.opsForList().remove(backupKey, 1, this.message);
+
+    protected void removeFromRedisList(RedisTemplate<String, String> redisTemplate, String backupQueue) {
+        if (StringUtils.isNotBlank(backupQueue)) {
+            redisTemplate.opsForList().remove(backupQueue, 1, this.message);
         }
     }
+
 }

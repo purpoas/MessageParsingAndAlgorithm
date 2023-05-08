@@ -9,7 +9,7 @@ import lombok.Setter;
 public class MessageDTO {
 
     @JsonProperty("dateTime")
-    private byte[] dateTime;
+    private long timeStamp;
 
     @JsonProperty("data")
     private Data data;

@@ -22,36 +22,31 @@ spring:
       ddl-auto: update
     database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
     show-sql: true
-  data:
-    redis:
-      host: 172.16.16.132
-      port: 6379
-      timeout: 0
-      password:
-      database: 0  # default db index
-      lettuce:
-        pool:
-          max-active: 200
-          max-wait: 10000
-          max-idle: 20
-          min-idle: 2
+  redis:
+    host: 172.16.16.132
+    port: 6379
+    timeout: 0
+    password: Purpo$e980512
+    database: 0  # default db index
+    lettuce:
+      pool:
+        max-active: 200
+        max-wait: 10000
+        max-idle: 20
+        min-idle: 2
 hy:
   async: # 异步任务配置，推送微信、短信的任务处理
     pool: # 处理线程池配置
       core-pool-size: 2
       max-pool-size: 16
-      queue-capacity: 128
       keep-alive-seconds: 60
-  dataQueue:
+      queue-capacity: 128
+  dataQueue: #Redis消息队列
     queue-capacity: 2000
-    dfm-data: hydfm:dataTaskQueue
-    dfm-data-bak: hydfm:dataBackupTaskQueue
-    dfm-data-unkown: hydfm:dataUnknownTaskQueue
-  database:
-    driver: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/middle_nr?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8&useSSL=false
-    username: root
-    password:
+    dnm-data: hydnm:dataTaskQueue
+    dnm-data-bak: hydnm:dataBackupTaskQueue
+    dnm-data-unknown: hydnm:dataUnknownTaskQueue
+    dnm-topic-channel: hydnm:stateChannel #Redis订阅通知
   constant:
     supplier-code: HY
     travel-threshold: 80

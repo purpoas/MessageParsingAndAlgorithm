@@ -19,6 +19,9 @@ public final class MessageConstants {
     public static final int MANUFACTURER_LENGTH = 50;  //生产厂家长度
     public static final int FACTORY_SERIAL_NUMBER_LENGTH = 20;  //出厂编号长度
     public static final int RESERVED_LENGTH = 30;  //备用长度
+    public static final int SIMPLE_DATE_LENGTH = 4;
+    public static final byte MESSAGE_STATUS_SUCCESS = 0x00;
+    public static final byte MESSAGE_STATUS_FAILURE = (byte) 0xFF;
 
 
     /**

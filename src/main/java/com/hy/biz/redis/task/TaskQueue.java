@@ -20,16 +20,6 @@ public class TaskQueue {
     }
 
     /**
-     * @description 将一个新任务add到队列中
-     * @param task 任务
-     */
-    public void addTask(Task task) {
-        if (task != null) {
-            blockingQueue.add(task);
-        }
-    }
-
-    /**
      * @description 将一个新任务put到队列中
      * @param task 任务
      */
@@ -50,13 +40,6 @@ public class TaskQueue {
      */
     public Task takeTask() throws InterruptedException {
         return blockingQueue.take();
-    }
-
-    /**
-     * @return 队列容量
-     */
-    public int getQueueSize() {
-        return blockingQueue.size();
     }
 
 }

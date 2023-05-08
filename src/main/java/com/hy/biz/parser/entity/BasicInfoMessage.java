@@ -30,7 +30,7 @@ public class BasicInfoMessage extends BaseMessage {
     /**
      * 生产日期
      */
-    private float productionDate;
+    private byte[] productionDate;
 
     /**
      * 出厂编号
