@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
  * 消费者实现类
  */
 @Component
-public class IddsDataConsumer {
+public class DataReadService {
 
     private final TaskQueue taskQueue;
     private final TaskFactory taskFactory;
@@ -19,7 +19,7 @@ public class IddsDataConsumer {
     private final HyConfigProperty hyConfigProperty;
 
 
-    public IddsDataConsumer(TaskQueue taskQueue, TaskFactory taskFactory, RedisTemplate<String, String> redisTemplate, HyConfigProperty hyConfigProperty) {
+    public DataReadService(TaskQueue taskQueue, TaskFactory taskFactory, RedisTemplate<String, String> redisTemplate, HyConfigProperty hyConfigProperty) {
         this.taskQueue = taskQueue;
         this.taskFactory = taskFactory;
         this.redisTemplate = redisTemplate;
