@@ -1,5 +1,9 @@
 package com.hy.biz.redis.task.impl;
 
+import com.hy.biz.dataAnalysis.DataAnalysisService;
+import com.hy.biz.dataPush.DataPushService;
+import com.hy.biz.dataPush.dto.DeviceDTO;
+import com.hy.biz.dataResolver.DataResolverService;
 import com.hy.biz.parser.MessageParser;
 import com.hy.biz.parser.entity.dto.MessageDTO;
 import com.hy.biz.redis.task.Task;
@@ -17,12 +21,20 @@ public class MessageParsingTask extends Task {
     private final RedisTemplate<String, String> redisTemplate;
     private final String dataBakQueue;
 
-    public MessageParsingTask(String message, MessageDTO messageDTO, MessageParser messageParser, RedisTemplate<String, String> redisTemplate, String dataBakQueue) {
+    private final DataResolverService dataResolverService;
+    private final DataPushService dataPushService;
+    private final DataAnalysisService dataAnalysisService;
+
+    public MessageParsingTask(String message, MessageDTO messageDTO, MessageParser messageParser, RedisTemplate<String, String> redisTemplate, String dataBakQueue,
+                              DataResolverService dataResolverService, DataPushService dataPushService, DataAnalysisService dataAnalysisService) {
         this.message = message;
         this.messageDTO = messageDTO;
         this.messageParser = messageParser;
         this.redisTemplate = redisTemplate;
         this.dataBakQueue = dataBakQueue;
+        this.dataResolverService = dataResolverService;
+        this.dataPushService = dataPushService;
+        this.dataAnalysisService = dataAnalysisService;
     }
 
     @Override
