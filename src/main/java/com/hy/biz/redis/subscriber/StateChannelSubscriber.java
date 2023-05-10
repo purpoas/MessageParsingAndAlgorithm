@@ -3,18 +3,15 @@ package com.hy.biz.redis.subscriber;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.JsonObject;
-import com.hy.biz.parser.SubscribedMessageParser;
-import com.hy.biz.parser.entity.dto.DeviceOnlineStatusDTO;
-import com.hy.biz.parser.entity.dto.MessageDTO;
+import com.hy.biz.parser.handler.MessageHandler;
 import com.hy.biz.parser.exception.MessageParsingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.lang.NonNull;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import static com.hy.biz.parser.constants.MessageConstants.ILLEGAL_SUBSCRIBED_MESSAGE_SIGNATURE_ERROR;
 import static com.hy.biz.parser.util.TypeConverter.byteArrToStr;
@@ -27,16 +24,21 @@ import static com.hy.biz.parser.util.TypeConverter.byteArrToStr;
  **/
 @Slf4j
 public class StateChannelSubscriber implements MessageListener {
-    private final SubscribedMessageParser subscribedMessageParser;
-    private final RedisTemplate<String, String> redisTemplate;
+    private final List<MessageHandler> messageHandlers;
     private final ObjectMapper mapper;
 
-    public StateChannelSubscriber(SubscribedMessageParser subscribedMessageParser, RedisTemplate<String, String> redisTemplate, ObjectMapper mapper) {
-        this.subscribedMessageParser = subscribedMessageParser;
-        this.redisTemplate = redisTemplate;
+    public StateChannelSubscriber(List<MessageHandler> messageHandlers, ObjectMapper mapper) {
+        this.messageHandlers = messageHandlers;
         this.mapper = mapper;
     }
 
+    /**
+     * This method processes the incoming message.
+     * It first tries to convert the message to a JsonNode.
+     * If the message has "data", it treats it as a control message and processes it accordingly.
+     * If the message has "result", it treats it as a device online status message and processes it accordingly.
+     * If the message doesn't fall into any of the above categories, it throws a MessageParsingException.
+     */
     @Override
     public void onMessage(@NonNull Message message, byte[] pattern) {
 
@@ -45,35 +47,21 @@ public class StateChannelSubscriber implements MessageListener {
             log.info("Redis订阅频道收到的消息（用于调试）: {}", message);
             rootNode = mapper.readTree(byteArrToStr(message.getBody()));
         } catch (JsonProcessingException e) {
-            log.error("Error processing the JSON: ", e);
             throw new MessageParsingException("Error processing the JSON", e);
         }
 
         String channel = new String(message.getChannel(), StandardCharsets.UTF_8);
 
-        if (rootNode.has("data")) { //控制报文
-            try {
-                MessageDTO messageDTO = mapper.convertValue(rootNode, MessageDTO.class);
-                JsonObject jsonObject = subscribedMessageParser.parseCtrlMsg(
-                        messageDTO.getData().getCommand(),
-                        messageDTO.getDeviceCode());
-                redisTemplate.convertAndSend(channel, jsonObject.toString());
-            } catch (IllegalArgumentException e) {
-                log.error("Error parsing control message", e);
-                throw new MessageParsingException("Error parsing control message", e);
+        for (MessageHandler messageHandler : messageHandlers) {
+            if (messageHandler.canHandle(rootNode)) {
+                try {
+                    messageHandler.handle(rootNode, channel);
+                } catch (Exception e) {
+                    throw new MessageParsingException("Error processing the message by "
+                            + messageHandler.getClass().getSimpleName(), e);
+                }
+                return;
             }
-            return;
-        }
-
-        if (rootNode.has("result")) { //设备在线状态
-            try {
-                DeviceOnlineStatusDTO deviceOnlineStatusDTO = mapper.convertValue(rootNode, DeviceOnlineStatusDTO.class);
-                subscribedMessageParser.parseDeviceOnlineStatMsg(deviceOnlineStatusDTO);
-            } catch (RuntimeException e) {
-                log.error("Error parsing online status message", e);
-                throw new MessageParsingException("Error parsing online status message", e);
-            }
-            return;
         }
 
         throw new MessageParsingException(ILLEGAL_SUBSCRIBED_MESSAGE_SIGNATURE_ERROR);

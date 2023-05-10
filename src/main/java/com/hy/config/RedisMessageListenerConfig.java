@@ -1,14 +1,17 @@
 package com.hy.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hy.biz.parser.SubscribedMessageParser;
+import com.hy.biz.parser.handler.MessageHandler;
 import com.hy.biz.redis.subscriber.StateChannelSubscriber;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
+
+import java.util.ArrayList;
+import java.util.Map;
 
 /**
  * @author shiwentao
@@ -18,15 +21,13 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
  **/
 @Configuration
 public class RedisMessageListenerConfig {
-    private final SubscribedMessageParser subscribedMessageParser;
-    private final RedisTemplate<String, String> redisTemplate;
+    private final ApplicationContext context;
     private final HyConfigProperty hyConfigProperty;
     private final ObjectMapper mapper;
 
-    public RedisMessageListenerConfig(HyConfigProperty hyConfigProperty, SubscribedMessageParser subscribedMessageParser, RedisTemplate<String, String> redisTemplate, ObjectMapper mapper) {
-        this.subscribedMessageParser = subscribedMessageParser;
+    public RedisMessageListenerConfig(ApplicationContext context, HyConfigProperty hyConfigProperty, ObjectMapper mapper) {
+        this.context = context;
         this.hyConfigProperty = hyConfigProperty;
-        this.redisTemplate = redisTemplate;
         this.mapper = mapper;
     }
 
@@ -40,7 +41,8 @@ public class RedisMessageListenerConfig {
 
     @Bean
     StateChannelSubscriber stateChannelSubscriber() {
-        return new StateChannelSubscriber(subscribedMessageParser, redisTemplate, mapper);
+        Map<String, MessageHandler> messageHandlers = context.getBeansOfType(MessageHandler.class);
+        return new StateChannelSubscriber(new ArrayList<>(messageHandlers.values()), mapper);
     }
 
 }
