@@ -5,6 +5,7 @@ package com.hy.biz.dataPush.dto;
  */
 public class DeviceDTO {
 
+    private Long deviceId;
     private String deviceCode;
     private Integer phase;
     private String lineId;
@@ -12,6 +13,14 @@ public class DeviceDTO {
     private String supplierCode;
     private Double distanceToHeadStation;
     private Double lineLength;
+
+    public Long getDeviceId() {
+        return deviceId;
+    }
+
+    public void setDeviceId(Long deviceId) {
+        this.deviceId = deviceId;
+    }
 
     public String getDeviceCode() {
         return deviceCode;
