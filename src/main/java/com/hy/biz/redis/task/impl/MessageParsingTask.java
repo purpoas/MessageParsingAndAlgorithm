@@ -27,6 +27,10 @@ public class MessageParsingTask extends Task {
 
     @Override
     public void run() {
+        // TODO 1.调用数据解析模块方法,返回基础数据类型BaseMessage,解析过程中有需要封装实体类中deviceId属性，需要调用DataPushService中findDeviceByCode方法获取deviceId信息
+        // TODO 2.根据基础数据类型BaseMessage，调用数据推送模块方法进行推送
+        // TODO 3.判断是否波形调用智能算法分析模块方法，进行波形预处理、故障波形判断等操作
+
         Object entitySaved = messageParser.parse(messageDTO.getTimeStamp(),
                 messageDTO.getData().getCommand(),
                 messageDTO.getDeviceCode());
