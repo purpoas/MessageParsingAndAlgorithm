@@ -5,9 +5,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * @author shiwentao
  * @package com.hy.config
  * @description
- * @author shiwentao
  * @create 2023-04-25 10:56
  **/
 
@@ -16,9 +16,39 @@ import org.springframework.context.annotation.Configuration;
 @Data
 public class HyConfigProperty {
 
+    private final Async async = new Async();                                // 异步线程池配置
+
+    private final DataReadConfig dataRead = new DataReadConfig();           // 数据读取配置
+
     private final DataQueue dataQueue = new DataQueue();                    //Redis配置
 
     private final Constant constant = new Constant();                       // 基础配置
+
+
+    /**
+     * 异步任务线程池配置
+     */
+    @Data
+    public static class Async {
+
+        private int corePoolSize = 2;
+
+        private int maxPoolSize = 50;
+
+        private int queueCapacity = 5000;
+
+    }
+
+    /**
+     * Data read mode , support REDIS or ROCKET or MQTT or MYSQL
+     */
+    @Data
+    public static class DataReadConfig {
+
+        private String mode = "REDISMQ";
+
+    }
+
 
     @Data
     public static class DataQueue {

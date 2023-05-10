@@ -1,6 +1,6 @@
 package com.hy;
 
-import com.hy.biz.redis.consumer.impl.RedisConsumerImpl;
+import com.hy.biz.dataRead.IddsDataConsumer;
 import com.hy.biz.redis.task.TaskFactory;
 import com.hy.biz.redis.task.TaskQueue;
 import com.hy.biz.redis.task.TaskWorker;
@@ -19,29 +19,24 @@ import org.springframework.stereotype.Component;
  **/
 @Component
 public class AppStartUp implements ApplicationListener<ContextRefreshedEvent> {
-    private final TaskQueue taskQueue;
     private final TaskWorker taskWorker;
-    private final TaskFactory taskFactory;
-    private final RedisTemplate<String, String> redisTemplate;
-    private final HyConfigProperty hyConfigProperty;
+    private final IddsDataConsumer iddsDataConsumer;
 
-    public AppStartUp(TaskQueue taskQueue, TaskWorker taskWorker, TaskFactory taskFactory, RedisTemplate<String, String> redisTemplate, HyConfigProperty hyConfigProperty) {
-        this.taskQueue = taskQueue;
+    public AppStartUp(TaskWorker taskWorker, IddsDataConsumer iddsDataConsumer) {
         this.taskWorker = taskWorker;
-        this.taskFactory = taskFactory;
-        this.redisTemplate = redisTemplate;
-        this.hyConfigProperty = hyConfigProperty;
+        this.iddsDataConsumer = iddsDataConsumer;
     }
 
     @Override
     public void onApplicationEvent(@NonNull ContextRefreshedEvent event) {
-        initRedisConsumer();
+        // 初始化消费者
+        initConsumer();
+        // 初始化工作线程
         initTaskWorker();
     }
 
-    private void initRedisConsumer() {
-        new RedisConsumerImpl(taskQueue, taskFactory, hyConfigProperty.getDataQueue().getDnmData(), hyConfigProperty.getDataQueue().getDnmDataBak(), hyConfigProperty.getDataQueue().getQueueCapacity(), redisTemplate)
-                .executeCommand();
+    private void initConsumer() {
+        iddsDataConsumer.initConsumer();
     }
 
     private void initTaskWorker() {

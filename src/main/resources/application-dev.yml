@@ -35,13 +35,13 @@ spring:
         max-idle: 20
         min-idle: 2
 hy:
-  async: # 异步任务配置，推送微信、短信的任务处理
-    pool: # 处理线程池配置
-      core-pool-size: 2
-      max-pool-size: 16
-      keep-alive-seconds: 60
-      queue-capacity: 128
-  dataQueue: #Redis消息队列
+  async: # 异步任务线程池配置
+    core-pool-size: 2
+    max-pool-size: 16
+    queue-capacity: 128
+  data-read: # 数据读取配置
+    mode: REDISMQ
+  dataQueue: # Redis消息队列
     queue-capacity: 2000
     dnm-data: hydnm:dataTaskQueue
     dnm-data-bak: hydnm:dataBackupTaskQueue
