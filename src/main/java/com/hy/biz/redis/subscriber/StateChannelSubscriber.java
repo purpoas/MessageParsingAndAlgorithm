@@ -39,29 +39,40 @@ public class StateChannelSubscriber implements MessageListener {
 
     @Override
     public void onMessage(@NonNull Message message, byte[] pattern) {
+
         JsonNode rootNode;
         try {
             log.info("Redis订阅频道收到的消息（用于调试）: {}", message);
             rootNode = mapper.readTree(byteArrToStr(message.getBody()));
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            log.error("Error processing the JSON: ", e);
+            throw new MessageParsingException("Error processing the JSON", e);
         }
 
         String channel = new String(message.getChannel(), StandardCharsets.UTF_8);
 
         if (rootNode.has("data")) { //控制报文
-            MessageDTO messageDTO = mapper.convertValue(rootNode, MessageDTO.class);
-            JsonObject jsonObject = subscribedMessageParser.parseCtrlMsg(
-                    messageDTO.getData().getCommand(),
-                    messageDTO.getDeviceCode());
-            redisTemplate.convertAndSend(channel, jsonObject.toString());
-
+            try {
+                MessageDTO messageDTO = mapper.convertValue(rootNode, MessageDTO.class);
+                JsonObject jsonObject = subscribedMessageParser.parseCtrlMsg(
+                        messageDTO.getData().getCommand(),
+                        messageDTO.getDeviceCode());
+                redisTemplate.convertAndSend(channel, jsonObject.toString());
+            } catch (IllegalArgumentException e) {
+                log.error("Error parsing control message", e);
+                throw new MessageParsingException("Error parsing control message", e);
+            }
             return;
         }
 
         if (rootNode.has("result")) { //设备在线状态
-            DeviceOnlineStatusDTO deviceOnlineStatusDTO = mapper.convertValue(rootNode, DeviceOnlineStatusDTO.class);
-            subscribedMessageParser.parseDeviceOnlineStatMsg(deviceOnlineStatusDTO);
+            try {
+                DeviceOnlineStatusDTO deviceOnlineStatusDTO = mapper.convertValue(rootNode, DeviceOnlineStatusDTO.class);
+                subscribedMessageParser.parseDeviceOnlineStatMsg(deviceOnlineStatusDTO);
+            } catch (RuntimeException e) {
+                log.error("Error parsing online status message", e);
+                throw new MessageParsingException("Error parsing online status message", e);
+            }
             return;
         }
 

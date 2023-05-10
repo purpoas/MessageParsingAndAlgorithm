@@ -20,6 +20,7 @@ public final class MessageConstants {
     public static final int FACTORY_SERIAL_NUMBER_LENGTH = 20;  //设备出厂编号长度
     public static final int RESERVED_LENGTH = 30;  //报文备用长度
     public static final int SIMPLE_DATE_LENGTH = 4;  //日期相关数据长度
+    public static final int CHECK_SUM_LENGTH = 2;  //校验和长度
 
 
     /**
@@ -38,7 +39,7 @@ public final class MessageConstants {
     public static final String UNPARSED_DATA_ERROR = "部分数据未被解析";
     public static final String UNSUPPORTED_DATA_TYPE_ERROR = "不支持该数据类型";
     public static final String ILLEGAL_SUBSCRIBED_MESSAGE_SIGNATURE_ERROR = "无法识别订阅频道收到的消息类型（目前只支持解析设备上线通知，及设备的控制数据报文）";
-    public static final String UNKNOWN_OPERATION_RESULT = "未知操作结果: ";
+    public static final String UNKNOWN_OPERATION_RESULT = "未知操作结果";
 
     private MessageConstants() {}
 }

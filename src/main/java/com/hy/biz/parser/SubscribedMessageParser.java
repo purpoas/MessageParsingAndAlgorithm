@@ -7,6 +7,7 @@ import com.hy.biz.parser.registry.ParamCodeRegistry;
 import com.hy.domain.DeviceOnlineStatus;
 import com.hy.repository.DeviceOnlineStatusRepository;
 import com.hy.repository.DeviceRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.nio.ByteBuffer;
@@ -23,6 +24,7 @@ import static java.nio.ByteOrder.BIG_ENDIAN;
  * @create 2023-05-08 16:12
  **/
 @Component
+@Slf4j
 public class SubscribedMessageParser {
     private final Map<String, String> PARAM_CODE_MAP = ParamCodeRegistry.getParamCodeMap();
 
@@ -69,6 +71,7 @@ public class SubscribedMessageParser {
             case "0x05:0x015":
                 return parseDeviceHistoricalDataRspMsg(buffer, messageSignature, deviceCode);
             default:
+                log.error("未知报文签名: {}，无法识别具体控制数据报文类型，设备编号为: {}", messageSignature, deviceCode);
                 throw new MessageParsingException(ILLEGAL_MESSAGE_SIGNATURE_ERROR);
         }
     }
@@ -150,7 +153,7 @@ public class SubscribedMessageParser {
                 status = "操作失败";
                 break;
             default:
-                throw new MessageParsingException(UNKNOWN_OPERATION_RESULT + isSuccessful);
+                throw new MessageParsingException(String.format("%s: %d", UNKNOWN_OPERATION_RESULT, isSuccessful));
         }
 
         return status;

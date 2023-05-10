@@ -74,7 +74,7 @@ public class MessageParser {
             if (MESSAGE_MAP.containsKey(key)) {
                 BaseMessage specificMessage = createSpecificMsg(key, deviceCode, frameType, messageType);
                 entitySaved = parseMessageContent(key, messageContent, specificMessage, timeStamp, deviceCode);
-                buffer.getShort(); // Skip checksum
+                buffer.position(buffer.position() + CHECK_SUM_LENGTH); // Skip checksum
                 if (!(specificMessage instanceof WaveDataMessage) && buffer.hasRemaining())
                     throw new MessageParsingException(UNPARSED_DATA_ERROR);
             }
