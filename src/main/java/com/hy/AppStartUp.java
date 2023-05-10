@@ -1,13 +1,9 @@
 package com.hy;
 
-import com.hy.biz.dataRead.IddsDataConsumer;
-import com.hy.biz.redis.task.TaskFactory;
-import com.hy.biz.redis.task.TaskQueue;
+import com.hy.biz.dataRead.DataReadService;
 import com.hy.biz.redis.task.TaskWorker;
-import com.hy.config.HyConfigProperty;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
@@ -20,11 +16,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class AppStartUp implements ApplicationListener<ContextRefreshedEvent> {
     private final TaskWorker taskWorker;
-    private final IddsDataConsumer iddsDataConsumer;
+    private final DataReadService dataReadService;
 
-    public AppStartUp(TaskWorker taskWorker, IddsDataConsumer iddsDataConsumer) {
+    public AppStartUp(TaskWorker taskWorker, DataReadService dataReadService) {
         this.taskWorker = taskWorker;
-        this.iddsDataConsumer = iddsDataConsumer;
+        this.dataReadService = dataReadService;
     }
 
     @Override
@@ -36,7 +32,7 @@ public class AppStartUp implements ApplicationListener<ContextRefreshedEvent> {
     }
 
     private void initConsumer() {
-        iddsDataConsumer.initConsumer();
+        dataReadService.initConsumer();
     }
 
     private void initTaskWorker() {
