@@ -1,4 +1,4 @@
-package com.hy.biz.parser;
+package com.hy.biz.parser.util;
 
 import com.hy.biz.parser.entity.WaveDataMessage;
 import com.hy.config.HyConfigProperty;
@@ -25,7 +25,7 @@ public class WaveDataParserHelper {
         this.hyConfigProperty = hyConfigProperty;
     }
 
-    protected void setWaveDataProperties(WaveData waveData, WaveDataMessage message, long timeStamp, String deviceCode) {
+    public void setWaveDataProperties(WaveData waveData, WaveDataMessage message, long timeStamp, String deviceCode) {
         waveData.setCollectionTime(Instant.ofEpochMilli(timeStamp));
         byte frameType = message.getFrameType();
         byte messageType = message.getMessageType();
@@ -46,7 +46,7 @@ public class WaveDataParserHelper {
         waveData.setRemark(byteArrToStr(message.getReserved()));
     }
 
-    protected void appendWaveData(WaveData waveData, WaveDataMessage waveDataMessage) {
+    public void appendWaveData(WaveData waveData, WaveDataMessage waveDataMessage) {
         waveData.setData(waveData.getData() + byteArrToStr(waveDataMessage.getWaveData()));
     }
 

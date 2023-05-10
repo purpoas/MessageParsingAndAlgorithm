@@ -1,5 +1,7 @@
 package com.hy.biz.parser.entity;
 
+import com.hy.biz.parser.util.WaveDataParserHelper;
+import com.hy.domain.WaveData;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -47,6 +49,20 @@ public class WaveDataMessage extends BaseMessage {
      * 备用
      */
     private byte[] reserved;
+
+    public WaveData transform(WaveData waveData, WaveDataParserHelper waveDataParserHelper, long timeStamp, String deviceCode) {
+        byte segmentNumber = this.getSegmentNumber();
+        byte dataPacketNumber = this.getDataPacketNumber();
+
+        if (segmentNumber == 1) {
+            waveData = new WaveData();
+            waveDataParserHelper.setWaveDataProperties(waveData, this, timeStamp, deviceCode);
+        } else if (segmentNumber <= dataPacketNumber) {
+            waveDataParserHelper.appendWaveData(waveData, this);
+        }
+
+        return waveData;
+    }
 
 }
 

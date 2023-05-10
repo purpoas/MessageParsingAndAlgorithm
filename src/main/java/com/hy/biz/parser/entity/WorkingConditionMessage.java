@@ -1,7 +1,11 @@
 package com.hy.biz.parser.entity;
 
+import com.hy.domain.WorkStatus;
+import com.hy.repository.DeviceRepository;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+
+import java.time.Instant;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -36,5 +40,15 @@ public class WorkingConditionMessage extends BaseMessage {
      * 备用
      */
     private byte[] reserved;
+
+    public WorkStatus transform(DeviceRepository deviceRepository, long timeStamp, String deviceCode) {
+        WorkStatus workStatus = new WorkStatus();
+        workStatus.setDeviceId(deviceRepository.findDeviceIdByCode(deviceCode));
+        workStatus.setCollectionTime(Instant.ofEpochMilli(timeStamp));
+        workStatus.setDeviceTemperature((float) this.getDeviceTemperature());
+        workStatus.setLineCurrent((float) this.getCurrentEffectiveValue());
+
+        return workStatus;
+    }
 }
 

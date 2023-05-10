@@ -11,8 +11,12 @@ import com.hy.biz.parser.exception.MessageParsingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.lang.NonNull;
 
+import java.nio.charset.StandardCharsets;
+
+import static com.hy.biz.parser.constants.MessageConstants.ILLEGAL_SUBSCRIBED_MESSAGE_SIGNATURE_ERROR;
 import static com.hy.biz.parser.util.TypeConverter.byteArrToStr;
 
 /**
@@ -24,10 +28,12 @@ import static com.hy.biz.parser.util.TypeConverter.byteArrToStr;
 @Slf4j
 public class StateChannelSubscriber implements MessageListener {
     private final SubscribedMessageParser subscribedMessageParser;
+    private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper mapper;
 
-    public StateChannelSubscriber(SubscribedMessageParser subscribedMessageParser, ObjectMapper mapper) {
+    public StateChannelSubscriber(SubscribedMessageParser subscribedMessageParser, RedisTemplate<String, String> redisTemplate, ObjectMapper mapper) {
         this.subscribedMessageParser = subscribedMessageParser;
+        this.redisTemplate = redisTemplate;
         this.mapper = mapper;
     }
 
@@ -41,12 +47,14 @@ public class StateChannelSubscriber implements MessageListener {
             throw new RuntimeException(e);
         }
 
+        String channel = new String(message.getChannel(), StandardCharsets.UTF_8);
+
         if (rootNode.has("data")) { //控制报文
             MessageDTO messageDTO = mapper.convertValue(rootNode, MessageDTO.class);
             JsonObject jsonObject = subscribedMessageParser.parseCtrlMsg(
                     messageDTO.getData().getCommand(),
-                    messageDTO.getTimeStamp(),
                     messageDTO.getDeviceCode());
+            redisTemplate.convertAndSend(channel, jsonObject.toString());
 
             return;
         }
@@ -57,7 +65,7 @@ public class StateChannelSubscriber implements MessageListener {
             return;
         }
 
-        throw new MessageParsingException("无法识别订阅频道收到的消息类型（目前只支持解析设备上线通知，及控制报文）");
+        throw new MessageParsingException(ILLEGAL_SUBSCRIBED_MESSAGE_SIGNATURE_ERROR);
     }
 
 }

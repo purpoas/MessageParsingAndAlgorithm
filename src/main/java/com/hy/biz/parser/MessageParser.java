@@ -2,6 +2,8 @@ package com.hy.biz.parser;
 
 import com.hy.biz.parser.entity.*;
 import com.hy.biz.parser.exception.MessageParsingException;
+import com.hy.biz.parser.registry.MessageClassRegistry;
+import com.hy.biz.parser.util.WaveDataParserHelper;
 import com.hy.domain.*;
 import com.hy.repository.*;
 import lombok.extern.slf4j.Slf4j;
@@ -10,19 +12,12 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.nio.ByteBuffer;
-import java.time.Instant;
 import java.util.Map;
 
 import static com.hy.biz.parser.constants.MessageConstants.*;
-import static com.hy.biz.parser.util.DateTimeUtil.parseDateTimeToInst;
-import static com.hy.biz.parser.util.DateTimeUtil.parseDateToStr;
-import static com.hy.biz.parser.util.TypeConverter.byteArrToStr;
 import static com.hy.biz.parser.util.TypeConverter.hexStringToByteArray;
 import static java.nio.ByteOrder.BIG_ENDIAN;
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 
 /**
@@ -69,29 +64,20 @@ public class MessageParser {
         Object entitySaved = null;
 
         while (buffer.hasRemaining()) {
-            if (buffer.getShort() != HEADER) {
-                throw new IllegalArgumentException(ILLEGAL_HEADER_ERROR);
-            }
-
-            buffer.get(new byte[ID_LENGTH]);
+            if (buffer.getShort() != HEADER) throw new IllegalArgumentException(ILLEGAL_HEADER_ERROR);
+            buffer.position(buffer.position() + ID_LENGTH);
             byte frameType = buffer.get();
             byte messageType = buffer.get();
-
             String key = frameType + ":" + messageType;
             byte[] messageContent = new byte[buffer.getShort()];
             buffer.get(messageContent);
             if (MESSAGE_MAP.containsKey(key)) {
                 BaseMessage specificMessage = createSpecificMsg(key, deviceCode, frameType, messageType);
-
-                entitySaved = parseMessageContent(messageContent, specificMessage, timeStamp, deviceCode);
-
+                entitySaved = parseMessageContent(key, messageContent, specificMessage, timeStamp, deviceCode);
                 buffer.getShort(); // Skip checksum
-
-                if (!(specificMessage instanceof WaveDataMessage) && buffer.hasRemaining()) {
+                if (!(specificMessage instanceof WaveDataMessage) && buffer.hasRemaining())
                     throw new MessageParsingException(UNPARSED_DATA_ERROR);
-                }
             }
-
         }
 
         return entitySaved;
@@ -128,28 +114,32 @@ public class MessageParser {
      * @return 被持久化的报文实体类
      * @description 该方法根据收到的报文类型，调用负责解析该类型的解析方法
      */
-    private Object parseMessageContent(byte[] messageContent, BaseMessage specificMessage, long timeStamp, String deviceCode) {
+    private Object parseMessageContent(String key, byte[] messageContent, BaseMessage specificMessage, long timeStamp, String deviceCode) {
         ByteBuffer buffer = ByteBuffer.wrap(messageContent).order(BIG_ENDIAN);
+        String messageSignature = String.format("0x%02X:0x%02X", Integer.parseInt(key.split(":")[0]), Integer.parseInt(key.split(":")[1]));
 
-        switch (specificMessage.getClass().getSimpleName()) {
-            case "HeartBeatMessage":
+        switch (messageSignature) {
+            case "0x05:0x01":
                 log.info("收到心跳数据");
-            case "BasicInfoMessage":
-                return handleBasicInfoMessage((BasicInfoMessage) specificMessage, buffer, timeStamp, deviceCode);
-            case "WorkingConditionMessage":
-                return handleWorkingConditionMessage((WorkingConditionMessage) specificMessage, buffer, timeStamp, deviceCode);
-            case "DeviceFaultMessage":
-                return handleDeviceFaultMessage((DeviceFaultMessage) specificMessage, buffer, deviceCode);
-            case "DeviceStatusMessage":
-                return handleDeviceStatusMessage((DeviceStatusMessage) specificMessage, buffer, deviceCode);
-            case "WaveDataMessage":
-                return handleWaveData((WaveDataMessage) specificMessage, buffer, timeStamp, deviceCode);
+            case "0x05:0x03":
+                return parseBasicInfoMessage((BasicInfoMessage) specificMessage, buffer, timeStamp, deviceCode);
+            case "0x05:0x05":
+                return parseWorkingConditionMessage((WorkingConditionMessage) specificMessage, buffer, timeStamp, deviceCode);
+            case "0x05:0x07":
+                return parseDeviceFaultMessage((DeviceFaultMessage) specificMessage, buffer, deviceCode);
+            case "0x05:0x0A":
+                return parseDeviceStatusMessage((DeviceStatusMessage) specificMessage, buffer, deviceCode);
+            case "0x01:0x01":
+            case "0x01:0x03":
+            case "0x01:0x05":
+                return parseWaveData((WaveDataMessage) specificMessage, buffer, timeStamp, deviceCode);
             default:
                 throw new MessageParsingException(ILLEGAL_MESSAGE_SIGNATURE_ERROR);
         }
+
     }
 
-    private Object handleBasicInfoMessage(BasicInfoMessage message, ByteBuffer buffer, long timeStamp, String deviceCode) {
+    private Object parseBasicInfoMessage(BasicInfoMessage message, ByteBuffer buffer, long timeStamp, String deviceCode) {
 
         byte[] terminalName = new byte[MONITORING_TERMINAL_NAME_LENGTH];
         buffer.get(terminalName);
@@ -171,24 +161,12 @@ public class MessageParser {
         buffer.get(reserved);
         message.setReserved(reserved);
 
-        DeviceInfo deviceInfo = new DeviceInfo();
-        deviceInfo.setDeviceId(deviceRepository.findDeviceIdByCode(deviceCode));
-        deviceInfo.setTerminalName(byteArrToStr(message.getMonitoringTerminalName()));
-        deviceInfo.setTerminalType(byteArrToStr(message.getMonitoringTerminalModel()));
-        deviceInfo.setTerminalEdition(
-                new BigDecimal(String.valueOf(message.getMonitoringTerminalInfoVersion()))
-                        .setScale(4, RoundingMode.HALF_UP)
-                        .toString());
-        deviceInfo.setProducer(byteArrToStr(message.getManufacturer()));
-        deviceInfo.setProducerCode(Long.toString(ByteBuffer.wrap(message.getFactoryNumber()).order(LITTLE_ENDIAN).getLong()));
-        deviceInfo.setProductionDate(parseDateToStr(message.getProductionDate()));
-        deviceInfo.setCollectionTime(Instant.ofEpochMilli(timeStamp));
-
+        DeviceInfo deviceInfo = message.transform(deviceRepository, timeStamp, deviceCode);
 
         return deviceInfoRepository.save(deviceInfo);
     }
 
-    private Object handleWorkingConditionMessage(WorkingConditionMessage message, ByteBuffer buffer, long timeStamp, String deviceCode) {
+    private Object parseWorkingConditionMessage(WorkingConditionMessage message, ByteBuffer buffer, long timeStamp, String deviceCode) {
 
         byte[] time = new byte[TIME_LENGTH];
         buffer.get(time);
@@ -201,16 +179,12 @@ public class MessageParser {
         buffer.get(reserved);
         message.setReserved(reserved);
 
-        WorkStatus workStatus = new WorkStatus();
-        workStatus.setDeviceId(deviceRepository.findDeviceIdByCode(deviceCode));
-        workStatus.setCollectionTime(Instant.ofEpochMilli(timeStamp));
-        workStatus.setDeviceTemperature((float) message.getDeviceTemperature());
-        workStatus.setLineCurrent((float) message.getCurrentEffectiveValue());
+        WorkStatus workStatus = message.transform(deviceRepository, timeStamp, deviceCode);
 
         return workStatusRepository.save(workStatus);
     }
 
-    private Object handleDeviceFaultMessage(DeviceFaultMessage message, ByteBuffer buffer, String deviceCode) {
+    private Object parseDeviceFaultMessage(DeviceFaultMessage message, ByteBuffer buffer, String deviceCode) {
         byte[] time = new byte[TIME_LENGTH];
         buffer.get(time);
         message.setFaultDataCollectionTime(time);
@@ -219,15 +193,12 @@ public class MessageParser {
         buffer.get(info);
         message.setDeviceFaultInfo(info);
 
-        DeviceFault deviceFault = new DeviceFault();
-        deviceFault.setDeviceId(deviceRepository.findDeviceIdByCode(deviceCode));
-        deviceFault.setCollectionTime(parseDateTimeToInst(message.getFaultDataCollectionTime()));
-        deviceFault.setFaultDescribe(byteArrToStr(message.getDeviceFaultInfo()));
+        DeviceFault deviceFault = message.transform(deviceRepository, deviceCode);
 
         return deviceFaultRepository.save(deviceFault);
     }
 
-    private Object handleDeviceStatusMessage(DeviceStatusMessage message, ByteBuffer buffer, String deviceCode) {
+    private Object parseDeviceStatusMessage(DeviceStatusMessage message, ByteBuffer buffer, String deviceCode) {
         byte[] time = new byte[TIME_LENGTH];
         buffer.get(time);
         message.setDataCollectionUploadTime(time);
@@ -247,32 +218,15 @@ public class MessageParser {
         message.setGpsLatitude(buffer.getFloat());
         message.setGpsLongitude(buffer.getFloat());
 
-        DeviceStatus deviceStatus = new DeviceStatus();
-        deviceStatus.setCollectionTime(parseDateTimeToInst(message.getDataCollectionUploadTime()));
-        deviceStatus.setDeviceId(deviceRepository.findDeviceIdByCode(deviceCode));
-        deviceStatus.setSolarChargeCurrent((int) message.getSolarChargingCurrent());
-        deviceStatus.setPhasePowerCurrent((int) message.getPhasePowerCurrent());
-        deviceStatus.setWorkVoltage((int) message.getDeviceWorkingVoltage());
-        deviceStatus.setWorkCurrent((int) message.getDeviceWorkingCurrent());
-        deviceStatus.setBatteryVoltage((int) message.getBatteryVoltage());
-        deviceStatus.setReserved((int) message.getReserved());
-        deviceStatus.setSolarPanelAVoltage((int) message.getSolarPanelAVoltage());
-        deviceStatus.setSolarPanelBVoltage((int) message.getSolarPanelBVoltage());
-        deviceStatus.setSolarPanelCVoltage((int) message.getSolarPanelCVoltage());
-        deviceStatus.setPhasePowerVoltage((int) message.getPhasePowerVoltage());
-        deviceStatus.setChipTemperature((int) message.getChipTemperature());
-        deviceStatus.setMainboardTemperature((int) message.getMainBoardTemperature());
-        deviceStatus.setSignalStrength((int) message.getDeviceSignalStrength());
-        deviceStatus.setGpsLatitude((int) message.getGpsLatitude());
-        deviceStatus.setGpsLongitude((int) message.getGpsLongitude());
+        DeviceStatus deviceStatus = message.transform(deviceRepository, deviceCode);
 
         return deviceStatusRepository.save(deviceStatus);
     }
 
-    private Object handleWaveData(WaveDataMessage message, ByteBuffer buffer, long timeStamp, String deviceCode) {
+    private Object parseWaveData(WaveDataMessage message, ByteBuffer buffer, long timeStamp, String deviceCode) {
         message.setDataPacketLength(buffer.getShort());
-        byte[] wave = new byte[message.getDataPacketLength()];
         log.info("这段报文的波形数据长度： {}", message.getDataPacketLength());
+        byte[] wave = new byte[message.getDataPacketLength()];
         buffer.get(wave);
         message.setWaveData(wave);
         byte[] waveStartTime = new byte[TIME_LENGTH];
@@ -289,15 +243,7 @@ public class MessageParser {
         buffer.get(reserved);
         message.setReserved(reserved);
 
-        byte segmentNumber = message.getSegmentNumber();
-        byte dataPacketNumber = message.getDataPacketNumber();
-
-        if (segmentNumber == 1) {
-            waveData = new WaveData();
-            waveDataParserHelper.setWaveDataProperties(waveData, message, timeStamp, deviceCode);
-        } else if (segmentNumber <= dataPacketNumber) {
-            waveDataParserHelper.appendWaveData(waveData, message);
-        }
+        waveData = message.transform(this.waveData, waveDataParserHelper, timeStamp, deviceCode);
 
         return waveDataRepository.save(waveData);
     }

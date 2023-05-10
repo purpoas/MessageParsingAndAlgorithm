@@ -6,6 +6,7 @@ import com.hy.biz.redis.subscriber.StateChannelSubscriber;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 
@@ -18,12 +19,14 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 @Configuration
 public class RedisMessageListenerConfig {
     private final SubscribedMessageParser subscribedMessageParser;
+    private final RedisTemplate<String, String> redisTemplate;
     private final HyConfigProperty hyConfigProperty;
     private final ObjectMapper mapper;
 
-    public RedisMessageListenerConfig(HyConfigProperty hyConfigProperty, SubscribedMessageParser subscribedMessageParser, ObjectMapper mapper) {
+    public RedisMessageListenerConfig(HyConfigProperty hyConfigProperty, SubscribedMessageParser subscribedMessageParser, RedisTemplate<String, String> redisTemplate, ObjectMapper mapper) {
         this.subscribedMessageParser = subscribedMessageParser;
         this.hyConfigProperty = hyConfigProperty;
+        this.redisTemplate = redisTemplate;
         this.mapper = mapper;
     }
 
@@ -37,7 +40,7 @@ public class RedisMessageListenerConfig {
 
     @Bean
     StateChannelSubscriber stateChannelSubscriber() {
-        return new StateChannelSubscriber(subscribedMessageParser, mapper);
+        return new StateChannelSubscriber(subscribedMessageParser, redisTemplate, mapper);
     }
 
 }

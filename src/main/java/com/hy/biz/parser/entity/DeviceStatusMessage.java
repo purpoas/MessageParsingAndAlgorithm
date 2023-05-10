@@ -1,7 +1,11 @@
 package com.hy.biz.parser.entity;
 
+import com.hy.domain.DeviceStatus;
+import com.hy.repository.DeviceRepository;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+
+import static com.hy.biz.parser.util.DateTimeUtil.parseDateTimeToInst;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -86,6 +90,29 @@ public class DeviceStatusMessage extends BaseMessage {
      * GPS经度
      */
     private float gpsLongitude;
+
+    public DeviceStatus transform(DeviceRepository deviceRepository, String deviceCode) {
+        DeviceStatus deviceStatus = new DeviceStatus();
+        deviceStatus.setCollectionTime(parseDateTimeToInst(this.getDataCollectionUploadTime()));
+        deviceStatus.setDeviceId(deviceRepository.findDeviceIdByCode(deviceCode));
+        deviceStatus.setSolarChargeCurrent((int) this.getSolarChargingCurrent());
+        deviceStatus.setPhasePowerCurrent((int) this.getPhasePowerCurrent());
+        deviceStatus.setWorkVoltage((int) this.getDeviceWorkingVoltage());
+        deviceStatus.setWorkCurrent((int) this.getDeviceWorkingCurrent());
+        deviceStatus.setBatteryVoltage((int) this.getBatteryVoltage());
+        deviceStatus.setReserved((int) this.getReserved());
+        deviceStatus.setSolarPanelAVoltage((int) this.getSolarPanelAVoltage());
+        deviceStatus.setSolarPanelBVoltage((int) this.getSolarPanelBVoltage());
+        deviceStatus.setSolarPanelCVoltage((int) this.getSolarPanelCVoltage());
+        deviceStatus.setPhasePowerVoltage((int) this.getPhasePowerVoltage());
+        deviceStatus.setChipTemperature((int) this.getChipTemperature());
+        deviceStatus.setMainboardTemperature((int) this.getMainBoardTemperature());
+        deviceStatus.setSignalStrength((int) this.getDeviceSignalStrength());
+        deviceStatus.setGpsLatitude((int) this.getGpsLatitude());
+        deviceStatus.setGpsLongitude((int) this.getGpsLongitude());
+
+        return deviceStatus;
+    }
 
 }
 

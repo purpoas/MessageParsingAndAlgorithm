@@ -1,8 +1,12 @@
 package com.hy.biz.parser.entity.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.hy.domain.DeviceOnlineStatus;
+import com.hy.repository.DeviceRepository;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.time.Instant;
 
 /**
  * @author shiwentao
@@ -48,6 +52,18 @@ public class DeviceOnlineStatusDTO {
 
         @JsonProperty("TimeStamp")
         private String timeStamp;
+    }
+
+    public DeviceOnlineStatus transform(DeviceRepository deviceRepository) {
+        DeviceOnlineStatus deviceOnlineStatus = new DeviceOnlineStatus();
+
+        String[] msg = this.getResult().getMsg().split(" ");
+        deviceOnlineStatus.setDeviceId(deviceRepository.findDeviceIdByCode(msg[0]));
+        deviceOnlineStatus.setCollectionTime(Instant.now());
+        deviceOnlineStatus.setMessage(this.getResult().getMsg());
+        deviceOnlineStatus.setStatus(this.getResult().getStatus());
+
+        return deviceOnlineStatus;
     }
 
 }

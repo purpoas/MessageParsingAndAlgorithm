@@ -1,4 +1,4 @@
-package com.hy.biz.parser;
+package com.hy.biz.parser.registry;
 
 import com.hy.biz.parser.entity.*;
 
@@ -37,7 +37,7 @@ public class MessageClassRegistry {
         MESSAGE_MAP.put(WORK_STATUS_REPORT + ":" + DEVICE_STATUS, DeviceStatusMessage.class);
     }
 
-    protected static Map<String, Class<? extends BaseMessage>> getMessageMap() {
+    public static Map<String, Class<? extends BaseMessage>> getMessageMap() {
         return UNMODIFIABLE_MESSAGE_MAP;
     }
 
