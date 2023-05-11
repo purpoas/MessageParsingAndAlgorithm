@@ -1,7 +1,7 @@
 package com.hy;
 
 import com.hy.biz.dataRead.DataReadService;
-import com.hy.biz.redis.task.TaskWorker;
+import com.hy.biz.dataRead.task.TaskWorker;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.lang.NonNull;
@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
  **/
 @Component
 public class AppStartUp implements ApplicationListener<ContextRefreshedEvent> {
+
     private final TaskWorker taskWorker;
     private final DataReadService dataReadService;
 
@@ -25,18 +26,11 @@ public class AppStartUp implements ApplicationListener<ContextRefreshedEvent> {
 
     @Override
     public void onApplicationEvent(@NonNull ContextRefreshedEvent event) {
-        // 初始化消费者
-        initConsumer();
-        // 初始化工作线程
-        initTaskWorker();
-    }
-
-    private void initConsumer() {
+        // 初始化 REDIS 消费者线程
         dataReadService.initConsumer();
-    }
-
-    private void initTaskWorker() {
+        // 初始化任务工作线程
         taskWorker.executeTask();
     }
+
 }
 

@@ -1,94 +1,33 @@
 package com.hy.biz.dataPush.dto;
 
+import com.hy.domain.Device;
+import lombok.Data;
+
 /**
  * 设备基础信息
  */
+@Data
 public class DeviceDTO {
 
     private Long deviceId;
     private String deviceCode;
     private Integer phase;
-    private String lineId;
-    private String towerId;
+    private Long lineId;
+    private Long poleId;
     private String supplierCode;
     private Double distanceToHeadStation;
-    private Double lineLength;
 
-    public Long getDeviceId() {
-        return deviceId;
+    public DeviceDTO from(Device device) {
+        DeviceDTO deviceDTO = new DeviceDTO();
+        deviceDTO.setDeviceId(device.getId());
+        deviceDTO.setDeviceCode(device.getCode());
+        deviceDTO.setPhase(device.getPhase());
+        deviceDTO.setLineId(device.getPole().getOrg().getId());
+        deviceDTO.setPoleId(device.getPole().getId());
+        deviceDTO.setSupplierCode(device.getSupplier());
+        deviceDTO.setDistanceToHeadStation(device.getPole().getDistanceToLastPole());
+
+        return deviceDTO;
     }
 
-    public void setDeviceId(Long deviceId) {
-        this.deviceId = deviceId;
-    }
-
-    public String getDeviceCode() {
-        return deviceCode;
-    }
-
-    public void setDeviceCode(String deviceCode) {
-        this.deviceCode = deviceCode;
-    }
-
-    public Integer getPhase() {
-        return phase;
-    }
-
-    public void setPhase(Integer phase) {
-        this.phase = phase;
-    }
-
-    public String getLineId() {
-        return lineId;
-    }
-
-    public void setLineId(String lineId) {
-        this.lineId = lineId;
-    }
-
-    public String getTowerId() {
-        return towerId;
-    }
-
-    public void setTowerId(String towerId) {
-        this.towerId = towerId;
-    }
-
-    public String getSupplierCode() {
-        return supplierCode;
-    }
-
-    public void setSupplierCode(String supplierCode) {
-        this.supplierCode = supplierCode;
-    }
-
-    public Double getDistanceToHeadStation() {
-        return distanceToHeadStation;
-    }
-
-    public void setDistanceToHeadStation(Double distanceToHeadStation) {
-        this.distanceToHeadStation = distanceToHeadStation;
-    }
-
-    public Double getLineLength() {
-        return lineLength;
-    }
-
-    public void setLineLength(Double lineLength) {
-        this.lineLength = lineLength;
-    }
-
-
-    @Override
-    public String toString() {
-        return "DeviceDetailsDTO{" +
-                "deviceCode='" + deviceCode + '\'' +
-                ", phase=" + phase +
-                ", lineId='" + lineId + '\'' +
-                ", towerId='" + towerId + '\'' +
-                ", supplierCode='" + supplierCode + '\'' +
-                ", distanceToHeadStation=" + distanceToHeadStation +
-                ", lineLength=" + lineLength +
-                '}';
-    }
 }
