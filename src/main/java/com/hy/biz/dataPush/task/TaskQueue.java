@@ -1,4 +1,4 @@
-package com.hy.biz.dataRead.task;
+package com.hy.biz.dataPush.task;
 
 import com.hy.config.HyConfigProperty;
 import org.springframework.stereotype.Component;

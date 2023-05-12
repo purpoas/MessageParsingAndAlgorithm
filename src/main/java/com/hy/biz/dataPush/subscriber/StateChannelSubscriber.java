@@ -1,4 +1,4 @@
-package com.hy.biz.dataRead.subscriber;
+package com.hy.biz.dataPush.subscriber;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;

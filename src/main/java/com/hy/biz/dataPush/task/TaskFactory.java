@@ -1,7 +1,7 @@
-package com.hy.biz.dataRead.task;
+package com.hy.biz.dataPush.task;
 
 import com.hy.biz.dataPush.DataPushService;
-import com.hy.biz.dataRead.task.impl.MessageParsingTask;
+import com.hy.biz.dataPush.task.impl.MessageParsingTask;
 import com.hy.biz.dataResolver.DataResolverService;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;

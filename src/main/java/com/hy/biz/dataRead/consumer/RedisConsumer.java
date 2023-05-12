@@ -1,8 +1,8 @@
 package com.hy.biz.dataRead.consumer;
 
-import com.hy.biz.dataRead.task.Task;
-import com.hy.biz.dataRead.task.TaskFactory;
-import com.hy.biz.dataRead.task.TaskQueue;
+import com.hy.biz.dataPush.task.Task;
+import com.hy.biz.dataPush.task.TaskFactory;
+import com.hy.biz.dataPush.task.TaskQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.core.RedisTemplate;

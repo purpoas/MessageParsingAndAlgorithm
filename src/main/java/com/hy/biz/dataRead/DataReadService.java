@@ -1,8 +1,8 @@
 package com.hy.biz.dataRead;
 
 import com.hy.biz.dataRead.consumer.impl.RedisConsumerImpl;
-import com.hy.biz.dataRead.task.TaskFactory;
-import com.hy.biz.dataRead.task.TaskQueue;
+import com.hy.biz.dataPush.task.TaskFactory;
+import com.hy.biz.dataPush.task.TaskQueue;
 import com.hy.config.HyConfigProperty;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;

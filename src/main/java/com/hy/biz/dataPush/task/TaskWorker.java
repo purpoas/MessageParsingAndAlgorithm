@@ -1,4 +1,4 @@
-package com.hy.biz.dataRead.task;
+package com.hy.biz.dataPush.task;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.TaskExecutor;

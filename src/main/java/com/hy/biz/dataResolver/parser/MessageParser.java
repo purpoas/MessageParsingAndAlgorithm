@@ -18,8 +18,7 @@ import java.math.RoundingMode;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-import static com.hy.biz.dataResolver.util.DateTimeUtil.parseDateTimeToInst;
-import static com.hy.biz.dataResolver.util.DateTimeUtil.parseDateToStr;
+import static com.hy.biz.dataResolver.util.DateTimeUtil.*;
 import static com.hy.biz.dataResolver.util.TypeConverter.byteArrToStr;
 import static com.hy.biz.dataResolver.util.TypeConverter.hexStringToByteArray;
 import static java.nio.ByteOrder.BIG_ENDIAN;
@@ -216,7 +215,7 @@ public class MessageParser {
         message.setWaveData(byteArrToStr(wave));
         byte[] waveStartTime = new byte[MessageConstants.TIME_LENGTH];
         buffer.get(waveStartTime);
-        message.setWaveStartTime(parseDateToStr(waveStartTime));
+        message.setWaveStartTime(parseDateTimeToStr(waveStartTime));
         message.setWaveDataLength(buffer.getShort());
         log.info("波形数据总长度： {}", message.getWaveDataLength());
         message.setSegmentNumber(buffer.get());
