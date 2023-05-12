@@ -46,6 +46,7 @@ public class DeviceInfoMessage extends BaseMessage {
     private String reserved;
 
     public DeviceInfo transform(long deviceId, long timeStamp) {
+
         DeviceInfo deviceInfo = new DeviceInfo();
         deviceInfo.setDeviceId(deviceId);
         deviceInfo.setTerminalName(this.monitoringTerminalName);
@@ -55,8 +56,10 @@ public class DeviceInfoMessage extends BaseMessage {
         deviceInfo.setProductionDate(this.productionDate);
         deviceInfo.setProducerCode(this.factoryNumber);
         deviceInfo.setCollectionTime(Instant.ofEpochMilli(timeStamp));
+
         return deviceInfo;
     }
+
 
 }
 

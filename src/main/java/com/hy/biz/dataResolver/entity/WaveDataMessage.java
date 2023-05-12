@@ -51,6 +51,7 @@ public class WaveDataMessage extends BaseMessage {
     private String reserved;
 
     public WaveData transform(WaveData waveData, WaveDataParserHelper waveDataParserHelper, long timeStamp, String deviceCode) {
+
         int segmentNumber = this.getSegmentNumber();
         int dataPacketNumber = this.getDataPacketNumber();
 
@@ -63,6 +64,7 @@ public class WaveDataMessage extends BaseMessage {
 
         return waveData;
     }
+
 
 }
 

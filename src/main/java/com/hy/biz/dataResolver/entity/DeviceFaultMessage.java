@@ -21,6 +21,7 @@ public class DeviceFaultMessage extends BaseMessage {
     private String deviceFaultInfo;
 
     public DeviceFault transform(long deviceId) {
+
         DeviceFault deviceFault = new DeviceFault();
         deviceFault.setDeviceId(deviceId);
         deviceFault.setCollectionTime(this.getFaultDataCollectionTime());
@@ -28,6 +29,7 @@ public class DeviceFaultMessage extends BaseMessage {
 
         return deviceFault;
     }
+
 
 }
 

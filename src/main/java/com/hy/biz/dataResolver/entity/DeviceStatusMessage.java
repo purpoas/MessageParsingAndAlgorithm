@@ -91,6 +91,7 @@ public class DeviceStatusMessage extends BaseMessage {
     private float gpsLongitude;
 
     public DeviceStatus transform(long deviceId) {
+
         DeviceStatus deviceStatus = new DeviceStatus();
         deviceStatus.setCollectionTime(this.dataCollectionUploadTime);
         deviceStatus.setDeviceId(deviceId);
@@ -112,6 +113,7 @@ public class DeviceStatusMessage extends BaseMessage {
 
         return deviceStatus;
     }
+
 
 }
 

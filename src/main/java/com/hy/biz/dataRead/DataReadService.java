@@ -8,7 +8,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 /**
- * 消费者实现类
+ * 数据获取
  */
 @Component
 public class DataReadService {
@@ -26,15 +26,18 @@ public class DataReadService {
         this.hyConfigProperty = hyConfigProperty;
     }
 
+    /**
+     * 开启 REDIS 消费者线程
+     */
     public void initConsumer() {
 
         // 队列消费模式
         String consumerMode = hyConfigProperty.getDataRead().getMode();
 
-        // TODO 根据配置实现不同数据源获取方式 eg：Redis 、 mysql 、 mqtt等
         if ("REDISMQ".equals(consumerMode))
             new RedisConsumerImpl(taskQueue, taskFactory, hyConfigProperty.getDataQueue().getDnmData(), hyConfigProperty.getDataQueue().getDnmDataBak(), hyConfigProperty.getDataQueue().getQueueCapacity(), redisTemplate)
                     .executeCommand();
-        }
+    }
+
 
 }

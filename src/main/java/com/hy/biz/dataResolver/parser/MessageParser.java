@@ -47,6 +47,7 @@ public class MessageParser {
      * @return            具体报文类型
      */
     public BaseMessage parse(String data) {
+
         MessageDTO messageDTO;
         try {
             messageDTO = new ObjectMapper().readValue(data, MessageDTO.class);
@@ -54,9 +55,9 @@ public class MessageParser {
             throw new MessageParsingException("接收到的 JSON 字符串无法转换为MessageDTO对象", e);
         }
 
-        String commandData = messageDTO.getData().getCommand();
+        String dataCommand = messageDTO.getData().getCommand();
 
-        ByteBuffer buffer = ByteBuffer.wrap(hexStringToByteArray(commandData)).order(BIG_ENDIAN);
+        ByteBuffer buffer = ByteBuffer.wrap(hexStringToByteArray(dataCommand)).order(BIG_ENDIAN);
         BaseMessage messageParsed = null;
 
         while (buffer.hasRemaining()) {
@@ -107,6 +108,7 @@ public class MessageParser {
      * @description 该方法根据收到的报文类型，调用负责解析该类型的解析方法
      */
     private BaseMessage parseMessageContent(String key, byte[] messageContent, BaseMessage specificMessage) {
+
         ByteBuffer buffer = ByteBuffer.wrap(messageContent).order(BIG_ENDIAN);
 
         String messageSignature = String.format("0x%02X:0x%02X", Integer.parseInt(key.split(":")[0]), Integer.parseInt(key.split(":")[1]));

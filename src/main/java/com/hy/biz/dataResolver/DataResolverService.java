@@ -16,11 +16,11 @@ public class DataResolverService {
 
     /**
      * @description 报文解析统一入口函数
-     * @param data  16进制字符串
+     * @param message  16进制字符串
      * @return      解析后的报文数据类型
      */
-    public BaseMessage resolve(String data) {
-        return messageParser.parse(data);
+    public BaseMessage resolve(String message) {
+        return messageParser.parse(message);
     }
 
 }

@@ -39,56 +39,55 @@ public abstract class RedisConsumer {
     }
 
     protected void executeCommand(ThreadFactory threadFactory) {
+
         AtomicInteger counter = new AtomicInteger();
         executorService = Executors.newSingleThreadExecutor(runnable -> {
             Thread thread = threadFactory.newThread(runnable);
             thread.setName("idds-message-consumer-thread-" + counter.getAndIncrement());
             return thread;
         });
+
         executorService.execute(this::command);
+
     }
 
     private void command() {
+
         int startPosition = 0;
         int endPosition = queueCapacity - 1;
 
         processBackupQueue(startPosition, endPosition);
 
-        while (!threadStopped.get()) {
+        while (!threadStopped.get())
             processWorkingQueue();
-        }
+
     }
 
     private void processBackupQueue(long startPosition, long endPosition) {
+
         while (true) {
-            try {
-                Optional<List<String>> unresolvedTasks = Optional.ofNullable(redisTemplate.opsForList().range(dataBakQueue, startPosition, endPosition));
+            Optional<List<String>> unresolvedTasks = Optional.ofNullable(redisTemplate.opsForList().range(dataBakQueue, startPosition, endPosition));
 
-                if (unresolvedTasks.isPresent()) {
-                    if (unresolvedTasks.get().isEmpty())
-                        break;
-                    else {
-                        Optional<Long> count = Optional.ofNullable(redisTemplate.opsForList().rightPushAll(dataQueue, unresolvedTasks.get()));
+            if (unresolvedTasks.isPresent()) {
+                if (unresolvedTasks.get().isEmpty()) break;
+                else {
+                    Optional<Long> count = Optional.ofNullable(redisTemplate.opsForList().rightPushAll(dataQueue, unresolvedTasks.get()));
 
-                        if (count.isPresent()) {
-                            if (count.get() > 0) {
-                                Long backupQueueSize = redisTemplate.opsForList().size(dataBakQueue);
-                                assert backupQueueSize != null;
-                                redisTemplate.opsForList().trim(dataBakQueue, count.get(), backupQueueSize);
-                            }
+                    if (count.isPresent()) {
+                        if (count.get() > 0) {
+                            Long backupQueueSize = redisTemplate.opsForList().size(dataBakQueue);
+                            assert backupQueueSize != null;
+                            redisTemplate.opsForList().trim(dataBakQueue, count.get(), backupQueueSize);
                         }
                     }
-                } else {
-                    log.error("unresolvedTasks 为 null");
                 }
-            } catch (OutOfMemoryError e) {
-                e.printStackTrace();
-                break;
             }
         }
+
     }
 
     private void processWorkingQueue() {
+
         String message = redisTemplate.opsForList().rightPopAndLeftPush(dataQueue, dataBakQueue, Duration.ofSeconds(10));
 
         if (StringUtils.isNotBlank(message)) {
@@ -101,7 +100,7 @@ public abstract class RedisConsumer {
     protected void stop() {
         this.threadStopped.set(true);
         if (executorService != null) {
-            executorService.shutdownNow();
+            executorService.shutdown();
             try {
                 if (!executorService.awaitTermination(1, TimeUnit.SECONDS)) {
                     executorService.shutdownNow();
@@ -112,5 +111,6 @@ public abstract class RedisConsumer {
             }
         }
     }
+
 
 }

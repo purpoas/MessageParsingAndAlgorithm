@@ -40,6 +40,8 @@ public final class MessageConstants {
     public static final String UNSUPPORTED_DATA_TYPE_ERROR = "不支持该数据类型";
     public static final String ILLEGAL_SUBSCRIBED_MESSAGE_SIGNATURE_ERROR = "无法识别订阅频道收到的消息类型（目前只支持解析设备上线通知，及设备的控制数据报文）";
     public static final String UNKNOWN_OPERATION_RESULT = "未知操作结果";
+    public static final String JSON_TO_DTO_ERROR = "接收到的 JSON 字符串无法转换为MessageDTO对象";
+    public static final String MESSAGE_TO_ENTITY_ERROR = "报文实体类无法转换成入库实体类";
 
     private MessageConstants() {}
 }

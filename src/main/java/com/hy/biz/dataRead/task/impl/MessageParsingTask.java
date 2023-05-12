@@ -14,8 +14,14 @@ import static com.hy.biz.dataPush.dto.PushDataType.*;
 
 public class MessageParsingTask extends Task {
 
-    private final Map<Class<? extends BaseMessage>, PushDataType> messageTypeMap;
-
+    private static final Map<Class<? extends BaseMessage>, PushDataType> messageTypeMap = new HashMap<>();
+    static {
+        messageTypeMap.put(DeviceFaultMessage.class, DEVICE_FAULT);
+        messageTypeMap.put(DeviceInfoMessage.class, DEVICE_INFO);
+        messageTypeMap.put(DeviceStatusMessage.class, DEVICE_STATUS);
+        messageTypeMap.put(WorkStatusMessage.class, WORK_STATUS);
+        messageTypeMap.put(WaveDataMessage.class, WAVE);
+    }
     private final RedisTemplate<String, String> redisTemplate;
     private final String dataBakQueue;
     private final DataResolverService dataResolverService;
@@ -28,20 +34,12 @@ public class MessageParsingTask extends Task {
         this.dataBakQueue = dataBakQueue;
         this.dataResolverService = dataResolverService;
         this.dataPushService = dataPushService;
-
-        // Initialize the map
-        messageTypeMap = new HashMap<>();
-        messageTypeMap.put(DeviceFaultMessage.class, DEVICE_FAULT);
-        messageTypeMap.put(DeviceInfoMessage.class, DEVICE_INFO);
-        messageTypeMap.put(DeviceStatusMessage.class, DEVICE_STATUS);
-        messageTypeMap.put(WorkStatusMessage.class, WORK_STATUS);
-        messageTypeMap.put(WaveDataMessage.class, WAVE);
     }
 
     @Override
     public void run() {
-        BaseMessage baseMessage = dataResolverService.resolve(message);
 
+        BaseMessage baseMessage = dataResolverService.resolve(message);
         messageTypeMap.forEach((messageClass, pushType) -> {
             if (messageClass.isInstance(baseMessage)) {
                 boolean flag = dataPushService.push(message, baseMessage, pushType);
@@ -50,6 +48,7 @@ public class MessageParsingTask extends Task {
                 }
             }
         });
+
     }
 
 

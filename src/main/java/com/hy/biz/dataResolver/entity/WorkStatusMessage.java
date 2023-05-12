@@ -41,6 +41,7 @@ public class WorkStatusMessage extends BaseMessage {
     private String reserved;
 
     public WorkStatus transform(long deviceId, long timeStamp) {
+
         WorkStatus workStatus = new WorkStatus();
         workStatus.setDeviceId(deviceId);
         workStatus.setCollectionTime(Instant.ofEpochMilli(timeStamp));
@@ -49,5 +50,7 @@ public class WorkStatusMessage extends BaseMessage {
 
         return workStatus;
     }
+
+
 }
 
