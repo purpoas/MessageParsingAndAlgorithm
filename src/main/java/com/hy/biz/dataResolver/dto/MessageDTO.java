@@ -1,4 +1,4 @@
-package com.hy.biz.dataResolver.entity.dto;
+package com.hy.biz.dataResolver.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;

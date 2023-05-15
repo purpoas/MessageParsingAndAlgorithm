@@ -1,6 +1,6 @@
 package com.hy.biz.dataResolver.util;
 
-import com.hy.biz.dataResolver.entity.WaveDataMessage;
+import com.hy.biz.dataResolver.dto.WaveDataMessage;
 import com.hy.config.HyConfigProperty;
 import com.hy.domain.WaveData;
 import org.springframework.stereotype.Component;

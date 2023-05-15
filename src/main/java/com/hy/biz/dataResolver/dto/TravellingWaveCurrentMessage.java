@@ -1,4 +1,4 @@
-package com.hy.biz.dataResolver.entity;
+package com.hy.biz.dataResolver.dto;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -7,10 +7,10 @@ import lombok.EqualsAndHashCode;
  * @package com.hy.idds.biz.dataResolver.MessageEntity
  * @description
  * @author shiwentao
- * @create 2023-04-21 10:20
+ * @create 2023-04-21 10:19
  **/
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class FaultCurrentMessage extends WaveDataMessage {
+public class TravellingWaveCurrentMessage extends WaveDataMessage {
 }
 

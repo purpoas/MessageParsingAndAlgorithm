@@ -3,7 +3,7 @@ package com.hy.biz.dataPush.subscriber;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hy.biz.dataResolver.handler.MessageHandler;
+import com.hy.biz.dataPush.handler.MessageHandler;
 import com.hy.biz.dataResolver.exception.MessageParsingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.Message;

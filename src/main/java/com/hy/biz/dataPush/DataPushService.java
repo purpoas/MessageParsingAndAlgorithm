@@ -2,7 +2,7 @@ package com.hy.biz.dataPush;
 
 import com.hy.biz.dataPush.dto.DeviceDTO;
 import com.hy.biz.dataPush.dto.PushDataType;
-import com.hy.biz.dataResolver.entity.BaseMessage;
+import com.hy.biz.dataResolver.dto.BaseMessage;
 
 public interface DataPushService {
 

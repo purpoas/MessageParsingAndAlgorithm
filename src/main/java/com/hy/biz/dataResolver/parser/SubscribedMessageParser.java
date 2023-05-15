@@ -1,12 +1,12 @@
 package com.hy.biz.dataResolver.parser;
 
 import com.google.gson.JsonObject;
-import com.hy.biz.dataResolver.entity.dto.DeviceOnlineStatusDTO;
+import com.hy.biz.dataPush.DataPushService;
+import com.hy.biz.dataResolver.dto.DeviceOnlineStatusDTO;
 import com.hy.biz.dataResolver.exception.MessageParsingException;
 import com.hy.biz.dataResolver.registry.ParamCodeRegistry;
 import com.hy.domain.DeviceOnlineStatus;
 import com.hy.repository.DeviceOnlineStatusRepository;
-import com.hy.repository.DeviceRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -28,11 +28,11 @@ import static java.nio.ByteOrder.BIG_ENDIAN;
 public class SubscribedMessageParser {
     private final Map<String, String> PARAM_CODE_MAP = ParamCodeRegistry.getParamCodeMap();
 
-    private final DeviceRepository deviceRepository;
+    private final DataPushService dataPushService;
     private final DeviceOnlineStatusRepository deviceOnlineStatusRepository;
 
-    public SubscribedMessageParser(DeviceRepository deviceRepository, DeviceOnlineStatusRepository deviceOnlineStatusRepository) {
-        this.deviceRepository = deviceRepository;
+    public SubscribedMessageParser(DataPushService dataPushService, DeviceOnlineStatusRepository deviceOnlineStatusRepository) {
+        this.dataPushService = dataPushService;
         this.deviceOnlineStatusRepository = deviceOnlineStatusRepository;
     }
 
@@ -50,7 +50,7 @@ public class SubscribedMessageParser {
     }
 
     public void parseDeviceOnlineStatMsg(DeviceOnlineStatusDTO deviceOnlineStatusDTO) {
-        DeviceOnlineStatus deviceOnlineStatus = deviceOnlineStatusDTO.transform(deviceRepository);
+        DeviceOnlineStatus deviceOnlineStatus = deviceOnlineStatusDTO.transform(dataPushService);
         deviceOnlineStatusRepository.save(deviceOnlineStatus);
     }
 

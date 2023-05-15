@@ -1,9 +1,9 @@
-package com.hy.biz.dataResolver.handler;
+package com.hy.biz.dataPush.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hy.biz.dataResolver.parser.SubscribedMessageParser;
-import com.hy.biz.dataResolver.entity.dto.DeviceOnlineStatusDTO;
+import com.hy.biz.dataResolver.dto.DeviceOnlineStatusDTO;
 import org.springframework.stereotype.Component;
 
 /**

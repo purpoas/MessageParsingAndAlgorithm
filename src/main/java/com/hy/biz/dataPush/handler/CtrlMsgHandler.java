@@ -1,10 +1,10 @@
-package com.hy.biz.dataResolver.handler;
+package com.hy.biz.dataPush.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
 import com.hy.biz.dataResolver.parser.SubscribedMessageParser;
-import com.hy.biz.dataResolver.entity.dto.MessageDTO;
+import com.hy.biz.dataResolver.dto.MessageDTO;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
  **/
 @Component
 public class CtrlMsgHandler implements MessageHandler {
+
     private final SubscribedMessageParser subscribedMessageParser;
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper mapper;
@@ -39,6 +40,7 @@ public class CtrlMsgHandler implements MessageHandler {
                 messageDTO.getDeviceCode());
         redisTemplate.convertAndSend(channel, jsonObject.toString());
     }
+
 
 }
 

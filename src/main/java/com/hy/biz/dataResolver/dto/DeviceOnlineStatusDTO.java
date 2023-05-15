@@ -1,8 +1,8 @@
-package com.hy.biz.dataResolver.entity.dto;
+package com.hy.biz.dataResolver.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.hy.biz.dataPush.DataPushService;
 import com.hy.domain.DeviceOnlineStatus;
-import com.hy.repository.DeviceRepository;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,7 +10,7 @@ import java.time.Instant;
 
 /**
  * @author shiwentao
- * @package com.hy.biz.dataResolver.entity.dto
+ * @package com.hy.biz.dataResolver.dto.dto
  * @description
  * @create 2023-05-04 16:37
  **/
@@ -54,11 +54,11 @@ public class DeviceOnlineStatusDTO {
         private String timeStamp;
     }
 
-    public DeviceOnlineStatus transform(DeviceRepository deviceRepository) {
+    public DeviceOnlineStatus transform(DataPushService dataPushService) {
         DeviceOnlineStatus deviceOnlineStatus = new DeviceOnlineStatus();
 
         String[] msg = this.getResult().getMsg().split(" ");
-        deviceOnlineStatus.setDeviceId(deviceRepository.findDeviceIdByCode(msg[0]));
+        deviceOnlineStatus.setDeviceId(dataPushService.findDeviceByCode(msg[0]).getDeviceId());
         deviceOnlineStatus.setCollectionTime(Instant.now());
         deviceOnlineStatus.setMessage(this.getResult().getMsg());
         deviceOnlineStatus.setStatus(this.getResult().getStatus());

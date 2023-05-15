@@ -1,4 +1,4 @@
-package com.hy.biz.dataResolver.entity;
+package com.hy.biz.dataResolver.dto;
 
 import com.hy.biz.dataResolver.util.WaveDataParserHelper;
 import com.hy.domain.WaveData;

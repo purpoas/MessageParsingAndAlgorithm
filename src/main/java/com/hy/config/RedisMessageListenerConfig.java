@@ -1,7 +1,7 @@
 package com.hy.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hy.biz.dataResolver.handler.MessageHandler;
+import com.hy.biz.dataPush.handler.MessageHandler;
 import com.hy.biz.dataPush.subscriber.StateChannelSubscriber;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;

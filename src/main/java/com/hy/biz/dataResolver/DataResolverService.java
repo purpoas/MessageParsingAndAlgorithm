@@ -1,6 +1,6 @@
 package com.hy.biz.dataResolver;
 
-import com.hy.biz.dataResolver.entity.BaseMessage;
+import com.hy.biz.dataResolver.dto.BaseMessage;
 import com.hy.biz.dataResolver.parser.MessageParser;
 import org.springframework.stereotype.Component;
 

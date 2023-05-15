@@ -4,7 +4,7 @@ import com.hy.biz.dataPush.DataPushService;
 import com.hy.biz.dataPush.dto.PushDataType;
 import com.hy.biz.dataPush.task.Task;
 import com.hy.biz.dataResolver.DataResolverService;
-import com.hy.biz.dataResolver.entity.*;
+import com.hy.biz.dataResolver.dto.*;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import java.util.HashMap;

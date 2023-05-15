@@ -2,7 +2,7 @@ package com.hy.biz.dataResolver.registry;
 
 import com.hy.biz.dataResolver.constants.FrameType;
 import com.hy.biz.dataResolver.constants.MessageType;
-import com.hy.biz.dataResolver.entity.*;
+import com.hy.biz.dataResolver.dto.*;
 
 import java.util.Collections;
 import java.util.HashMap;
