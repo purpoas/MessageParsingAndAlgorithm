@@ -5,9 +5,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ *
+ * 参数读取应答报文的参数编码注册类
+ *
  * @author shiwentao
  * @package com.hy.biz.dataResolver
- * @description
  * @create 2023-05-10 09:33
  **/
 public class ParamCodeRegistry {

@@ -12,11 +12,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author shiwentao
  * @package com.hy.biz.redis.task
- * @description
  * @create 2023-04-26 14:23
  **/
 @Component
 public class TaskWorker {
+
     private final TaskQueue taskQueue;
     private final TaskExecutor taskExecutor;
 
@@ -89,5 +89,6 @@ public class TaskWorker {
             }
         }
     }
+
 
 }

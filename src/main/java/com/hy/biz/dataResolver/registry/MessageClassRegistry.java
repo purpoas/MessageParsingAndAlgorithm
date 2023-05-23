@@ -9,8 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @description A utility class that manages the registration of message classes.
- *              Provides a static, unmodifiable map containing the message classes.
+ * 报文类的注册类
  */
 public class MessageClassRegistry {
 

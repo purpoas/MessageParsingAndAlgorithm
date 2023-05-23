@@ -11,9 +11,11 @@ import static com.hy.biz.dataResolver.constants.FrameType.CONTROL_ACK_REPORT;
 import static com.hy.biz.dataResolver.constants.MessageType.*;
 
 /**
+ *
+ * 控制报文解析器的注册类
+ *
  * @author shiwentao
  * @package com.hy.biz.dataResolver.registry
- * @description
  * @create 2023-05-23 10:08
  **/
 public class CtrlMsgStrategyRegistry {

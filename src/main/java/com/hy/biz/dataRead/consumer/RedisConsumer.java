@@ -17,6 +17,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Redis 消费线程
+ */
 @Slf4j
 public abstract class RedisConsumer {
     private final TaskQueue taskQueue;

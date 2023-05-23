@@ -3,8 +3,10 @@ package com.hy.biz.dataResolver.dto;
 import lombok.Data;
 
 /**
+ *
+ * 报文基类
+ *
  * @package com.hy.idds.biz.dataResolver.MessageEntity
- * @description 报文基类
  * @author shiwentao
  * @create 2023-04-18 17:24
  **/

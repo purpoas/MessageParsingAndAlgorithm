@@ -6,9 +6,11 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /**
+ *
+ * 自定义消息阻塞队列
+ *
  * @author shiwentao
  * @package com.hy.biz.redis.task
- * @description
  * @create 2023-04-26 10:59
  **/
 @Component

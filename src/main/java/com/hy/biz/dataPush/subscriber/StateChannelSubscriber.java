@@ -17,9 +17,11 @@ import static com.hy.biz.dataResolver.constants.MessageConstants.*;
 import static com.hy.biz.dataResolver.util.TypeConverter.byteArrToStr;
 
 /**
+ *
+ * Redis 订阅频道消息处理解析器
+ *
  * @author shiwentao
  * @package com.hy.config
- * @description
  * @create 2023-05-04 16:07
  **/
 @Slf4j
@@ -36,11 +38,11 @@ public class StateChannelSubscriber implements MessageListener {
     }
 
     /**
-     * This method processes the incoming message.
-     * It first tries to convert the message to a JsonNode.
-     * If the message has "data", it treats it as a control message and processes it accordingly.
-     * If the message has "result", it treats it as a device online status message and processes it accordingly.
-     * If the message doesn't fall into any of the above categories, it throws a MessageParsingException.
+     * 该方法用于处理从订阅频道中接收到的 JSON 数据
+     * 该方法先尝试将接收到的数据转换成一个 JsonNode
+     * 若jsonNode中含 "data", 它将被当作一个控制报文来进行解析
+     * 若jsonNode中含 "result", 它将被当作设备上下线状态报文来进行解析
+     * 若jsonNode中不包含前两者，程序抛出解析异常
      */
     @Override
     public void onMessage(@NonNull Message message, byte[] pattern) {
