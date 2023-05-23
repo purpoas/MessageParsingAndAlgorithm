@@ -4,8 +4,10 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 /**
+ *
+ * 数据类型转换工具类，主要负责 byte数组 与 String 类型之间的切换
+ *
  * @package com.hy.idds.biz.dataResolver.util
- * @description
  * @author shiwentao
  * @create 2023-04-23 17:16
  **/

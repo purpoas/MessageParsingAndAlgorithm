@@ -10,9 +10,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ *
+ * 报文解析器的注册类
+ *
  * @author shiwentao
  * @package com.hy.biz.dataResolver.registry
- * @description
  * @create 2023-05-19 12:00
  **/
 public class MessageStrategyRegistry {

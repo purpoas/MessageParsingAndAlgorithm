@@ -1,8 +1,10 @@
 package com.hy.biz.dataResolver.constants;
 
 /**
+ *
+ * 报文类型
+ *
  * @package com.hy.idds.biz.dataResolver.constants
- * @description 报文类型
  * @author shiwentao
  * @create 2023-04-21 17:54
  **/

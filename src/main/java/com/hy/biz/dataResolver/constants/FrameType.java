@@ -1,8 +1,10 @@
 package com.hy.biz.dataResolver.constants;
 
 /**
+ *
+ * 报文帧类型常量
+ *
  * @package com.hy.biz.dataResolver.constants
- * @description 报文帧类型常量
  * @author shiwentao
  * @create 2023-04-21 17:52
  **/

@@ -1,8 +1,10 @@
 package com.hy.biz.dataResolver.exception;
 
 /**
+ *
+ * 解析异常类
+ *
  * @package com.hy.idds.biz.dataResolver.exception
- * @description
  * @author shiwentao
  * @create 2023-04-19 13:34
  **/

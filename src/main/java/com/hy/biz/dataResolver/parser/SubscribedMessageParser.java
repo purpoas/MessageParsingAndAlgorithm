@@ -20,9 +20,11 @@ import static com.hy.biz.dataResolver.util.TypeConverter.hexStringToByteArray;
 import static java.nio.ByteOrder.BIG_ENDIAN;
 
 /**
+ *
+ * 解析器：用于解析 Redis 订阅频道中的控制报文，及设备上线通知报文
+ *
  * @author shiwentao
  * @package com.hy.biz.redis.subscriber
- * @description 解析器：用于解析 Redis 订阅频道中的控制报文，及设备上线通知报文
  * @create 2023-05-08 16:12
  **/
 @Component
@@ -46,6 +48,15 @@ public class SubscribedMessageParser {
         this.deviceOnlineStatusRepository = deviceOnlineStatusRepository;
     }
 
+    /**
+     *
+     * 解析控制报文
+     *
+     * @param commandData 报文 byte 数组
+     * @param deviceCode 设备编号
+     * @param timeStamp 时间戳
+     * @return 将发布到订阅频道的 json 数据
+     */
     public JsonObject parseCtrlMsg(String commandData, String deviceCode, long timeStamp) {
 
         ByteBuffer buffer = ByteBuffer.wrap(hexStringToByteArray(commandData)).order(BIG_ENDIAN);
@@ -57,6 +68,13 @@ public class SubscribedMessageParser {
         return parseMessageContent(messageContent, frameType, messageType, deviceCode, timeStamp);
     }
 
+    /**
+     *
+     * 解析设备上下线状态报文
+     *
+     * @param deviceOnlineStatusDTO 设备上下线状态实体类
+     * @return 将发布到订阅频道的 json 数据
+     */
     public JsonObject parseDeviceOnlineStatMsg(DeviceOnlineStatusDTO deviceOnlineStatusDTO) {
 
         DeviceOnlineStatus deviceOnlineStatus = deviceOnlineStatusDTO.transform(dataPushService);

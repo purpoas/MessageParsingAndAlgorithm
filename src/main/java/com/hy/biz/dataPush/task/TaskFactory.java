@@ -7,9 +7,11 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 /**
+ *
+ * 任务工厂
+ *
  * @author shiwentao
  * @package com.hy.biz.redis.task
- * @description
  * @create 2023-04-27 15:58
  **/
 @Component
