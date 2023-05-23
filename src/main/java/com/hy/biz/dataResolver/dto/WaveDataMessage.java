@@ -1,6 +1,9 @@
 package com.hy.biz.dataResolver.dto;
 
 import com.hy.biz.dataResolver.parser.ParserHelper;
+import com.hy.biz.dataAnalysis.dto.FaultWave;
+import com.hy.biz.dataPush.dto.DeviceDTO;
+import com.hy.biz.dataResolver.util.WaveDataParserHelper;
 import com.hy.domain.WaveData;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -52,10 +55,24 @@ public class WaveDataMessage extends BaseMessage {
      */
     private String reserved;
 
+    /**
+     * 是否故障
+     */
+    private boolean isFault;
+
+    /**
+     * 故障性质
+     */
+    private Integer relaFlag;
+
     public WaveData transform(ParserHelper parserHelper, long timeStamp, String deviceCode) {
         return parserHelper.setWaveDataProperty(this, timeStamp, deviceCode);
     }
 
+    public FaultWave transform(DeviceDTO deviceDTO){
+
+        return null;
+    }
 
 }
 

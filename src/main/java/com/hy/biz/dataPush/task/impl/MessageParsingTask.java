@@ -1,5 +1,6 @@
-package com.hy.biz.dataPush.task.impl;
+package com.hy.biz.dataRead.task.impl;
 
+import com.hy.biz.dataAnalysis.DataAnalysisService;
 import com.hy.biz.dataPush.DataPushService;
 import com.hy.biz.dataPush.dto.PushDataType;
 import com.hy.biz.dataPush.task.Task;
@@ -26,29 +27,40 @@ public class MessageParsingTask extends Task {
     private final String dataBakQueue;
     private final DataResolverService dataResolverService;
     private final DataPushService dataPushService;
+    private final DataAnalysisService dataAnalysisService;
 
     public MessageParsingTask(String message, RedisTemplate<String, String> redisTemplate, String dataBakQueue,
-                              DataResolverService dataResolverService, DataPushService dataPushService) {
+                              DataResolverService dataResolverService, DataPushService dataPushService,
+                              DataAnalysisService dataAnalysisService) {
         this.message = message;
         this.redisTemplate = redisTemplate;
         this.dataBakQueue = dataBakQueue;
         this.dataResolverService = dataResolverService;
         this.dataPushService = dataPushService;
+        this.dataAnalysisService = dataAnalysisService;
     }
 
     @Override
     public void run() {
-
+        // 数据解析
         BaseMessage baseMessage = dataResolverService.resolve(message);
+
         messageTypeMap.forEach((messageClass, pushType) -> {
             if (messageClass.isInstance(baseMessage)) {
+                // 数据上送
                 boolean flag = dataPushService.push(message, baseMessage, pushType);
+
+                // 数据分析 针对波形数据
+                if (pushType == WAVE) {
+                    WaveDataMessage wave = (WaveDataMessage) baseMessage;
+                    dataAnalysisService.createAlgorithmTask(wave);
+                }
+
                 if (flag) {
                     removeFromRedisList(redisTemplate, dataBakQueue);
                 }
             }
         });
-
     }
 
 

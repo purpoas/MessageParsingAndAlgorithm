@@ -1,6 +1,7 @@
 package com.hy.biz.dataAnalysis;
 
 import com.hy.biz.dataAnalysis.dto.FaultWave;
+import com.hy.biz.dataResolver.dto.WaveDataMessage;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
@@ -9,19 +10,19 @@ import java.util.Set;
 public interface DataAnalysisService {
 
     /**
-     * 算法分析入口函数，对故障波形进行故障分析 (根据诊断分析流程而定)
+     * 实现对故障波形的分析工作，诊断出故障结果，函数执行处理流程根据诊断分析流程而定
      *
      * @param faultWaves
      */
-    public void analysis(Set<FaultWave> faultWaves);
+    public void executeAlgorithmAnalysis(Set<FaultWave> faultWaves);
 
 
     /**
-     * 执行算法任务生成/更新处理函数
-     * @param deviceCode
-     * @param wave
+     * 根据设备上传波形创建算法任务，函数内部执行逻辑需要对波形进行有效性监测，通过有效性后进行算法任务创建逻辑执行
+     *
+     * @param waveDataMessage 报文类型
      */
-    public void algorithmTask(String deviceCode, String wave);
+    public void createAlgorithmTask(WaveDataMessage waveDataMessage);
 
 
 }

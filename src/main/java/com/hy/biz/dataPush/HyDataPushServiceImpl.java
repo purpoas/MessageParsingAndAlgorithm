@@ -2,6 +2,8 @@ package com.hy.biz.dataPush;
 
 import com.google.gson.*;
 import com.hy.biz.dataPush.dto.DeviceDTO;
+import com.hy.biz.dataPush.dto.LineDTO;
+import com.hy.biz.dataPush.dto.PoleDTO;
 import com.hy.biz.dataPush.dto.PushDataType;
 import com.hy.biz.dataResolver.dto.*;
 import com.hy.biz.dataResolver.exception.MessageParsingException;
@@ -16,6 +18,9 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
+import java.util.List;
+
+import static com.hy.biz.dataResolver.constants.MessageConstants.JSON_TO_DTO_ERROR;
 import static com.hy.biz.dataResolver.constants.MessageConstants.MESSAGE_TO_ENTITY_ERROR;
 
 @Slf4j
@@ -82,7 +87,21 @@ public class HyDataPushServiceImpl implements DataPushService {
         return new DeviceDTO().from(device);
     }
 
-//     私有方法 =========================================================================================================
+    @Override
+    public LineDTO findLineByLineId(String lineId) {
+        return null;
+    }
+
+    @Override
+    public List<PoleDTO> findPolesByLineId(String lineId) {
+        return null;
+    }
+
+    @Override
+    public PoleDTO getPoleByPoleId(String lineId, String poleId) {
+        return null;
+    }
+
 
     private boolean saveDeviceFault(DeviceFaultMessage message, String deviceCode) {
 

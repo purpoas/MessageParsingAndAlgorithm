@@ -13,6 +13,7 @@ public enum PushDataType {
     HEARTBEAT,                 //设备心跳
     TRAVELLING_WAVE_CURRENT,   //行波电流
     WAVE,                      //波形数据
+    ANALYSIS_RESULT,              //故障分析结果
     WORK_STATUS,               //线路工况
 
 

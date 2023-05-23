@@ -24,6 +24,7 @@ public class HyConfigProperty {
 
     private final Constant constant = new Constant();                       // 基础配置
 
+    private final AlgorithmConfig algorithm = new AlgorithmConfig();        // 算法配置
 
     /**
      * 异步任务线程池配置
@@ -81,6 +82,16 @@ public class HyConfigProperty {
         private String accidentFilePath;             //存储事故ID文件位置
         private String faultFilePath;                //存储故障波形推送失败的文件夹
         private String batteryFilePath;              //电池电量对应关联文件位置
+    }
+
+    /**
+     * 算法相关配置
+     */
+    @Data
+    public static class AlgorithmConfig {
+
+        private int delayExecuteTime = 10; // 算法任务延迟执行时间 单位秒
+
     }
 
 }

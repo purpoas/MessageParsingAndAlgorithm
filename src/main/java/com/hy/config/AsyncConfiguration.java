@@ -28,9 +28,9 @@ public class AsyncConfiguration implements AsyncConfigurer {
     @Bean(name = "taskExecutor")
     public TaskExecutor getAsyncExecutor() {
         log.info("Creating Async Task Executor\n" +
-                "\tCorePoolSize:\t{}\n" +
-                "\tMaxPoolSize:\t{}\n" +
-                "\tQueueCapacity:\t{} ",
+                        "\tCorePoolSize:\t{}\n" +
+                        "\tMaxPoolSize:\t{}\n" +
+                        "\tQueueCapacity:\t{} ",
                 hyConfigProperty.getAsync().getCorePoolSize(),
                 hyConfigProperty.getAsync().getMaxPoolSize(),
                 hyConfigProperty.getAsync().getQueueCapacity());
@@ -38,7 +38,29 @@ public class AsyncConfiguration implements AsyncConfigurer {
         executor.setCorePoolSize(hyConfigProperty.getAsync().getCorePoolSize());
         executor.setMaxPoolSize(hyConfigProperty.getAsync().getMaxPoolSize());
         executor.setQueueCapacity(hyConfigProperty.getAsync().getQueueCapacity());
-        executor.setThreadNamePrefix("idds-exec-");
+        executor.setThreadNamePrefix("idds-data-exec-");
+        return new ExceptionHandlingAsyncTaskExecutor(executor);
+    }
+
+    /**
+     * 初始化延迟算法任务线程池配置
+     *
+     * @return
+     */
+    @Bean(name = "algorithmTaskExecutor")
+    public TaskExecutor getAsyncAlgorithmExecutor() {
+        log.info("Creating Async Algorithm Executor\n" +
+                        "\tCorePoolSize:\t{}\n" +
+                        "\tMaxPoolSize:\t{}\n" +
+                        "\tQueueCapacity:\t{} ",
+                hyConfigProperty.getAsync().getCorePoolSize(),
+                hyConfigProperty.getAsync().getMaxPoolSize(),
+                hyConfigProperty.getAsync().getQueueCapacity());
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(hyConfigProperty.getAsync().getCorePoolSize());
+        executor.setMaxPoolSize(hyConfigProperty.getAsync().getMaxPoolSize());
+        executor.setQueueCapacity(hyConfigProperty.getAsync().getQueueCapacity());
+        executor.setThreadNamePrefix("idds-analysis-exec-");
         return new ExceptionHandlingAsyncTaskExecutor(executor);
     }
 

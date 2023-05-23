@@ -12,5 +12,6 @@ import lombok.Data;
 public abstract class BaseMessage {
     private byte frameType;
     private byte messageType;
+    private String deviceCode;
 }
 
