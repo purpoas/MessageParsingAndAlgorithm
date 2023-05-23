@@ -63,11 +63,13 @@ public class HyConfigProperty {
         /**
          * redis订阅通知
          */
-        private String dnmTopicChannel;
+        private String dnmTopicChannelSb;
+        private String dnmTopicChannelPb;
     }
 
     @Data
     public static class Constant {
+        private String dnmLatestDeviceStatus;
         private String supplierCode;                 //供应商编号
         private Integer travelThreshold;             //行波阈值
         private Integer frequencyThreshold;          //工频阈值

@@ -4,16 +4,18 @@ import com.google.gson.JsonObject;
 import com.hy.biz.dataPush.DataPushService;
 import com.hy.biz.dataResolver.dto.DeviceOnlineStatusDTO;
 import com.hy.biz.dataResolver.exception.MessageParsingException;
-import com.hy.biz.dataResolver.registry.ParamCodeRegistry;
+import com.hy.biz.dataResolver.parser.strategy.CtrlMsgParserStrategy;
+import com.hy.biz.dataResolver.registry.CtrlMsgStrategyRegistry;
 import com.hy.domain.DeviceOnlineStatus;
 import com.hy.repository.DeviceOnlineStatusRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-import static com.hy.biz.dataResolver.constants.MessageConstants.*;
+import static com.hy.biz.dataResolver.constants.MessageConstants.ILLEGAL_MESSAGE_SIGNATURE_ERROR;
 import static com.hy.biz.dataResolver.util.TypeConverter.hexStringToByteArray;
 import static java.nio.ByteOrder.BIG_ENDIAN;
 
@@ -26,137 +28,77 @@ import static java.nio.ByteOrder.BIG_ENDIAN;
 @Component
 @Slf4j
 public class SubscribedMessageParser {
-    private final Map<String, String> PARAM_CODE_MAP = ParamCodeRegistry.getParamCodeMap();
+
+    private static final String ONLINE_STATUS_MESSAGE = "设备上线";
+    private static final String OFFLINE_STATUS_MESSAGE = "设备下线";
+    private static final String ONLINE_STATUS = "online";
+    private static final String MSG_TYPE = "0x04:0x08";
+    private final Map<String, CtrlMsgParserStrategy> strategies = CtrlMsgStrategyRegistry.getMessageStrategyMap();
 
     private final DataPushService dataPushService;
+    private final ParserHelper parserHelper;
     private final DeviceOnlineStatusRepository deviceOnlineStatusRepository;
 
-    public SubscribedMessageParser(DataPushService dataPushService, DeviceOnlineStatusRepository deviceOnlineStatusRepository) {
+    @Autowired
+    public SubscribedMessageParser(DataPushService dataPushService, ParserHelper parserHelper, DeviceOnlineStatusRepository deviceOnlineStatusRepository) {
         this.dataPushService = dataPushService;
+        this.parserHelper = parserHelper;
         this.deviceOnlineStatusRepository = deviceOnlineStatusRepository;
     }
 
-    public JsonObject parseCtrlMsg(String commandData, String deviceCode) {
-        ByteBuffer buffer = ByteBuffer.wrap(hexStringToByteArray(commandData)).order(BIG_ENDIAN);
-        if (buffer.getShort() != HEADER)
-            throw new IllegalArgumentException(ILLEGAL_HEADER_ERROR);
-        buffer.position(buffer.position() + ID_LENGTH);
-        byte frameType = buffer.get();
-        byte messageType = buffer.get();
-        byte[] messageContent = new byte[buffer.getShort()];
-        buffer.get(messageContent);
+    public JsonObject parseCtrlMsg(String commandData, String deviceCode, long timeStamp) {
 
-        return parseMessageContent(messageContent, frameType, messageType, deviceCode);
+        ByteBuffer buffer = ByteBuffer.wrap(hexStringToByteArray(commandData)).order(BIG_ENDIAN);
+        parserHelper.checkHeader(buffer);
+        byte frameType = parserHelper.parseFrameType(buffer);
+        byte messageType = parserHelper.parseMessageType(buffer);
+        byte[] messageContent = parserHelper.parseMessageContent(buffer);
+
+        return parseMessageContent(messageContent, frameType, messageType, deviceCode, timeStamp);
     }
 
-    public void parseDeviceOnlineStatMsg(DeviceOnlineStatusDTO deviceOnlineStatusDTO) {
+    public JsonObject parseDeviceOnlineStatMsg(DeviceOnlineStatusDTO deviceOnlineStatusDTO) {
+
         DeviceOnlineStatus deviceOnlineStatus = deviceOnlineStatusDTO.transform(dataPushService);
         deviceOnlineStatusRepository.save(deviceOnlineStatus);
+
+        return createDeviceOnlineStatJsonMsg(deviceOnlineStatusDTO);
     }
 
-    private JsonObject parseMessageContent(byte[] messageContent, byte frameType, byte messageType, String deviceCode) {
+    //私有方法=========================================================================================================
+
+    private JsonObject parseMessageContent(byte[] messageContent, byte frameType, byte messageType, String deviceCode, long timeStamp) {
+
         ByteBuffer buffer = ByteBuffer.wrap(messageContent).order(BIG_ENDIAN);
         String messageSignature = String.format("0x%02X:0x%02X", frameType, messageType);
 
-        switch (messageSignature) {
-            case "0x04:0x01":
-                return parseDeviceResetRspMsg(buffer, messageSignature, deviceCode);
-            case "0x04:0x03":
-                return parseParamSettingRspMsg(buffer, messageSignature, deviceCode);
-            case "0x04:0x05":
-                return parseParamReadingRspMsg(buffer, messageSignature, deviceCode);
-            case "0x04:0x07":
-                return parseProgramUpgradeRspMsg(buffer, messageSignature, deviceCode);
-            case "0x04:0x015":
-            case "0x05:0x015":
-                return parseDeviceHistoricalDataRspMsg(buffer, messageSignature, deviceCode);
-            default:
-                log.error("未知报文签名: {}，无法识别具体控制数据报文类型，设备编号为: {}", messageSignature, deviceCode);
-                throw new MessageParsingException(ILLEGAL_MESSAGE_SIGNATURE_ERROR);
-        }
-    }
-
-    private JsonObject parseDeviceResetRspMsg(ByteBuffer buffer, String messageSignature, String deviceCode) {
-        String operationSucceeded = operationSucceeded(buffer);
-        JsonObject deviceResetRspMsg = new JsonObject();
-        deviceResetRspMsg.addProperty("status", "装置复位" + operationSucceeded);
-        deviceResetRspMsg.addProperty("msgType", messageSignature);
-        deviceResetRspMsg.addProperty("deviceCode", deviceCode);
-
-        return deviceResetRspMsg;
-    }
-
-    private JsonObject parseParamSettingRspMsg(ByteBuffer buffer, String messageSignature, String deviceCode) {
-        String operationSucceeded = operationSucceeded(buffer);
-        JsonObject paramSettingRspMsg = new JsonObject();
-        paramSettingRspMsg.addProperty("status", "参数设置" + operationSucceeded);
-        paramSettingRspMsg.addProperty("msgType", messageSignature);
-        paramSettingRspMsg.addProperty("deviceCode", deviceCode);
-
-        return paramSettingRspMsg;
-    }
-
-    private JsonObject parseParamReadingRspMsg(ByteBuffer buffer, String messageSignature, String deviceCode) {
-        String operationSucceeded = operationSucceeded(buffer);
-        JsonObject paramReadingRspMsg = new JsonObject();
-        paramReadingRspMsg.addProperty("status", operationSucceeded);
-        paramReadingRspMsg.addProperty("msgType", messageSignature);
-        paramReadingRspMsg.addProperty("deviceCode", deviceCode);
-
-        JsonObject params = new JsonObject();
-        for (int i = 0, paramNum = buffer.getShort(); i < paramNum; i++) {
-            String paramCodeHex = String.format("0x%04x", buffer.getShort() & 0xffff);
-            params.addProperty(PARAM_CODE_MAP.get(paramCodeHex), Integer.toString(buffer.getInt()));
-        }
-        paramReadingRspMsg.add("param", params);
-
-        return paramReadingRspMsg;
-    }
-
-    private JsonObject parseProgramUpgradeRspMsg(ByteBuffer buffer, String messageSignature, String deviceCode) {
-        String operationSucceeded = operationSucceeded(buffer);
-        JsonObject programUpgradeRspMsg = new JsonObject();
-        programUpgradeRspMsg.addProperty("status", operationSucceeded);
-        programUpgradeRspMsg.addProperty("msgType", messageSignature);
-        programUpgradeRspMsg.addProperty("deviceCode", deviceCode);
-
-        return programUpgradeRspMsg;
-    }
-
-    private JsonObject parseDeviceHistoricalDataRspMsg(ByteBuffer buffer, String messageSignature, String deviceCode) {
-        String operationSucceeded = operationSucceeded(buffer);
-        JsonObject deviceHistoricalDataRspMsg = new JsonObject();
-        deviceHistoricalDataRspMsg.addProperty("status", operationSucceeded);
-        deviceHistoricalDataRspMsg.addProperty("msgType", messageSignature);
-        deviceHistoricalDataRspMsg.addProperty("deviceCode", deviceCode);
-
-        JsonObject params = new JsonObject();
-        params.addProperty("historicalDataNum", buffer.getShort());
-        params.addProperty("historicalTravellingWaveCurrentDataNum", buffer.getShort());
-        params.addProperty("historicalPowerFrequencyCurrentDataNum", buffer.getShort());
-        params.addProperty("historicalElectricalFieldVoltageDataNum", buffer.getShort());
-
-        deviceHistoricalDataRspMsg.add("param", params);
-
-        return deviceHistoricalDataRspMsg;
-    }
-
-    private String operationSucceeded(ByteBuffer buffer) {
-        byte isSuccessful = buffer.get();
-
-        String status;
-        switch (isSuccessful) {
-            case MESSAGE_STATUS_SUCCESSFUL:
-                status = "操作成功";
-                break;
-            case MESSAGE_STATUS_FAILED:
-                status = "操作失败";
-                break;
-            default:
-                throw new MessageParsingException(String.format("%s: %d", UNKNOWN_OPERATION_RESULT, isSuccessful));
+        CtrlMsgParserStrategy strategy = strategies.get(messageSignature);
+        if (strategy == null) {
+            log.error("未知报文签名: {}，无法识别具体控制数据报文类型", messageSignature);
+            throw new MessageParsingException(ILLEGAL_MESSAGE_SIGNATURE_ERROR);
         }
 
-        return status;
+        return strategy.parse(buffer, parserHelper, messageSignature, deviceCode, timeStamp);
     }
+
+    public JsonObject createDeviceOnlineStatJsonMsg(DeviceOnlineStatusDTO deviceOnlineStatusDTO) {
+        JsonObject jsonObject = new JsonObject();
+
+        String status = deviceOnlineStatusDTO.getResult().getStatus();
+        boolean isOnline = ONLINE_STATUS.equals(status);
+
+        jsonObject.addProperty("status", isOnline);
+        jsonObject.addProperty("msg", isOnline ? ONLINE_STATUS_MESSAGE : OFFLINE_STATUS_MESSAGE);
+        jsonObject.addProperty("msgType", MSG_TYPE);
+        jsonObject.addProperty("timestamp", deviceOnlineStatusDTO.getHeader().getTimeStamp());
+        jsonObject.addProperty("deviceCode", extractDeviceCode(deviceOnlineStatusDTO.getResult().getMsg()));
+
+        return jsonObject;
+    }
+
+    private String extractDeviceCode(String msg) {
+        return msg.split(" ")[0];
+    }
+
 
 }

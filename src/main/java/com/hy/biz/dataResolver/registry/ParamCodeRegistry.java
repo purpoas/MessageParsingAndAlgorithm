@@ -20,20 +20,20 @@ public class ParamCodeRegistry {
     }
 
     private static void registerParamCode() {
-        map.put("0x0001", "行波召回时间");
-        map.put("0x0002", "行波电流阈值");
-        map.put("0x0003", "行波电流采集时长");
-        map.put("0x0004", "行波电流采集频率");
-        map.put("0x0005", "工频电流召回时间");
-        map.put("0x0006", "工频电流阈值");
-        map.put("0x0007", "工频电流采集时长");
-        map.put("0x0008", "工频电流采样频率");
-        map.put("0x0009", "工作状态上报时间");
-        map.put("0x000A", "工况数据采集间隔");
-        map.put("0x000B", "电场电压召回时间");
-        map.put("0x000C", "电场电压阈值");
-        map.put("0x000D", "电场电压采集时长");
-        map.put("0x000E", "电场电压采样频率");
+        map.put("0x0001", "waveCallbackTime");
+        map.put("0x0002", "waveThreshold");
+        map.put("0x0003", "waveCollectionTime");
+        map.put("0x0004", "waveSampleRate");
+        map.put("0x0005", "powerCallbackTime");
+        map.put("0x0006", "powerThreshold");
+        map.put("0x0007", "powerCollectionTime");
+        map.put("0x0008", "powerSampleRate");
+        map.put("0x0009", "workReportTime");
+        map.put("0x000A", "workStatusCollectDuration");
+        map.put("0x000B", "groundCallbackTime");
+        map.put("0x000C", "groundThreshold");
+        map.put("0x000D", "groundCollectionTime");
+        map.put("0x000E", "groundSampleRate");
     }
 
     public static Map<String, String> getParamCodeMap() {

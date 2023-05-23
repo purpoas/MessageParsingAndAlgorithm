@@ -51,16 +51,17 @@ public class DeviceOnlineStatusDTO {
         private String deviceCode;
 
         @JsonProperty("TimeStamp")
-        private String timeStamp;
+        private long timeStamp;
     }
 
     public DeviceOnlineStatus transform(DataPushService dataPushService) {
+
         DeviceOnlineStatus deviceOnlineStatus = new DeviceOnlineStatus();
 
         String[] msg = this.getResult().getMsg().split(" ");
         deviceOnlineStatus.setDeviceId(dataPushService.findDeviceByCode(msg[0]).getDeviceId());
         deviceOnlineStatus.setCollectionTime(Instant.now());
-        deviceOnlineStatus.setMessage(this.getResult().getMsg());
+        deviceOnlineStatus.setMessage("deviceCode: " + this.getHeader().getDeviceCode() + "  signal: " + this.getSenderInfo().getSignal());
         deviceOnlineStatus.setStatus(this.getResult().getStatus());
 
         return deviceOnlineStatus;

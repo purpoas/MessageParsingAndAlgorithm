@@ -15,4 +15,5 @@ public enum PushDataType {
     WAVE,                      //波形数据
     WORK_STATUS,               //线路工况
 
+
 }

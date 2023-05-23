@@ -89,7 +89,7 @@ public abstract class RedisConsumer {
     private void processWorkingQueue() {
 
         String message = redisTemplate.opsForList().rightPopAndLeftPush(dataQueue, dataBakQueue, Duration.ofSeconds(10));
-
+//        log.info("消息队列中的报文: {}", message);
         if (StringUtils.isNotBlank(message)) {
             Task task = taskFactory.createTask(message, dataBakQueue);
             taskQueue.putTask(task);
@@ -102,7 +102,7 @@ public abstract class RedisConsumer {
         if (executorService != null) {
             executorService.shutdown();
             try {
-                if (!executorService.awaitTermination(1, TimeUnit.SECONDS)) {
+                if (!executorService.awaitTermination(3, TimeUnit.SECONDS)) {
                     executorService.shutdownNow();
                 }
             } catch (InterruptedException e) {

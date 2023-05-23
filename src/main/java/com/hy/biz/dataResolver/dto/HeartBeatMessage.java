@@ -11,4 +11,4 @@ import lombok.EqualsAndHashCode;
  **/
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class HeartBeatMessage extends BaseMessage {}
+public class HeartBeatMessage extends BaseMessage  {}

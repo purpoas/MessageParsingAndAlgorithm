@@ -13,7 +13,7 @@ public class WorkStatusMessage extends BaseMessage {
     /**
      * 工况上传时间 长度：12字节
      */
-    private String uploadTime;
+    private Instant uploadTime;
 
     /**
      * 电池供电状态 长度：1字节
@@ -40,11 +40,12 @@ public class WorkStatusMessage extends BaseMessage {
      */
     private String reserved;
 
-    public WorkStatus transform(long deviceId, long timeStamp) {
+
+    public WorkStatus transform(long deviceId) {
 
         WorkStatus workStatus = new WorkStatus();
         workStatus.setDeviceId(deviceId);
-        workStatus.setCollectionTime(Instant.ofEpochMilli(timeStamp));
+        workStatus.setCollectionTime(this.uploadTime);
         workStatus.setDeviceTemperature(this.deviceTemperature);
         workStatus.setLineCurrent(this.currentEffectiveValue);
 

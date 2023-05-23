@@ -1,4 +1,4 @@
-package com.hy.biz.dataPush.handler;
+package com.hy.biz.dataPush.subscriber.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 

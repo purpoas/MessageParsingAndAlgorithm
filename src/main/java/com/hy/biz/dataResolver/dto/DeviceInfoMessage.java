@@ -45,6 +45,7 @@ public class DeviceInfoMessage extends BaseMessage {
      */
     private String reserved;
 
+
     public DeviceInfo transform(long deviceId, long timeStamp) {
 
         DeviceInfo deviceInfo = new DeviceInfo();

@@ -35,4 +35,5 @@ public class DeviceOnlineStatus extends AbstractDeviceDataEntity<DeviceOnlineSta
     @Column(name = "status")
     private String status;
 
+
 }

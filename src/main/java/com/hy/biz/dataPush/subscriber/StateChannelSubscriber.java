@@ -3,17 +3,17 @@ package com.hy.biz.dataPush.subscriber;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hy.biz.dataPush.handler.MessageHandler;
+import com.hy.biz.dataPush.subscriber.handler.MessageHandler;
 import com.hy.biz.dataResolver.exception.MessageParsingException;
+import com.hy.config.HyConfigProperty;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.lang.NonNull;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import static com.hy.biz.dataResolver.constants.MessageConstants.ILLEGAL_SUBSCRIBED_MESSAGE_SIGNATURE_ERROR;
+import static com.hy.biz.dataResolver.constants.MessageConstants.*;
 import static com.hy.biz.dataResolver.util.TypeConverter.byteArrToStr;
 
 /**
@@ -24,10 +24,13 @@ import static com.hy.biz.dataResolver.util.TypeConverter.byteArrToStr;
  **/
 @Slf4j
 public class StateChannelSubscriber implements MessageListener {
+
     private final List<MessageHandler> messageHandlers;
+    private final HyConfigProperty hyConfigProperty;
     private final ObjectMapper mapper;
 
-    public StateChannelSubscriber(List<MessageHandler> messageHandlers, ObjectMapper mapper) {
+    public StateChannelSubscriber(HyConfigProperty hyConfigProperty, List<MessageHandler> messageHandlers, ObjectMapper mapper) {
+        this.hyConfigProperty = hyConfigProperty;
         this.messageHandlers = messageHandlers;
         this.mapper = mapper;
     }
@@ -47,18 +50,15 @@ public class StateChannelSubscriber implements MessageListener {
             log.info("Redis订阅频道收到的消息（用于调试）: {}", message);
             rootNode = mapper.readTree(byteArrToStr(message.getBody()));
         } catch (JsonProcessingException e) {
-            throw new MessageParsingException("Error processing the JSON", e);
+            throw new MessageParsingException(JSON_PROCESSING_ERROR);
         }
-
-        String channel = new String(message.getChannel(), StandardCharsets.UTF_8);
 
         for (MessageHandler messageHandler : messageHandlers) {
             if (messageHandler.canHandle(rootNode)) {
                 try {
-                    messageHandler.handle(rootNode, channel);
+                    messageHandler.handle(rootNode, hyConfigProperty.getDataQueue().getDnmTopicChannelPb());
                 } catch (Exception e) {
-                    throw new MessageParsingException("Error processing the message by "
-                            + messageHandler.getClass().getSimpleName(), e);
+                    throw new MessageParsingException(SUB_MESSAGE_PARSING_ERROR);
                 }
                 return;
             }

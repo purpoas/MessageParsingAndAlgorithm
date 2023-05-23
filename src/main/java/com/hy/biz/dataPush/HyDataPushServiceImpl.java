@@ -1,29 +1,28 @@
 package com.hy.biz.dataPush;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.*;
 import com.hy.biz.dataPush.dto.DeviceDTO;
 import com.hy.biz.dataPush.dto.PushDataType;
 import com.hy.biz.dataResolver.dto.*;
-import com.hy.biz.dataResolver.dto.MessageDTO;
 import com.hy.biz.dataResolver.exception.MessageParsingException;
-import com.hy.biz.dataResolver.util.WaveDataParserHelper;
+import com.hy.biz.dataResolver.parser.ParserHelper;
 import com.hy.domain.*;
 import com.hy.repository.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import static com.hy.biz.dataResolver.constants.MessageConstants.JSON_TO_DTO_ERROR;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Map;
+
 import static com.hy.biz.dataResolver.constants.MessageConstants.MESSAGE_TO_ENTITY_ERROR;
 
 @Slf4j
 @Component
 public class HyDataPushServiceImpl implements DataPushService {
 
-    private final ObjectMapper mapper = new ObjectMapper();
-    private WaveData waveData;
-
-    private final WaveDataParserHelper waveDataParserHelper;
+    private final ParserHelper parserHelper;
     private final WaveDataRepository waveDataRepository;
     private final DeviceRepository deviceRepository;
     private final DeviceFaultRepository deviceFaultRepository;
@@ -31,9 +30,9 @@ public class HyDataPushServiceImpl implements DataPushService {
     private final DeviceInfoRepository deviceInfoRepository;
     private final DeviceStatusRepository deviceStatusRepository;
 
-    public HyDataPushServiceImpl(WaveDataParserHelper waveDataParserHelper, WaveDataRepository waveDataRepository, DeviceRepository deviceRepository, DeviceFaultRepository deviceFaultRepository, DeviceInfoRepository deviceInfoRepository, DeviceStatusRepository deviceStatusRepository,
+    public HyDataPushServiceImpl(ParserHelper parserHelper, WaveDataRepository waveDataRepository, DeviceRepository deviceRepository, DeviceFaultRepository deviceFaultRepository, DeviceInfoRepository deviceInfoRepository, DeviceStatusRepository deviceStatusRepository,
                                  WorkStatusRepository workStatusRepository) {
-        this.waveDataParserHelper = waveDataParserHelper;
+        this.parserHelper = parserHelper;
         this.waveDataRepository = waveDataRepository;
         this.deviceRepository = deviceRepository;
         this.deviceFaultRepository = deviceFaultRepository;
@@ -46,13 +45,7 @@ public class HyDataPushServiceImpl implements DataPushService {
     public boolean push(String data, BaseMessage message, PushDataType dataType) {
 
         if (message == null) return false;
-        MessageDTO messageDTO;
-        try {
-            messageDTO = mapper.readValue(data, MessageDTO.class);
-        } catch (JsonProcessingException e) {
-            throw new MessageParsingException(JSON_TO_DTO_ERROR, e);
-        }
-
+        MessageDTO messageDTO = parserHelper.createMessageDTO(data);
         long timeStamp = messageDTO.getTimeStamp();
         String deviceCode = messageDTO.getDeviceCode();
 
@@ -62,7 +55,7 @@ public class HyDataPushServiceImpl implements DataPushService {
                 pushable = true;
                 break;
             case DEVICE_FAULT:
-                pushable = handleDeviceFault((DeviceFaultMessage) message, deviceCode);
+                pushable = saveDeviceFault((DeviceFaultMessage) message, deviceCode);
                 break;
             case DEVICE_INFO:
                 pushable = handleDeviceInfo((DeviceInfoMessage) message, timeStamp, deviceCode);
@@ -71,7 +64,7 @@ public class HyDataPushServiceImpl implements DataPushService {
                 pushable = handleDeviceStatus((DeviceStatusMessage) message, deviceCode);
                 break;
             case WORK_STATUS:
-                pushable = handleWorkStatus((WorkStatusMessage) message, timeStamp, deviceCode);
+                pushable = saveWorkStatus((WorkStatusMessage) message, deviceCode);
                 break;
             case WAVE:
                 pushable = handleWaveData((WaveDataMessage) message, timeStamp, deviceCode);
@@ -89,13 +82,13 @@ public class HyDataPushServiceImpl implements DataPushService {
         return new DeviceDTO().from(device);
     }
 
+//     私有方法 =========================================================================================================
 
-//     私有方法 ====================================================================
+    private boolean saveDeviceFault(DeviceFaultMessage message, String deviceCode) {
 
-    private boolean handleDeviceFault(DeviceFaultMessage message, String deviceCode) {
         DeviceFault deviceFault;
         try {
-            deviceFault = message.transform(findDeviceByCode(deviceCode).getDeviceId());
+            deviceFault = message.transform(deviceRepository.findDeviceIdByCode(deviceCode));
         } catch (Exception e) {
             throw new MessageParsingException(MESSAGE_TO_ENTITY_ERROR, e);
         }
@@ -105,33 +98,40 @@ public class HyDataPushServiceImpl implements DataPushService {
     }
 
     private boolean handleDeviceInfo(DeviceInfoMessage message, long timeStamp, String deviceCode) {
+
         DeviceInfo deviceInfo;
         try {
-            deviceInfo = message.transform(findDeviceByCode(deviceCode).getDeviceId(), timeStamp);
+            deviceInfo = message.transform(deviceRepository.findDeviceIdByCode(deviceCode), timeStamp);
         } catch (Exception e) {
             throw new MessageParsingException(MESSAGE_TO_ENTITY_ERROR, e);
         }
         deviceInfoRepository.save(deviceInfo);
 
+        parserHelper.maintainDeviceStatus(deviceInfo, deviceCode);
+
         return true;
     }
 
     private boolean handleDeviceStatus(DeviceStatusMessage message, String deviceCode) {
+
         DeviceStatus deviceStatus;
         try {
-            deviceStatus = message.transform(findDeviceByCode(deviceCode).getDeviceId());
+            deviceStatus = message.transform(deviceRepository.findDeviceIdByCode(deviceCode));
         } catch (Exception e) {
             throw new MessageParsingException(MESSAGE_TO_ENTITY_ERROR, e);
         }
         deviceStatusRepository.save(deviceStatus);
 
+        parserHelper.maintainDeviceStatus(deviceStatus, deviceCode);
+
         return true;
     }
 
-    private boolean handleWorkStatus(WorkStatusMessage message, long timeStamp, String deviceCode) {
+    private boolean saveWorkStatus(WorkStatusMessage message, String deviceCode) {
+
         WorkStatus workStatus;
         try {
-            workStatus = message.transform(findDeviceByCode(deviceCode).getDeviceId(), timeStamp);
+            workStatus = message.transform(deviceRepository.findDeviceIdByCode(deviceCode));
         } catch (Exception e) {
             throw new MessageParsingException(MESSAGE_TO_ENTITY_ERROR, e);
         }
@@ -142,16 +142,37 @@ public class HyDataPushServiceImpl implements DataPushService {
 
     private boolean handleWaveData(WaveDataMessage message, long timeStamp, String deviceCode) {
 
+        WaveData waveData;
         try {
-            waveData = message.transform(waveData, waveDataParserHelper, timeStamp, deviceCode);
+            waveData = message.transform(parserHelper, timeStamp, deviceCode);
         } catch (Exception e) {
             throw new MessageParsingException(MESSAGE_TO_ENTITY_ERROR, e);
         }
 
-        if (message.getSegmentNumber() == message.getDataPacketNumber())
-            waveDataRepository.save(waveData);
+        waveDataRepository.save(waveData);
+
+        publishWaveData(waveData, message, timeStamp, deviceCode);
 
         return true;
+    }
+
+    private void publishWaveData(WaveData waveData, WaveDataMessage message, long timeStamp, String deviceCode) {
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(Instant.class, (JsonSerializer<Instant>) (src, typeOfSrc, context) -> new JsonPrimitive(
+                        DateTimeFormatter.ofPattern("yyyy:MM:dd'T'HH:mm:ss'Z'")
+                                .withZone(ZoneId.of("Z"))
+                                .format(src)))
+                .create();
+
+        JsonObject waveDataJson = JsonParser.parseString(gson.toJson(waveData)).getAsJsonObject();
+
+        JsonObject params = new JsonObject();
+
+        for (Map.Entry<String, JsonElement> entry : waveDataJson.entrySet()) {
+            params.add(entry.getKey(), entry.getValue());
+        }
+
+        parserHelper.publishToRedis(message.getFrameType(), message.getMessageType(), timeStamp, deviceCode, params);
     }
 
 

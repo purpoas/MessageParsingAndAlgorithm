@@ -90,6 +90,7 @@ public class DeviceStatusMessage extends BaseMessage {
      */
     private float gpsLongitude;
 
+
     public DeviceStatus transform(long deviceId) {
 
         DeviceStatus deviceStatus = new DeviceStatus();

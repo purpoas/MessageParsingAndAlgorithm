@@ -1,7 +1,7 @@
 package com.hy.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hy.biz.dataPush.handler.MessageHandler;
+import com.hy.biz.dataPush.subscriber.handler.MessageHandler;
 import com.hy.biz.dataPush.subscriber.StateChannelSubscriber;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -35,14 +35,14 @@ public class RedisMessageListenerConfig {
     RedisMessageListenerContainer container(RedisConnectionFactory connectionFactory, StateChannelSubscriber stateChannelSubscriber) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
-        container.addMessageListener(stateChannelSubscriber, new PatternTopic(hyConfigProperty.getDataQueue().getDnmTopicChannel()));
+        container.addMessageListener(stateChannelSubscriber, new PatternTopic(hyConfigProperty.getDataQueue().getDnmTopicChannelSb()));
         return container;
     }
 
     @Bean
     StateChannelSubscriber stateChannelSubscriber() {
         Map<String, MessageHandler> messageHandlers = context.getBeansOfType(MessageHandler.class);
-        return new StateChannelSubscriber(new ArrayList<>(messageHandlers.values()), mapper);
+        return new StateChannelSubscriber(hyConfigProperty, new ArrayList<>(messageHandlers.values()), mapper);
     }
 
 }

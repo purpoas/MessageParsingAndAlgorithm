@@ -1,16 +1,18 @@
 package com.hy.biz.dataResolver.dto;
 
-import com.hy.biz.dataResolver.util.WaveDataParserHelper;
+import com.hy.biz.dataResolver.parser.ParserHelper;
 import com.hy.domain.WaveData;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.extern.slf4j.Slf4j;
 
 /**
+ * @author shiwentao
  * @package com.hy.idds.biz.dataResolver.MessageEntity
  * @description
- * @author shiwentao
  * @create 2023-04-21 10:13
  **/
+@Slf4j
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class WaveDataMessage extends BaseMessage {
@@ -50,19 +52,8 @@ public class WaveDataMessage extends BaseMessage {
      */
     private String reserved;
 
-    public WaveData transform(WaveData waveData, WaveDataParserHelper waveDataParserHelper, long timeStamp, String deviceCode) {
-
-        int segmentNumber = this.getSegmentNumber();
-        int dataPacketNumber = this.getDataPacketNumber();
-
-        if (segmentNumber == 1) {
-            waveData = new WaveData();
-            waveDataParserHelper.setWaveDataProperties(waveData, this, timeStamp, deviceCode);
-        } else if (segmentNumber <= dataPacketNumber) {
-            waveDataParserHelper.appendWaveData(waveData, this);
-        }
-
-        return waveData;
+    public WaveData transform(ParserHelper parserHelper, long timeStamp, String deviceCode) {
+        return parserHelper.setWaveDataProperty(this, timeStamp, deviceCode);
     }
 
 
