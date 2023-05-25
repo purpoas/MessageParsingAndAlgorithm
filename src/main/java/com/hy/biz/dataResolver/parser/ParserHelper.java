@@ -30,7 +30,7 @@ import static com.hy.biz.dataResolver.constants.MessageType.*;
  * 解析 Helper 类
  *
  * @author shiwentao
- * @package com.hy.biz.dataResolver.util
+ * @package com.hy.biz.dataResolver.algorithmUtil
  * @create 2023-05-06 10:57
  **/
 @Slf4j

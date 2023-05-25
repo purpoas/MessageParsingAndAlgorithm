@@ -112,8 +112,8 @@ public class MessageParser {
                 MESSAGE_STRATEGY_MAP.get(specificMessage.getFrameType() + ":" + specificMessage.getMessageType());
         if (strategy != null)
             return strategy.parse(contentBuffer, specificMessage);
-        else
-            throw new MessageParsingException(ILLEGAL_MESSAGE_SIGNATURE_ERROR);
+
+        throw new MessageParsingException(ILLEGAL_MESSAGE_SIGNATURE_ERROR);
 
     }
 

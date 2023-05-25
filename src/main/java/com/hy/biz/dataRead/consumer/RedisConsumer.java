@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Slf4j
 public abstract class RedisConsumer {
+
     private final TaskQueue taskQueue;
     private final TaskFactory taskFactory;
     private final String dataQueue;

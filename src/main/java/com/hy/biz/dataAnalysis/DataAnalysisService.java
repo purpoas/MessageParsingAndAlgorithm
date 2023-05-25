@@ -12,7 +12,7 @@ public interface DataAnalysisService {
     /**
      * 实现对故障波形的分析工作，诊断出故障结果，函数执行处理流程根据诊断分析流程而定
      *
-     * @param faultWaves
+     * @param faultWaves 故障波形
      */
     public void executeAlgorithmAnalysis(Set<FaultWave> faultWaves);
 

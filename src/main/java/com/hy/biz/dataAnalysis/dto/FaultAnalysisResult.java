@@ -1,7 +1,9 @@
 package com.hy.biz.dataAnalysis.dto;
 
+import lombok.Data;
+
 /**
  * 故障分析结果
  */
-public class FaultAnalysisResult {
-}
+@Data
+public class FaultAnalysisResult {}

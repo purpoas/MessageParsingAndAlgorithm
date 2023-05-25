@@ -3,15 +3,11 @@ package com.hy.biz.dataAnalysis;
 import com.hy.biz.cache.service.AlgorithmCacheManager;
 import com.hy.biz.cache.service.GroundFaultCacheManager;
 import com.hy.biz.dataAnalysis.delay.DelayTaskQueue;
-import com.hy.biz.dataAnalysis.dto.AlgorithmIdentify;
-import com.hy.biz.dataAnalysis.dto.AlgorithmTask;
-import com.hy.biz.dataAnalysis.dto.AreaLocateDTO;
-import com.hy.biz.dataAnalysis.dto.FaultWave;
+import com.hy.biz.dataAnalysis.dto.*;
 import com.hy.biz.dataAnalysis.intervalAlgorithm.IntervalAlgorithm;
-import com.hy.biz.dataAnalysis.intervalAlgorithm.TravelWaveAlgorithmUtil;
+import com.hy.biz.dataAnalysis.positioningAlgorithm.PositioningAlgorithm;
 import com.hy.biz.dataPush.DataPushService;
 import com.hy.biz.dataPush.dto.DeviceDTO;
-import com.hy.biz.dataResolver.constants.MessageType;
 import com.hy.biz.dataResolver.dto.WaveDataMessage;
 import com.hy.biz.util.TimeUtil;
 import com.hy.config.HyConfigProperty;
@@ -21,9 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * v1版本算法实现
@@ -35,6 +29,9 @@ public class V1AnalysisServiceImpl implements DataAnalysisService {
 
     @Autowired
     private HyConfigProperty hyConfigProperty;
+
+    @Autowired
+    private PositioningAlgorithm positioningAlgorithm;
 
     @Autowired
     private DataPushService dataPushService;
@@ -63,11 +60,12 @@ public class V1AnalysisServiceImpl implements DataAnalysisService {
 
         // TODO 3.故障类型判断
 
-
-
         // TODO 4.故障特性计算
 
         // TODO 5.故障精确定位
+        if (positioningAlgorithm.analyze(faultWaves).isPresent()) {
+            FaultPositioningAnalysisResult result = positioningAlgorithm.analyze(faultWaves).get();
+        }
 
         // TODO 6.工频故障特征量计算
 

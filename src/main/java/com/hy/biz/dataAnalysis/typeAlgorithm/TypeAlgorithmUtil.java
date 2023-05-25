@@ -5,11 +5,11 @@ import com.hy.biz.dataAnalysis.dto.FaultWave;
 import com.hy.biz.dataAnalysis.extraAlgorithm.ExtraAlgorithmUtil;
 import com.hy.biz.util.ListUtil;
 import com.hy.config.HyConfigProperty;
-import org.apache.commons.lang3.ArrayUtils;
-import org.springframework.util.CollectionUtils;
 
-import java.util.*;
-import java.util.stream.Collector;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -25,7 +25,7 @@ public class TypeAlgorithmUtil {
      * @param data
      * @return
      */
-    public Double[] preProccessTravelWave(Double[] data) {
+    public Double[] preProcessTravelWave(Double[] data) {
 
 
         return null;
@@ -227,9 +227,9 @@ public class TypeAlgorithmUtil {
         }
 
         // 波形预处理
-        aData = ExtraAlgorithmUtil.preProccessFrequencyWave(aData);
-        bData = ExtraAlgorithmUtil.preProccessFrequencyWave(aData);
-        cData = ExtraAlgorithmUtil.preProccessFrequencyWave(aData);
+        aData = ExtraAlgorithmUtil.preProcessFrequencyWave(aData);
+        bData = ExtraAlgorithmUtil.preProcessFrequencyWave(aData);
+        cData = ExtraAlgorithmUtil.preProcessFrequencyWave(aData);
 
         Double[] i0 = new Double[i0Length];
 

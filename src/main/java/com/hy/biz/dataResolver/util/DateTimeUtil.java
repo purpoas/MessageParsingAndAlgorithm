@@ -14,7 +14,7 @@ import java.time.format.DateTimeFormatter;
  * 日期时间转换工具类
  *
  * @author shiwentao
- * @package com.hy.idds.biz.dataResolver.util
+ * @package com.hy.idds.biz.dataResolver.algorithmUtil
  * @create 2023-04-23 17:13
  **/
 public class DateTimeUtil {

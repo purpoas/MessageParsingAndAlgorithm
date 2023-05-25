@@ -10,8 +10,8 @@ public class FaultWave {
     private String lineId;             // 线路Id(主线或支线)
     private String topMainLineId;      // 最上层主线Id
     private String poleId;             // 杆塔Id
-    private Integer poleSerial;        // 杆塔序列号
-    private Integer phase;
+    private Long poleSerial;        // 杆塔序列号
+    private Integer phase;             //相位
     private Double distanceToHeadStation;
 
     private byte waveType;    // 波形类型 0x01 || 0x03 || 0x05
@@ -38,4 +38,6 @@ public class FaultWave {
                 ", data='" + data + '\'' +
                 '}';
     }
+
+
 }

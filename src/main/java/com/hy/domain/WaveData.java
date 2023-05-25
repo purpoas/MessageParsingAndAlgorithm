@@ -26,6 +26,7 @@ import java.io.Serializable;
 public class WaveData extends AbstractDeviceDataEntity<WaveData> implements Serializable {
 
     private static final long serialVersionUID = 1L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -83,4 +84,6 @@ public class WaveData extends AbstractDeviceDataEntity<WaveData> implements Seri
      */
     @Column(name = "remark", columnDefinition = "text")
     private String remark;
+
+
 }
