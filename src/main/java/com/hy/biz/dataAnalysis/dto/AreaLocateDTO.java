@@ -27,27 +27,46 @@ public class AreaLocateDTO {
     private Double intervalDistance;
 
     // 起始杆塔所属故障波形
-    private FaultWave headFaultWave;
-
+//    private FaultWave headFaultWave;
     // 结束杆塔所属故障波形
-    private FaultWave endFaultWave;
+//    private FaultWave endFaultWave;
+
+    // 极性
+    private Boolean headFaultWaveAbsolute;
+    private Boolean endFaultWaveAbsolute;
+
+    // 电流值
+    private Double[] headFaultWaveData;
+    private Double[] endFaultWaveData;
 
     public AreaLocateDTO(String faultHeadTowerId, String faultEndTowerId, Double faultHeadTowerDistanceToHeadStation, Double faultEndTowerDistanceToHeadStation) {
         this.faultHeadTowerId = faultHeadTowerId;
         this.faultEndTowerId = faultEndTowerId;
         this.faultHeadTowerDistanceToHeadStation = faultHeadTowerDistanceToHeadStation;
         this.faultEndTowerDistanceToHeadStation = faultEndTowerDistanceToHeadStation;
-        this.intervalDistance = Math.abs(faultEndTowerDistanceToHeadStation - faultEndTowerDistanceToHeadStation);
+        this.intervalDistance = faultEndTowerDistanceToHeadStation == null ? 0D : Math.abs(faultEndTowerDistanceToHeadStation - faultEndTowerDistanceToHeadStation);
     }
 
-    public AreaLocateDTO(String faultHeadTowerId, String faultEndTowerId, Double faultHeadTowerDistanceToHeadStation, Double faultEndTowerDistanceToHeadStation, FaultWave headFaultWave, FaultWave endFaultWave) {
+    public AreaLocateDTO(String faultHeadTowerId, String faultEndTowerId, Double faultHeadTowerDistanceToHeadStation, Double faultEndTowerDistanceToHeadStation, Boolean headFaultWaveAbsolute, Boolean endFaultWaveAbsolute, Double[] headFaultWaveData, Double[] endFaultWaveData) {
         this.faultHeadTowerId = faultHeadTowerId;
         this.faultEndTowerId = faultEndTowerId;
         this.faultHeadTowerDistanceToHeadStation = faultHeadTowerDistanceToHeadStation;
         this.faultEndTowerDistanceToHeadStation = faultEndTowerDistanceToHeadStation;
         this.intervalDistance = faultEndTowerDistanceToHeadStation == null ? 0D : Math.abs(faultEndTowerDistanceToHeadStation - faultEndTowerDistanceToHeadStation);
-        this.headFaultWave = headFaultWave;
-        this.endFaultWave = endFaultWave;
+        this.headFaultWaveAbsolute = headFaultWaveAbsolute;
+        this.endFaultWaveAbsolute = endFaultWaveAbsolute;
+        this.headFaultWaveData = headFaultWaveData;
+        this.endFaultWaveData = endFaultWaveData;
+    }
+
+    public AreaLocateDTO(String faultHeadTowerId, String faultEndTowerId, Double faultHeadTowerDistanceToHeadStation, Double faultEndTowerDistanceToHeadStation, Boolean headFaultWaveAbsolute, Boolean endFaultWaveAbsolute) {
+        this.faultHeadTowerId = faultHeadTowerId;
+        this.faultEndTowerId = faultEndTowerId;
+        this.faultHeadTowerDistanceToHeadStation = faultHeadTowerDistanceToHeadStation;
+        this.faultEndTowerDistanceToHeadStation = faultEndTowerDistanceToHeadStation;
+        this.intervalDistance = faultEndTowerDistanceToHeadStation == null ? 0D : Math.abs(faultEndTowerDistanceToHeadStation - faultEndTowerDistanceToHeadStation);
+        this.headFaultWaveAbsolute = headFaultWaveAbsolute;
+        this.endFaultWaveAbsolute = endFaultWaveAbsolute;
     }
 
     @Override

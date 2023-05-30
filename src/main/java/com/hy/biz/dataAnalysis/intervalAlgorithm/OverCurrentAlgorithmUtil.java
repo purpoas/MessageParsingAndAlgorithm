@@ -1,5 +1,6 @@
 package com.hy.biz.dataAnalysis.intervalAlgorithm;
 
+import com.hy.biz.dataAnalysis.commonAlgorithm.CommonAlgorithmUtil;
 import com.hy.biz.dataAnalysis.dto.AreaLocateDTO;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
 import com.hy.biz.dataAnalysis.typeAlgorithm.TypeAlgorithmUtil;
@@ -70,7 +71,7 @@ public class OverCurrentAlgorithmUtil {
                 faultWave.setAbsolute(flag);
             });
 
-            boolean mainHeadWaveAbsolute = mainAreaLocateDTO.getHeadFaultWave().getAbsolute();
+            boolean mainHeadWaveAbsolute = mainAreaLocateDTO.getHeadFaultWaveAbsolute();
 
             // 筛选出极性为+的故障波形
             FaultWave branchLineOpinionWave = lineBranchLineWave.stream().filter(faultWave -> mainHeadWaveAbsolute == faultWave.getAbsolute()).findFirst().orElse(null);
@@ -121,16 +122,14 @@ public class OverCurrentAlgorithmUtil {
         if (CollectionUtils.isEmpty(intervalWaves)) {
             // 不存在极性突变区间 取故障位置最后一个极性为+的大号测 （大号测：故障杆塔到结束变电站）
             FaultWave headWave = phaseWaves.stream().sorted(Comparator.comparing(FaultWave::getDistanceToHeadStation).reversed()).filter(FaultWave::getAbsolute).findFirst().get();
-            return new AreaLocateDTO(headWave.getPoleId(), null, headWave.getDistanceToHeadStation(), null, headWave, null);
+            return new AreaLocateDTO(headWave.getPoleId(), null, headWave.getDistanceToHeadStation(), null, headWave.getAbsolute(), null);
         }
 
         // 存在突变区间
-        intervalWaves = intervalWaves.stream().sorted(Comparator.comparing(FaultWave::getDistanceToHeadStation)).collect(Collectors.toList());
-
         FaultWave f1 = intervalWaves.get(0);
         FaultWave f2 = intervalWaves.get(1);
 
-        return new AreaLocateDTO(f1.getPoleId(), f2.getPoleId(), f1.getDistanceToHeadStation(), f2.getDistanceToHeadStation());
+        return new AreaLocateDTO(f1.getPoleId(), f2.getPoleId(), f1.getDistanceToHeadStation(), f2.getDistanceToHeadStation(), f1.getAbsolute(), f2.getAbsolute());
     }
 
 }

@@ -212,6 +212,31 @@ public class TypeAlgorithmUtil {
      * @return 零序电流值
      */
     public static double calculateZeroCurrent(Double[] aData, Double[] bData, Double[] cData) {
+
+        Double[] i0 = synthesisZeroCurrent(aData, bData, cData);
+
+        int cyclicWaveIndexSum = i0.length / 256;
+
+        List<Double> I0List = new ArrayList<>();
+
+        for (int i = 0; i < cyclicWaveIndexSum; i++) {
+            // 计算周波有效值
+            I0List.add(calculateCyclicWavePH(i0, i + 1, 256));
+        }
+
+        // 取各波周有效值的最大值
+        return Collections.max(I0List);
+    }
+
+    /**
+     * 合成零序电压电流  3.7.3 (1) 零序电压电流计算
+     *
+     * @param aData A相波形内容
+     * @param bData B相波形内容
+     * @param cData C相波形内容
+     * @return 合成零序电流
+     */
+    public static Double[] synthesisZeroCurrent(Double[] aData, Double[] bData, Double[] cData) {
         int aLength = aData.length;
         int bLength = bData.length;
         int cLength = cData.length;
@@ -238,17 +263,7 @@ public class TypeAlgorithmUtil {
             i0[i] = aData[i] + bData[i] + cData[i];
         }
 
-        int cyclicWaveIndexSum = i0Length / 256;
-
-        List<Double> I0List = new ArrayList<>();
-
-        for (int i = 0; i < cyclicWaveIndexSum; i++) {
-            // 计算周波有效值
-            I0List.add(calculateCyclicWavePH(i0, i + 1, 256));
-        }
-
-        // 取各波周有效值的最大值
-        return Collections.max(I0List);
+        return i0;
     }
 
     /**
@@ -258,31 +273,8 @@ public class TypeAlgorithmUtil {
      * @return 零序电流极性
      */
     public static boolean calculateZeroCurrentAbsolute(Double[] data) {
-        int fpower = 12800; //设备采样率
-        int threshold = 5;  //电流阈值
         int N = 256;        //一个周波对应点位
-
-        // 从2N+1点开始计算pos
-        List<Double> deltaI = new ArrayList<>();
-        for (int n = 2 * N; n < data.length; n++) {
-            // FIXME 这里需要确定是n-N还是n-N-1
-            double i = Math.abs(Math.abs(data[n] - data[n - N]) - Math.abs(data[n] - data[n - 2 * N]));
-            deltaI.add(i);
-        }
-
-        // Pos是第一个大于触发阈值的点
-        int pos = 0;
-        for (int i = 0; i < deltaI.size(); i++) {
-            if (deltaI.get(i) > threshold) {
-                pos = i;
-                break;
-            }
-        }
-
-        // 校验Pos有效性
-        if ((fpower / 50 * 7 / 2 >= pos || pos >= fpower / 50 * 9 / 2)) {
-            pos = 1024;
-        }
+        int pos = calculateZeroCurrentPosLocation(data);    //触发位置
 
         int prePoint = N / 4;
         int sufPoint = N / 2;
@@ -291,7 +283,7 @@ public class TypeAlgorithmUtil {
         int endIndex = Math.min(pos + sufPoint, data.length);
 
         // 数据处理后的原始波形
-        Double[] subData = new Double[endIndex - startIndex];
+        Double[] subData = new Double[endIndex - startIndex + 1];
         System.arraycopy(data, startIndex, subData, 0, subData.length);
 
         // 计算突变量
@@ -321,6 +313,92 @@ public class TypeAlgorithmUtil {
         return false;
 
     }
+
+    /**
+     * 零序电流相关系数计算  3.6.3 B
+     *
+     * @param data 波形内容
+     * @return 零序电流极性
+     */
+    public static double calculateZeroCurrentCoefficient(Double[] data) {
+
+        if (ArrayUtils.isEmpty(data)) return 0.0;
+
+        int N = 256;        //一个周波对应点位
+        int pos = calculateZeroCurrentPosLocation(data);    //触发位置
+
+        int startIndex = Math.max(pos - N, 0);
+        int endIndex = Math.min(pos + N, data.length);
+
+        List<Double> xn = new ArrayList<>();
+        List<Double> yn = new ArrayList<>();
+        for (int i = startIndex; i < pos; i++) {
+            xn.add(data[i]);
+        }
+
+        for (int i = pos; i < endIndex; i++) {
+            yn.add(data[i]);
+        }
+
+        double xnMax = Collections.max(xn);
+        double xnMin = Collections.min(xn);
+        double ynMax = Collections.max(yn);
+        double ynMin = Collections.min(yn);
+
+        // 归一化
+        xn = xn.stream().map(aDouble -> (2 * aDouble - xnMin) / (xnMax - xnMin) - 1).collect(Collectors.toList());
+        yn = yn.stream().map(aDouble -> (2 * aDouble - ynMin) / (ynMax - ynMin) - 1).collect(Collectors.toList());
+
+        double up = 0.0;
+        for (int i = 0; i < xn.size(); i++) {
+            up += xn.get(i) * yn.get(i);
+        }
+
+        double down = 0.0;
+        for (int i = 0; i < xn.size(); i++) {
+            down += xn.get(i) * xn.get(i) * yn.get(i) * yn.get(i);
+        }
+
+        return up / Math.sqrt(down);
+    }
+
+    /**
+     * 零序电流触发位置Pos计算  3.6.3 A、B计算中使用通用方法
+     *
+     * @param data 波形内容
+     * @return 触发位置
+     */
+    private static int calculateZeroCurrentPosLocation(Double[] data) {
+        int fpower = 12800; //设备采样率
+        int threshold = 5;  //电流阈值
+        int N = 256;        //一个周波对应点位
+
+        // 从2N+1点开始计算pos
+        List<Double> deltaI = new ArrayList<>();
+        for (int n = 2 * N; n < data.length; n++) {
+            // FIXME 这里需要确定是n-N还是n-N-1
+            double i = Math.abs(Math.abs(data[n] - data[n - N]) - Math.abs(data[n] - data[n - 2 * N]));
+            deltaI.add(i);
+        }
+
+        // Pos是第一个大于触发阈值的点
+        int pos = 0;
+        for (int i = 0; i < deltaI.size(); i++) {
+            if (deltaI.get(i) > threshold) {
+                pos = i;
+                break;
+            }
+        }
+
+        // 校验Pos有效性
+        if ((fpower / 50 * 7 / 2 >= pos || pos >= fpower / 50 * 9 / 2)) {
+            pos = 1024;
+        }
+
+        return pos;
+    }
+
+
 
 
 }

@@ -1,5 +1,9 @@
 package com.hy.biz.dataAnalysis.commonAlgorithm;
 
+import com.hy.biz.dataAnalysis.dto.FaultIdentifyPoleDTO;
+import com.hy.biz.dataAnalysis.dto.FaultWave;
+import com.hy.biz.dataResolver.constants.MessageType;
+import com.hy.biz.util.ListUtil;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
@@ -10,6 +14,20 @@ import java.util.stream.Collectors;
  */
 public class CommonAlgorithmUtil {
 
+    /**
+     * 转换波形 eg : 1,2,3 ---> [1.0,2.0,3.0]
+     *
+     * @param data
+     * @return
+     */
+    public static Double[] shiftWave(String data) {
+        String[] strings = data.split(",");
+        Double[] in = new Double[strings.length];
+        for (int i = 0; i < strings.length; i++) {
+            in[i] = Double.valueOf(strings[i]);
+        }
+        return in;
+    }
 
     /**
      * 计算相邻两个电流值之差，并计算电流突变量能量 E(k)
@@ -39,6 +57,118 @@ public class CommonAlgorithmUtil {
 
         return E;
     }
+
+    /**
+     * 寻找筛选出杆塔下有三相电流的集合
+     *
+     * @param faultWaveList 故障波形
+     * @return
+     */
+    public static List<FaultIdentifyPoleDTO> filterThreePhaseCurrentPole(List<FaultWave> faultWaveList) {
+        List<FaultIdentifyPoleDTO> result = new ArrayList<>();
+
+        Map<String, List<FaultWave>> poleMap = ListUtil.convertListToMapList(faultWaveList, FaultWave::getPoleId);
+
+        Set<String> matchPoleSet = new HashSet<>();
+        for (String poleId : poleMap.keySet()) {
+            List<FaultWave> f = poleMap.get(poleId);
+
+            long aPhaseAmount = f.stream().filter(faultWave -> 1 == faultWave.getPhase() && (faultWave.getWaveType() == MessageType.FAULT_CURRENT)).count();
+            long bPhaseAmount = f.stream().filter(faultWave -> 2 == faultWave.getPhase() && (faultWave.getWaveType() == MessageType.FAULT_CURRENT)).count();
+            long cPhaseAmount = f.stream().filter(faultWave -> 3 == faultWave.getPhase() && (faultWave.getWaveType() == MessageType.FAULT_CURRENT)).count();
+
+            if (aPhaseAmount >= 1 && bPhaseAmount >= 1 && cPhaseAmount >= 1) {
+                matchPoleSet.add(poleId);
+            }
+        }
+
+        if (CollectionUtils.isEmpty(matchPoleSet)) return result;
+
+        List<FaultIdentifyPoleDTO> faultIdentifyPoleDTOList = new ArrayList<>();
+        for (String poleId : matchPoleSet) {
+            List<FaultWave> f = poleMap.get(poleId);
+
+            Double[] aPhaseData = null;
+            Double[] bPhaseData = null;
+            Double[] cPhaseData = null;
+
+            for (FaultWave faultWave : f) {
+                if (faultWave.getWaveType() == MessageType.FAULT_CURRENT && faultWave.getPhase() == 1) {
+                    aPhaseData = CommonAlgorithmUtil.shiftWave(faultWave.getData());
+                } else if (faultWave.getWaveType() == MessageType.FAULT_CURRENT && faultWave.getPhase() == 2) {
+                    bPhaseData = CommonAlgorithmUtil.shiftWave(faultWave.getData());
+                } else if (faultWave.getWaveType() == MessageType.FAULT_CURRENT && faultWave.getPhase() == 3) {
+                    cPhaseData = CommonAlgorithmUtil.shiftWave(faultWave.getData());
+                }
+            }
+
+            faultIdentifyPoleDTOList.add(new FaultIdentifyPoleDTO(f.get(0).getLineId(), f.get(0).getPoleId(), f.get(0).getDistanceToHeadStation()
+                    , aPhaseData, bPhaseData, cPhaseData));
+        }
+        return faultIdentifyPoleDTOList;
+    }
+
+    /**
+     * 寻找筛选出杆塔下有三相电流和三相电压的集合
+     * <p>
+     * 用筛选出三相电流的故障波形集合进行过了
+     *
+     * @param faultWaveList 故障波形
+     * @return
+     */
+    public static List<FaultIdentifyPoleDTO> filterThreePhaseCurrentAndVoltagePole(List<String> poleIdList, List<FaultWave> faultWaveList) {
+        List<FaultIdentifyPoleDTO> result = new ArrayList<>();
+
+        Map<String, List<FaultWave>> poleMap = ListUtil.convertListToMapList(faultWaveList, FaultWave::getPoleId);
+
+        Set<String> matchPoleSet = new HashSet<>();
+        for (String poleId : poleIdList) {
+            List<FaultWave> f = poleMap.get(poleId);
+
+            long aPhaseAmount = f.stream().filter(faultWave -> 1 == faultWave.getPhase() && (faultWave.getWaveType() == MessageType.FAULT_VOLTAGE)).count();
+            long bPhaseAmount = f.stream().filter(faultWave -> 2 == faultWave.getPhase() && (faultWave.getWaveType() == MessageType.FAULT_VOLTAGE)).count();
+            long cPhaseAmount = f.stream().filter(faultWave -> 3 == faultWave.getPhase() && (faultWave.getWaveType() == MessageType.FAULT_VOLTAGE)).count();
+
+            if (aPhaseAmount >= 1 && bPhaseAmount >= 1 && cPhaseAmount >= 1) {
+                matchPoleSet.add(poleId);
+            }
+        }
+
+        if (CollectionUtils.isEmpty(matchPoleSet)) return result;
+
+        List<FaultIdentifyPoleDTO> faultIdentifyPoleDTOList = new ArrayList<>();
+        for (String poleId : matchPoleSet) {
+            List<FaultWave> f = poleMap.get(poleId);
+
+            Double[] aPhaseCurrentData = null;
+            Double[] bPhaseCurrentData = null;
+            Double[] cPhaseCurrentData = null;
+            Double[] aPhaseVoltageData = null;
+            Double[] bPhaseVoltageData = null;
+            Double[] cPhaseVoltageData = null;
+
+            for (FaultWave faultWave : f) {
+                if (faultWave.getWaveType() == MessageType.FAULT_CURRENT && faultWave.getPhase() == 1) {
+                    aPhaseCurrentData = CommonAlgorithmUtil.shiftWave(faultWave.getData());
+                } else if (faultWave.getWaveType() == MessageType.FAULT_CURRENT && faultWave.getPhase() == 2) {
+                    bPhaseCurrentData = CommonAlgorithmUtil.shiftWave(faultWave.getData());
+                } else if (faultWave.getWaveType() == MessageType.FAULT_CURRENT && faultWave.getPhase() == 3) {
+                    cPhaseCurrentData = CommonAlgorithmUtil.shiftWave(faultWave.getData());
+                } else if (faultWave.getWaveType() == MessageType.FAULT_VOLTAGE && faultWave.getPhase() == 1) {
+                    aPhaseVoltageData = CommonAlgorithmUtil.shiftWave(faultWave.getData());
+                } else if (faultWave.getWaveType() == MessageType.FAULT_VOLTAGE && faultWave.getPhase() == 2) {
+                    bPhaseVoltageData = CommonAlgorithmUtil.shiftWave(faultWave.getData());
+                } else if (faultWave.getWaveType() == MessageType.FAULT_VOLTAGE && faultWave.getPhase() == 3) {
+                    cPhaseVoltageData = CommonAlgorithmUtil.shiftWave(faultWave.getData());
+                }
+            }
+
+            faultIdentifyPoleDTOList.add(new FaultIdentifyPoleDTO(f.get(0).getLineId(), f.get(0).getPoleId(), f.get(0).getDistanceToHeadStation()
+                    , aPhaseCurrentData, bPhaseCurrentData, cPhaseCurrentData, aPhaseVoltageData, bPhaseVoltageData, cPhaseVoltageData));
+        }
+        return faultIdentifyPoleDTOList;
+    }
+
 
     // TODO 计算波形极值点坐标函数  -------------- START
 

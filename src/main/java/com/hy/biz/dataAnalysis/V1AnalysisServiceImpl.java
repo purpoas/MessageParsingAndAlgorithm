@@ -6,6 +6,7 @@ import com.hy.biz.dataAnalysis.delay.DelayTaskQueue;
 import com.hy.biz.dataAnalysis.dto.*;
 import com.hy.biz.dataAnalysis.intervalAlgorithm.IntervalAlgorithm;
 import com.hy.biz.dataAnalysis.positioningAlgorithm.PositioningAlgorithm;
+import com.hy.biz.dataAnalysis.typeAlgorithm.FaultIdentifyAlgorithmUtil;
 import com.hy.biz.dataPush.DataPushService;
 import com.hy.biz.dataPush.dto.DeviceDTO;
 import com.hy.biz.dataResolver.dto.WaveDataMessage;
@@ -59,6 +60,10 @@ public class V1AnalysisServiceImpl implements DataAnalysisService {
         AreaLocateDTO areaLocateDTO = IntervalAlgorithm.analysis(faultWaves);
 
         // TODO 3.故障类型判断
+
+        if (areaLocateDTO == null) return;
+
+        FaultIdentifyDTO faultType = FaultIdentifyAlgorithmUtil.judge(faultWaves, areaLocateDTO);
 
         // TODO 4.故障特性计算
 
