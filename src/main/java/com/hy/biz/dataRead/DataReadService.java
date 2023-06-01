@@ -30,7 +30,6 @@ public class DataReadService {
      * 开启 REDIS 消费者线程
      */
     public void initConsumer() {
-
         // 队列消费模式
         String consumerMode = hyConfigProperty.getDataRead().getMode();
 

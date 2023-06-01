@@ -1,11 +1,11 @@
-package com.hy.biz.dataRead.task.impl;
+package com.hy.biz.dataPush.task.impl;
 
 import com.hy.biz.dataAnalysis.DataAnalysisService;
 import com.hy.biz.dataPush.DataPushService;
 import com.hy.biz.dataPush.dto.PushDataType;
 import com.hy.biz.dataPush.task.Task;
-import com.hy.biz.dataResolver.DataResolverService;
-import com.hy.biz.dataResolver.dto.*;
+import com.hy.biz.dataParsing.DataParserService;
+import com.hy.biz.dataParsing.dto.*;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import java.util.HashMap;
@@ -25,17 +25,17 @@ public class MessageParsingTask extends Task {
     }
     private final RedisTemplate<String, String> redisTemplate;
     private final String dataBakQueue;
-    private final DataResolverService dataResolverService;
+    private final DataParserService dataParserService;
     private final DataPushService dataPushService;
     private final DataAnalysisService dataAnalysisService;
 
     public MessageParsingTask(String message, RedisTemplate<String, String> redisTemplate, String dataBakQueue,
-                              DataResolverService dataResolverService, DataPushService dataPushService,
+                              DataParserService dataParserService, DataPushService dataPushService,
                               DataAnalysisService dataAnalysisService) {
         this.message = message;
         this.redisTemplate = redisTemplate;
         this.dataBakQueue = dataBakQueue;
-        this.dataResolverService = dataResolverService;
+        this.dataParserService = dataParserService;
         this.dataPushService = dataPushService;
         this.dataAnalysisService = dataAnalysisService;
     }
@@ -43,7 +43,7 @@ public class MessageParsingTask extends Task {
     @Override
     public void run() {
         // 数据解析
-        BaseMessage baseMessage = dataResolverService.resolve(message);
+        BaseMessage baseMessage = dataParserService.parse(message);
 
         messageTypeMap.forEach((messageClass, pushType) -> {
             if (messageClass.isInstance(baseMessage)) {
@@ -56,9 +56,7 @@ public class MessageParsingTask extends Task {
                     dataAnalysisService.createAlgorithmTask(wave);
                 }
 
-                if (flag) {
-                    removeFromRedisList(redisTemplate, dataBakQueue);
-                }
+                if (flag) removeFromRedisList(redisTemplate, dataBakQueue);
             }
         });
     }

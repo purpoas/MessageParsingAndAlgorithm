@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 /**
  * @author shiwentao
  * @package com.hy
- * @description
  * @create 2023-04-26 10:43
  **/
 @Component

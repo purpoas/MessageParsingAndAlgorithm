@@ -3,16 +3,16 @@ package com.hy.biz.dataPush.subscriber.handler;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
-import com.hy.biz.dataResolver.parser.ParserHelper;
-import com.hy.biz.dataResolver.parser.SubscribedMessageParser;
-import com.hy.biz.dataResolver.dto.DeviceOnlineStatusDTO;
+import com.hy.biz.dataParsing.parser.ParserHelper;
+import com.hy.biz.dataParsing.parser.SubscribedMessageParser;
+import com.hy.biz.dataParsing.dto.DeviceOnlineStatusDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 /**
  * @author shiwentao
- * @package com.hy.biz.dataResolver
+ * @package com.hy.biz.dataParsing
  * @description
  * @create 2023-05-10 14:44
  **/

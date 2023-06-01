@@ -2,7 +2,7 @@ package com.hy.biz.dataAnalysis.commonAlgorithm;
 
 import com.hy.biz.dataAnalysis.dto.FaultIdentifyPoleDTO;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
-import com.hy.biz.dataResolver.constants.MessageType;
+import com.hy.biz.dataParsing.constants.MessageType;
 import com.hy.biz.util.ListUtil;
 import org.springframework.util.CollectionUtils;
 
@@ -71,11 +71,11 @@ public class CommonAlgorithmUtil {
 
         Set<String> matchPoleSet = new HashSet<>();
         for (String poleId : poleMap.keySet()) {
-            List<FaultWave> f = poleMap.get(poleId);
+            List<FaultWave> faultWaves = poleMap.get(poleId);
 
-            long aPhaseAmount = f.stream().filter(faultWave -> 1 == faultWave.getPhase() && (faultWave.getWaveType() == MessageType.FAULT_CURRENT)).count();
-            long bPhaseAmount = f.stream().filter(faultWave -> 2 == faultWave.getPhase() && (faultWave.getWaveType() == MessageType.FAULT_CURRENT)).count();
-            long cPhaseAmount = f.stream().filter(faultWave -> 3 == faultWave.getPhase() && (faultWave.getWaveType() == MessageType.FAULT_CURRENT)).count();
+            long aPhaseAmount = faultWaves.stream().filter(faultWave -> 1 == faultWave.getPhase() && (faultWave.getWaveType() == MessageType.FAULT_CURRENT)).count();
+            long bPhaseAmount = faultWaves.stream().filter(faultWave -> 2 == faultWave.getPhase() && (faultWave.getWaveType() == MessageType.FAULT_CURRENT)).count();
+            long cPhaseAmount = faultWaves.stream().filter(faultWave -> 3 == faultWave.getPhase() && (faultWave.getWaveType() == MessageType.FAULT_CURRENT)).count();
 
             if (aPhaseAmount >= 1 && bPhaseAmount >= 1 && cPhaseAmount >= 1) {
                 matchPoleSet.add(poleId);

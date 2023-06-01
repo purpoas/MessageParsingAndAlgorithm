@@ -1,7 +1,7 @@
 package com.hy.biz.dataAnalysis;
 
 import com.hy.biz.dataAnalysis.dto.FaultWave;
-import com.hy.biz.dataResolver.dto.WaveDataMessage;
+import com.hy.biz.dataParsing.dto.WaveDataMessage;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;

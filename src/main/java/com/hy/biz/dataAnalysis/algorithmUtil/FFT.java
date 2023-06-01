@@ -129,20 +129,20 @@ public class FFT {
 
 
     /**
-     * Compute the linear convolution of two complex arrays inputArr1 and inputArr2.
+     * Compute the linear convolution of two complex arrays complexArr1 and complexArr2.
      * The arrays are first extended to twice their length by appending zeros.
      * Then, the circular convolution of the extended arrays is computed.
      *
-     * @param inputArr1 The first complex array
-     * @param inputArr2 The second complex array
+     * @param complexArr1 The first complex array
+     * @param complexArr2 The second complex array
      * @return The linear convolution of the two complex arrays
      */
-    public static Complex[] linearConvolve(Complex[] inputArr1, Complex[] inputArr2) {
+    public static Complex[] linearConvolve(Complex[] complexArr1, Complex[] complexArr2) {
         Complex zero = new Complex(0, 0);
 
-        // Extend inputArr1[] and inputArr2[] to twice their length by appending zeros
-        Complex[] extendedArr1 = extendArrayWithZeros(inputArr1, 2 * inputArr1.length, zero);
-        Complex[] extendedArr2 = extendArrayWithZeros(inputArr2, 2 * inputArr2.length, zero);
+        // Extend complexArr1[] and complexArr2[] to twice their length by appending zeros
+        Complex[] extendedArr1 = extendArrayWithZeros(complexArr1, 2 * complexArr1.length, zero);
+        Complex[] extendedArr2 = extendArrayWithZeros(complexArr2, 2 * complexArr2.length, zero);
 
         // Compute and return the circular convolution of the extended arrays
         return circularConvolve(extendedArr1, extendedArr2);
@@ -163,15 +163,15 @@ public class FFT {
         arr2 = pow2DoubleArr(arr2);
 
         // Convert arr1 and arr2 into Complex arrays
-        Complex[] arr1Complex = new Complex[arr1.length];
-        Complex[] arr2Complex = new Complex[arr2.length];
+        Complex[] complexArr1 = new Complex[arr1.length];
+        Complex[] complexArr2 = new Complex[arr2.length];
         for (int i = 0; i < arr1.length; i++) {
-            arr1Complex[i] = new Complex(arr1[i], 0);
-            arr2Complex[i] = new Complex(arr2[i], 0);
+            complexArr1[i] = new Complex(arr1[i], 0);
+            complexArr2[i] = new Complex(arr2[i], 0);
         }
 
         // Perform the circular convolution using FFT and IFFT
-        Complex[] convolutionComplex = circularConvolve(arr1Complex, arr2Complex);
+        Complex[] convolutionComplex = circularConvolve(complexArr1, complexArr2);
 
         // Convert the Complex result back into a Double array
         Double[] convolution = new Double[convolutionComplex.length];

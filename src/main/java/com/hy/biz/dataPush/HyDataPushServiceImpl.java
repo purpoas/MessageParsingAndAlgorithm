@@ -5,9 +5,9 @@ import com.hy.biz.dataPush.dto.DeviceDTO;
 import com.hy.biz.dataPush.dto.LineDTO;
 import com.hy.biz.dataPush.dto.PoleDTO;
 import com.hy.biz.dataPush.dto.PushDataType;
-import com.hy.biz.dataResolver.dto.*;
-import com.hy.biz.dataResolver.exception.MessageParsingException;
-import com.hy.biz.dataResolver.parser.ParserHelper;
+import com.hy.biz.dataParsing.dto.*;
+import com.hy.biz.dataParsing.exception.MessageParsingException;
+import com.hy.biz.dataParsing.parser.ParserHelper;
 import com.hy.domain.*;
 import com.hy.repository.*;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +20,7 @@ import java.util.Map;
 
 import java.util.List;
 
-import static com.hy.biz.dataResolver.constants.MessageConstants.JSON_TO_DTO_ERROR;
-import static com.hy.biz.dataResolver.constants.MessageConstants.MESSAGE_TO_ENTITY_ERROR;
+import static com.hy.biz.dataParsing.constants.MessageConstants.MESSAGE_TO_ENTITY_ERROR;
 
 @Slf4j
 @Component

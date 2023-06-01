@@ -5,15 +5,14 @@ import com.hy.biz.cache.service.GroundFaultCacheManager;
 import com.hy.biz.dataAnalysis.delay.DelayTaskQueue;
 import com.hy.biz.dataAnalysis.dto.*;
 import com.hy.biz.dataAnalysis.intervalAlgorithm.IntervalAlgorithm;
-import com.hy.biz.dataAnalysis.positioningAlgorithm.PositioningAlgorithm;
+import com.hy.biz.dataAnalysis.faultLocationAlgorithm.FaultLocationAlgorithm;
 import com.hy.biz.dataAnalysis.typeAlgorithm.FaultIdentifyAlgorithmUtil;
 import com.hy.biz.dataPush.DataPushService;
 import com.hy.biz.dataPush.dto.DeviceDTO;
-import com.hy.biz.dataResolver.dto.WaveDataMessage;
+import com.hy.biz.dataParsing.dto.WaveDataMessage;
 import com.hy.biz.util.TimeUtil;
 import com.hy.config.HyConfigProperty;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -24,15 +23,14 @@ import java.util.Set;
  * v1版本算法实现
  */
 @Component
+@Slf4j
 public class V1AnalysisServiceImpl implements DataAnalysisService {
-
-    private final Logger log = LoggerFactory.getLogger(V1AnalysisServiceImpl.class);
 
     @Autowired
     private HyConfigProperty hyConfigProperty;
 
     @Autowired
-    private PositioningAlgorithm positioningAlgorithm;
+    private FaultLocationAlgorithm faultLocationAlgorithm;
 
     @Autowired
     private DataPushService dataPushService;
@@ -68,9 +66,9 @@ public class V1AnalysisServiceImpl implements DataAnalysisService {
         // TODO 4.故障特性计算
 
         // TODO 5.故障精确定位
-        if (positioningAlgorithm.analyze(faultWaves).isPresent()) {
-            FaultPositioningAnalysisResult result = positioningAlgorithm.analyze(faultWaves).get();
-        }
+        faultLocationAlgorithm.locate(faultWaves).ifPresent(result -> {
+            // todo 执行相关操作
+        });
 
         // TODO 6.工频故障特征量计算
 
@@ -99,7 +97,7 @@ public class V1AnalysisServiceImpl implements DataAnalysisService {
             algorithmCacheManager.put(algorithmIdentify, algorithmTaskNew);
             // 算法标识放入延迟队列中
             taskQueue.add(algorithmIdentify);
-            log.info("[DELAY] {} 放入延迟队列", algorithmIdentify.toString());
+            log.info("[DELAY] {} 放入延迟队列", algorithmIdentify);
         } else {
             algorithmTask.getFaultWaveSet().add(faultWave);
         }

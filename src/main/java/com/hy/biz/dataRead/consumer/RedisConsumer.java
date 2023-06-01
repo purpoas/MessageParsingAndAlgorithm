@@ -8,6 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -93,8 +94,8 @@ public abstract class RedisConsumer {
     private void processWorkingQueue() {
 
         String message = redisTemplate.opsForList().rightPopAndLeftPush(dataQueue, dataBakQueue, Duration.ofSeconds(10));
-//        log.info("消息队列中的报文: {}", message);
         if (StringUtils.isNotBlank(message)) {
+            log.info("于时间 {} , 在消息队列中收到报文: {}", Instant.now(), message);
             Task task = taskFactory.createTask(message, dataBakQueue);
             taskQueue.putTask(task);
         }

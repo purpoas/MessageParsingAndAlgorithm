@@ -2,12 +2,20 @@ package com.hy.biz.dataAnalysis.extraAlgorithm;
 
 import com.hy.biz.dataAnalysis.algorithmUtil.Complex;
 import com.hy.biz.dataAnalysis.algorithmUtil.FFT;
+import com.hy.biz.dataAnalysis.commonAlgorithm.CommonAlgorithmUtil;
+import com.hy.biz.dataAnalysis.dto.FaultIdentifyPoleDTO;
+import com.hy.biz.dataAnalysis.dto.FaultWave;
+import com.hy.biz.dataAnalysis.typeAlgorithm.FrequencyCharacterUtil;
 import com.hy.config.HyConfigProperty;
+import javafx.util.Pair;
 
 import java.util.Arrays;
 import java.util.DoubleSummaryStatistics;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static com.hy.biz.dataAnalysis.algorithmUtil.FFT.fft;
 
 /**
  * 故障额外算法 eg : 波形预处理方法 、 波形有效性检验方法 、 合闸涌流计算方法 、 波形极性计算方法
@@ -45,7 +53,7 @@ public class ExtraAlgorithmUtil {
         double avg = Arrays.stream(freqWaveData, 0, 768).mapToDouble(Double::doubleValue).sum() / 768;
 
         // Subtract the average from each point in the freqWaveData
-        return Arrays.stream(freqWaveData).map(d -> d - avg).toArray(Double[]::new);
+        return Arrays.stream(freqWaveData).map(data -> data - avg).toArray(Double[]::new);
     }
 
 
@@ -78,13 +86,68 @@ public class ExtraAlgorithmUtil {
     }
 
     /**
-     * 判断行波波形极性
+     * 合闸涌流判断
      *
-     * @return true +  false -
+     * @param freqWaveDataA phase A current data
+     * @param freqWaveDataB phase B current data
+     * @param freqWaveDataC phase C current data
+     * @return A pair where first element is a boolean indicating if any phase has second harmonic content > 15%
+     * of fundamental and second element is the maximum second harmonic content across the phases
      */
-    public boolean judgeTravelWaveAbsolute(Double[] data) {
-        return false;
+    public static Pair<Boolean, Double> isSurge(Double[] freqWaveDataA, Double[] freqWaveDataB, Double[] freqWaveDataC, HyConfigProperty hyConfigProperty) {
+        long deviceSampleRate = hyConfigProperty.getConstant().getDeviceSampleRate();
+        // Compute FFT and extract 50Hz and 100Hz component for each phase
+        Double[] fftPhaseA = fftGetSpecificFrequencies(freqWaveDataA, deviceSampleRate);
+        Double[] fftPhaseB = fftGetSpecificFrequencies(freqWaveDataB, deviceSampleRate);
+        Double[] fftPhaseC = fftGetSpecificFrequencies(freqWaveDataC, deviceSampleRate);
+
+        // Calculate second harmonic content for each phase
+        double IA2X = fftPhaseA[1] / fftPhaseA[0];
+        double IB2X = fftPhaseB[1] / fftPhaseB[0];
+        double IC2X = fftPhaseC[1] / fftPhaseC[0];
+
+        // Find the maximum second harmonic content across the phases
+        double maxSecondHarmonic = Math.max(IA2X, Math.max(IB2X, IC2X));
+        // Check if any second harmonic content is > 15% of fundamental
+        boolean isSurge = IA2X > 0.15 || IB2X > 0.15 || IC2X > 0.15;
+
+        return new Pair<>(isSurge, maxSecondHarmonic);
     }
+
+    public static Boolean loadFluctuationDetection(List<FaultWave> faultWaves, HyConfigProperty hyConfigProperty) {
+        // 找三相电流三相电压杆塔
+        List<FaultIdentifyPoleDTO> threePhaseCurrents = CommonAlgorithmUtil.filterThreePhaseCurrentPole(faultWaves);
+        List<String> poleIds = threePhaseCurrents.stream().map(FaultIdentifyPoleDTO::getPoleId).distinct().collect(Collectors.toList());
+        List<FaultIdentifyPoleDTO> threePhaseCurrentsAndVoltages = CommonAlgorithmUtil.filterThreePhaseCurrentAndVoltagePole(poleIds, faultWaves);
+
+        boolean isFluctuation = false;
+        for (FaultIdentifyPoleDTO pole : threePhaseCurrentsAndVoltages) {
+            double IAJMP = FrequencyCharacterUtil.IJMP(pole.getAPhaseCurrentData());
+            double IBJMP = FrequencyCharacterUtil.IJMP(pole.getBPhaseCurrentData());
+            double ICJMP = FrequencyCharacterUtil.IJMP(pole.getCPhaseCurrentData());
+
+            double IA10 = FrequencyCharacterUtil.I10(pole.getAPhaseCurrentData());
+            double IB10 = FrequencyCharacterUtil.I10(pole.getBPhaseCurrentData());
+            double IC10 = FrequencyCharacterUtil.I10(pole.getCPhaseCurrentData());
+
+            double UAJMP = FrequencyCharacterUtil.UJMP(pole.getAPhaseVoltageData());
+            double UBJMP = FrequencyCharacterUtil.UJMP(pole.getBPhaseVoltageData());
+            double UCJMP = FrequencyCharacterUtil.UJMP(pole.getCPhaseVoltageData());
+
+            double IA1 = FrequencyCharacterUtil.I1(pole.getAPhaseCurrentData());
+            double IB1 = FrequencyCharacterUtil.I1(pole.getBPhaseCurrentData());
+            double IC1 = FrequencyCharacterUtil.I1(pole.getCPhaseCurrentData());
+
+            double IMIN = hyConfigProperty.getConstant().getDeviceSampleRate();
+
+            boolean condition = (((IAJMP<0&&ICJMP<0&&IBJMP<0)&&(IA10>IMIN&&IB10>IMIN&&IC10>IMIN))||((IAJMP>0&&ICJMP>0&&IBJMP>0)&&(IA10>IA1&&IB10>IB1&&IC10>IC1)))&&(UBJMP<0&&UAJMP<0&&UCJMP<0);
+            if (condition)
+                isFluctuation = true ;
+        }
+
+        return isFluctuation;
+    }
+
 
     // 私有方法==========================================================================================================
 
@@ -117,7 +180,7 @@ public class ExtraAlgorithmUtil {
         IntStream.range(0, complexSignalLength).forEach(i -> complexSignalForFFT[i] = new Complex(filteredSignal[i + 20], 0));
         IntStream.range(complexSignalLength, 4096).forEach(i -> complexSignalForFFT[i] = new Complex(0, 0));
 
-        Complex[] fftResult = FFT.fft(complexSignalForFFT);
+        Complex[] fftResult = fft(complexSignalForFFT);
         double normalizationFactor = 2.0 / (filteredSignal.length - 40);
 
         int peakFrequencyIndex = IntStream.range(1, fftResult.length / 2 + 1)
@@ -173,6 +236,27 @@ public class ExtraAlgorithmUtil {
         return Arrays.stream(inputData.split(","))
                 .map(Double::parseDouble)
                 .toArray(Double[]::new);
+    }
+
+    private static Double[] fftGetSpecificFrequencies(Double[] freqWaveData, long deviceSampleRate) {
+        // Convert freqWaveData into a Complex array
+        Complex[] complexInput = new Complex[freqWaveData.length];
+        for (int i = 0; i < freqWaveData.length; i++) {
+            complexInput[i] = new Complex(freqWaveData[i], 0);
+        }
+
+        // Perform FFT
+        Complex[] fftResults = fft(complexInput);
+
+        // Calculate indices corresponding to the frequencies
+        int index1 = (int) ((double) 50 / (double) deviceSampleRate * freqWaveData.length);
+        int index2 = (int) ((double) 100 / (double) deviceSampleRate * freqWaveData.length);
+
+        // Extract 50Hz and 100Hz components
+        double magnitude50Hz = fftResults[index1].abs();
+        double magnitude100Hz = fftResults[index2].abs();
+
+        return new Double[]{magnitude50Hz, magnitude100Hz};
     }
 
 

@@ -5,6 +5,7 @@ import com.hy.biz.dataAnalysis.dto.FaultWave;
 import com.hy.biz.dataAnalysis.extraAlgorithm.ExtraAlgorithmUtil;
 import com.hy.biz.util.ListUtil;
 import com.hy.config.HyConfigProperty;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
