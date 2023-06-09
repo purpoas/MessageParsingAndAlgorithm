@@ -69,4 +69,5 @@ public class StateChannelSubscriber implements MessageListener {
         throw new MessageParsingException(ILLEGAL_SUBSCRIBED_MESSAGE_SIGNATURE_ERROR);
     }
 
+
 }

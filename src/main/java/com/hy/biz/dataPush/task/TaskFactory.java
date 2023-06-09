@@ -34,4 +34,5 @@ public class TaskFactory {
         return new MessageParsingTask(message, redisTemplate, backupQueue, dataParserService, dataPushService, dataAnalysisService);
     }
 
+
 }

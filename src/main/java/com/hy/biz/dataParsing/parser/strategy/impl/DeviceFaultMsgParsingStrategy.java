@@ -5,9 +5,9 @@ import com.hy.biz.dataParsing.dto.DeviceFaultMessage;
 import com.hy.biz.dataParsing.parser.strategy.MessageParserStrategy;
 
 import java.nio.ByteBuffer;
+import java.time.Instant;
 
 import static com.hy.biz.dataParsing.constants.MessageConstants.TIME_LENGTH;
-import static com.hy.biz.dataParsing.util.DateTimeUtil.parseDateTimeToInst;
 import static com.hy.biz.dataParsing.util.TypeConverter.byteArrToStr;
 
 /**
@@ -19,11 +19,11 @@ import static com.hy.biz.dataParsing.util.TypeConverter.byteArrToStr;
 public class DeviceFaultMsgParsingStrategy implements MessageParserStrategy {
 
     @Override
-    public BaseMessage parse(ByteBuffer buffer, BaseMessage specificMessage) {
+    public BaseMessage parse(ByteBuffer buffer, BaseMessage specificMessage, long timeStamp) {
         DeviceFaultMessage message = new DeviceFaultMessage();
         byte[] time = new byte[TIME_LENGTH];
         buffer.get(time);
-        message.setFaultDataCollectionTime(parseDateTimeToInst(time));
+        message.setFaultDataCollectionTime(Instant.ofEpochMilli(timeStamp));
         int remaining = buffer.remaining();
         byte[] info = new byte[remaining];
         buffer.get(info);

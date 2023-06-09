@@ -3,7 +3,6 @@ package com.hy.biz.dataParsing.parser.strategy.impl;
 import com.google.gson.JsonObject;
 import com.hy.biz.dataParsing.parser.ParserHelper;
 import com.hy.biz.dataParsing.parser.strategy.CtrlMsgParserStrategy;
-import org.springframework.stereotype.Component;
 
 import java.nio.ByteBuffer;
 
@@ -13,12 +12,19 @@ import java.nio.ByteBuffer;
  * @description
  * @create 2023-05-23 09:42
  **/
-@Component
 public class DeviceResetRspMsgStrategy implements CtrlMsgParserStrategy {
 
     @Override
     public JsonObject parse(ByteBuffer buffer, ParserHelper parserHelper, String messageSignature, String deviceCode, long timeStamp) {
-        return parserHelper.createJsonMsg(buffer, messageSignature, deviceCode, timeStamp, "装置复位");
+        JsonObject jsonObject = new JsonObject();
+
+        jsonObject.addProperty("status", true);
+        jsonObject.addProperty("msg", "装置复位成功");
+        jsonObject.addProperty("msgType", messageSignature);
+        jsonObject.addProperty("timestamp", timeStamp / 1000);
+        jsonObject.addProperty("deviceCode", deviceCode);
+
+        return jsonObject;
     }
 
 

@@ -7,7 +7,11 @@ import org.springframework.stereotype.Component;
 
 import static com.hy.biz.dataParsing.constants.MessageConstants.EMPTY_MESSAGE_ERROR;
 
-
+/**
+ * ==========================
+ * 报文解析统一入口函数         ｜
+ * ==========================
+ */
 @Component
 public class DataParserService {
 
@@ -18,7 +22,6 @@ public class DataParserService {
     }
 
     /**
-     * @description 报文解析统一入口函数
      * @param message  16进制字符串
      * @return      解析后的报文数据类型
      */
@@ -26,5 +29,6 @@ public class DataParserService {
         if (StringUtils.isBlank(message)) throw new IllegalArgumentException(EMPTY_MESSAGE_ERROR);
         return messageParser.parse(message);
     }
+
 
 }

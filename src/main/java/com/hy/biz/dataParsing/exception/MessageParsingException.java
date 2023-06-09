@@ -1,8 +1,9 @@
 package com.hy.biz.dataParsing.exception;
 
 /**
- *
- * 解析异常类
+ *==============
+ * 解析异常类    ｜
+ *==============
  *
  * @package com.hy.idds.biz.dataParsing.exception
  * @author shiwentao

@@ -18,23 +18,23 @@ import java.time.Instant;
 @Setter
 public class DeviceOnlineStatusDTO {
 
-    @JsonProperty("result")
-    private Result result;
+    @JsonProperty("header")
+    private Header header;
 
     @JsonProperty("senderInfo")
     private SenderInfo senderInfo;
 
-    @JsonProperty("header")
-    private Header header;
+    @JsonProperty("result")
+    private Result result;
 
     @Getter
     @Setter
     public static class Result {
-        @JsonProperty("Msg")
-        private String msg;
-
         @JsonProperty("Stat")
         private String status;
+
+        @JsonProperty("Msg")
+        private String msg;
     }
 
     @Getter
@@ -58,13 +58,14 @@ public class DeviceOnlineStatusDTO {
 
         DeviceOnlineStatus deviceOnlineStatus = new DeviceOnlineStatus();
 
-        String[] msg = this.getResult().getMsg().split(" ");
+        String[] msg = this.result.msg.split(" ");
         deviceOnlineStatus.setDeviceId(dataPushService.findDeviceByCode(msg[0]).getDeviceId());
-        deviceOnlineStatus.setCollectionTime(Instant.now());
-        deviceOnlineStatus.setMessage("deviceCode: " + this.getHeader().getDeviceCode() + "  signal: " + this.getSenderInfo().getSignal());
-        deviceOnlineStatus.setStatus(this.getResult().getStatus());
+        deviceOnlineStatus.setCollectionTime(Instant.ofEpochMilli(this.header.timeStamp));
+        deviceOnlineStatus.setMessage("deviceCode: " + this.header.deviceCode + "  signal: " + this.senderInfo.signal);
+        deviceOnlineStatus.setStatus(this.result.status);
 
         return deviceOnlineStatus;
     }
+
 
 }

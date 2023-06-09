@@ -125,7 +125,7 @@ public class HyDataPushServiceImpl implements DataPushService {
         }
         deviceInfoRepository.save(deviceInfo);
 
-        parserHelper.maintainDeviceStatus(deviceInfo, deviceCode);
+        parserHelper.maintainDeviceStatusInRedis(deviceInfo, deviceCode);
 
         return true;
     }
@@ -140,7 +140,7 @@ public class HyDataPushServiceImpl implements DataPushService {
         }
         deviceStatusRepository.save(deviceStatus);
 
-        parserHelper.maintainDeviceStatus(deviceStatus, deviceCode);
+        parserHelper.maintainDeviceStatusInRedis(deviceStatus, deviceCode);
 
         return true;
     }

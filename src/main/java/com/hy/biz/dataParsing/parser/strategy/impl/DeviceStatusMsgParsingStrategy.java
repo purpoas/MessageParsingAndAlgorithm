@@ -6,8 +6,7 @@ import com.hy.biz.dataParsing.dto.DeviceStatusMessage;
 import com.hy.biz.dataParsing.parser.strategy.MessageParserStrategy;
 
 import java.nio.ByteBuffer;
-
-import static com.hy.biz.dataParsing.util.DateTimeUtil.parseDateTimeToInst;
+import java.time.Instant;
 
 /**
  * @author shiwentao
@@ -18,7 +17,7 @@ import static com.hy.biz.dataParsing.util.DateTimeUtil.parseDateTimeToInst;
 public class DeviceStatusMsgParsingStrategy implements MessageParserStrategy {
 
     @Override
-    public BaseMessage parse(ByteBuffer buffer, BaseMessage specificMessage) {
+    public BaseMessage parse(ByteBuffer buffer, BaseMessage specificMessage, long timeStamp) {
 
         DeviceStatusMessage message = new DeviceStatusMessage();
 
@@ -26,7 +25,7 @@ public class DeviceStatusMsgParsingStrategy implements MessageParserStrategy {
         message.setMessageType(specificMessage.getMessageType());
         byte[] time = new byte[MessageConstants.TIME_LENGTH];
         buffer.get(time);
-        message.setDataCollectionUploadTime(parseDateTimeToInst(time));
+        message.setDataCollectionUploadTime(Instant.ofEpochMilli(timeStamp));
         message.setSolarChargingCurrent(buffer.getShort());
         message.setPhasePowerCurrent(buffer.getShort());
         message.setDeviceWorkingVoltage(buffer.getShort());

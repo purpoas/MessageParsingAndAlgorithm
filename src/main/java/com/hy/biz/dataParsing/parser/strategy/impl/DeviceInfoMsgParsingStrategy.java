@@ -23,7 +23,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 public class DeviceInfoMsgParsingStrategy implements MessageParserStrategy {
 
     @Override
-    public BaseMessage parse(ByteBuffer buffer, BaseMessage specificMessage) {
+    public BaseMessage parse(ByteBuffer buffer, BaseMessage specificMessage, long timeStamp) {
 
         DeviceInfoMessage message = new DeviceInfoMessage();
 

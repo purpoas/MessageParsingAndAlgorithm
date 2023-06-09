@@ -1,15 +1,14 @@
 package com.hy.biz.dataParsing.parser;
 
 import com.google.gson.JsonObject;
-import com.hy.biz.dataPush.DataPushService;
 import com.hy.biz.dataParsing.dto.DeviceOnlineStatusDTO;
 import com.hy.biz.dataParsing.exception.MessageParsingException;
 import com.hy.biz.dataParsing.parser.strategy.CtrlMsgParserStrategy;
 import com.hy.biz.dataParsing.registry.CtrlMsgStrategyRegistry;
+import com.hy.biz.dataPush.DataPushService;
 import com.hy.domain.DeviceOnlineStatus;
 import com.hy.repository.DeviceOnlineStatusRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.nio.ByteBuffer;
@@ -20,15 +19,16 @@ import static com.hy.biz.dataParsing.util.TypeConverter.hexStringToByteArray;
 import static java.nio.ByteOrder.BIG_ENDIAN;
 
 /**
- *
- * 解析器：用于解析 Redis 订阅频道中的控制报文，及设备上线通知报文
+ *============================================================
+ * 解析器：用于解析 Redis 订阅频道中的控制报文，及设备上线通知报文      ｜
+ *============================================================
  *
  * @author shiwentao
  * @package com.hy.biz.redis.subscriber
  * @create 2023-05-08 16:12
  **/
-@Component
 @Slf4j
+@Component
 public class SubscribedMessageParser {
 
     private static final String ONLINE_STATUS_MESSAGE = "设备上线";
@@ -41,7 +41,6 @@ public class SubscribedMessageParser {
     private final ParserHelper parserHelper;
     private final DeviceOnlineStatusRepository deviceOnlineStatusRepository;
 
-    @Autowired
     public SubscribedMessageParser(DataPushService dataPushService, ParserHelper parserHelper, DeviceOnlineStatusRepository deviceOnlineStatusRepository) {
         this.dataPushService = dataPushService;
         this.parserHelper = parserHelper;
@@ -74,14 +73,16 @@ public class SubscribedMessageParser {
      * @param deviceOnlineStatusDTO 设备上下线状态实体类
      * @return 将发布到订阅频道的 json 数据
      */
-    public JsonObject parseDeviceOnlineStatMsg(DeviceOnlineStatusDTO deviceOnlineStatusDTO) {
+    public JsonObject parseDeviceOnlineStatDTO(DeviceOnlineStatusDTO deviceOnlineStatusDTO) {
         DeviceOnlineStatus deviceOnlineStatus = deviceOnlineStatusDTO.transform(dataPushService);
-        deviceOnlineStatusRepository.save(deviceOnlineStatus);
+        deviceOnlineStatusRepository.save(deviceOnlineStatus);   // 设备上下线入库
 
-        return createDeviceOnlineStatJsonMsg(deviceOnlineStatusDTO);
+        return createDeviceOnlineStatJsonMsg(deviceOnlineStatusDTO);  // 返回按照协议解析好的设备上下线 JSON 数据
     }
 
+
     //======================private=================================private============================private======================
+
 
     private JsonObject parseMessageContent(byte[] messageContent, byte frameType, byte messageType, String deviceCode, long timeStamp) {
         ByteBuffer buffer = ByteBuffer.wrap(messageContent).order(BIG_ENDIAN);
@@ -99,8 +100,7 @@ public class SubscribedMessageParser {
     private JsonObject createDeviceOnlineStatJsonMsg(DeviceOnlineStatusDTO deviceOnlineStatusDTO) {
         JsonObject jsonObject = new JsonObject();
 
-        String status = deviceOnlineStatusDTO.getResult().getStatus();
-        boolean isOnline = ONLINE_STATUS.equals(status);
+        boolean isOnline = ONLINE_STATUS.equals(deviceOnlineStatusDTO.getResult().getStatus());
 
         jsonObject.addProperty("status", isOnline);
         jsonObject.addProperty("msg", isOnline ? ONLINE_STATUS_MESSAGE : OFFLINE_STATUS_MESSAGE);

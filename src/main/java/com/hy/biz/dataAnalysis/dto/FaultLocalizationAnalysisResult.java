@@ -22,5 +22,10 @@ public class FaultLocalizationAnalysisResult {
      */
     private long nearestPoleId;
 
+    /**
+     * 故障点与最近杆塔的距离
+     */
+    private double distToNearestPole;
+
 
 }

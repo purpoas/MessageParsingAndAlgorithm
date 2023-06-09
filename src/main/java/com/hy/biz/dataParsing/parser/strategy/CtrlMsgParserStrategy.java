@@ -6,6 +6,10 @@ import com.hy.biz.dataParsing.parser.ParserHelper;
 import java.nio.ByteBuffer;
 
 /**
+ * ===========================
+ * 控制报文解析 Strategy       ｜
+ * ===========================
+ *
  * @author shiwentao
  * @package com.hy.biz.dataParsing.parser.strategy
  * @create 2023-05-23 09:27

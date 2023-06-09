@@ -14,7 +14,7 @@ public interface DataAnalysisService {
      *
      * @param faultWaves 故障波形
      */
-    public void executeAlgorithmAnalysis(Set<FaultWave> faultWaves);
+    void executeAlgorithmAnalysis(Set<FaultWave> faultWaves);
 
 
     /**
@@ -22,7 +22,7 @@ public interface DataAnalysisService {
      *
      * @param waveDataMessage 报文类型
      */
-    public void createAlgorithmTask(WaveDataMessage waveDataMessage);
+    void createAlgorithmTask(WaveDataMessage waveDataMessage);
 
 
 }

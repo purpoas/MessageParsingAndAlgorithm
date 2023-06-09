@@ -14,7 +14,7 @@ import java.nio.ByteBuffer;
 public class HeartBeatMsgParsingStrategy implements MessageParserStrategy {
 
     @Override
-    public BaseMessage parse(ByteBuffer buffer, BaseMessage specificMessage) {
+    public BaseMessage parse(ByteBuffer buffer, BaseMessage specificMessage, long timeStamp) {
         return null;
     }
 

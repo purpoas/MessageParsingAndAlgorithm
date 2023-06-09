@@ -7,7 +7,7 @@ import com.hy.config.HyConfigProperty;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -16,10 +16,16 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 故障定位：采用双端定位算法
- */
+ * ===========================
+ * 故障定位算法（双端）          ｜
+ * ===========================
+ *
+ * @author shiwentao
+ * @package com.hy.biz.dataAnalysis.faultLocationAlgorithm
+ * @create 2023-05-23 09:27
+ **/
 @Slf4j
-@Component
+@Service
 public class FaultLocationAlgorithm {
 
     private final String NANO_PATTERN = "yyyy:MM:dd HH:mm:ss.SSSSSSSSS";
@@ -102,18 +108,20 @@ public class FaultLocationAlgorithm {
                 .orElse(null);
         if (referencePointWave == null) throw new RuntimeException("无法定位参照点");
 
-        double averageSpeed = calculateAvgSpeed(phaseSortedWaves, basePointAbsolute); //// Calculate wave speed in m/ns
+        double averageSpeed = calculateAvgSpeed(phaseSortedWaves, basePointAbsolute); // Calculate wave speed in m/ns
         // 计算L2与L3
         double L = Math.abs(basePointWave.getDistanceToHeadStation() - referencePointWave.getDistanceToHeadStation());
-        double L2 = computeLength(basePointWave, referencePointWave, averageSpeed, L, false);
+        double L2 = computeLength(basePointWave, referencePointWave, averageSpeed, L, false); // Length in m
         double L3 = computeLength(basePointWave, referencePointWave, averageSpeed, L, true); // Length in m
         // 校验L2与L3
         if (L2 > L || L3 < 0) return Optional.empty();
 
         // 创建DevicePairDistance对象
         DevicePairDistance pair = new DevicePairDistance();
-        pair.setL2(L2);
         pair.setL3(L3);
+        pair.setL2(L2);
+        pair.setBasePointPoleId(Long.parseLong(basePointWave.getPoleId()));
+        pair.setReferencePoleId(Long.parseLong(referencePointWave.getPoleId()));
         long nearestPoleId = Long.parseLong(
                 basePointWave.getDistanceToHeadStation() > referencePointWave.getDistanceToHeadStation() ?
                         referencePointWave.getPoleId() : basePointWave.getPoleId());
@@ -174,8 +182,10 @@ public class FaultLocationAlgorithm {
     @Getter
     @Setter
     private static class DevicePairDistance {
-        private double L2;
         private double L3;
+        private double L2;
+        private long basePointPoleId;
+        private long referencePoleId;
         private long nearestPoleId;
     }
 

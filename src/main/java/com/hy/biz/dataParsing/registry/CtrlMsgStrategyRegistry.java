@@ -28,22 +28,19 @@ public class CtrlMsgStrategyRegistry {
         UNMODIFIABLE_CTRL_MESSAGE_STRATEGY_MAP = Collections.unmodifiableMap(CTRL_MESSAGE_STRATEGY_MAP);
     }
 
-    /**
-     * Registers all message classes in the MESSAGE_MAP.
-     */
     private static void registerMessageClass() {
-        CTRL_MESSAGE_STRATEGY_MAP.put(CONTROL_ACK_REPORT + ":" + DEVICE_RESET, new DeviceResetRspMsgStrategy());
-        CTRL_MESSAGE_STRATEGY_MAP.put(CONTROL_ACK_REPORT + ":" + PARAMETER_SETTING, new ParamSettingRspMsgStrategy());
-        CTRL_MESSAGE_STRATEGY_MAP.put(CONTROL_ACK_REPORT + ":" + PARAMETER_READING, new ParamReadingRspMsgStrategy());
-        CTRL_MESSAGE_STRATEGY_MAP.put(CONTROL_ACK_REPORT + ":" + PROGRAM_UPGRADE, new ProgramUpgradeRspMsgStrategy());
-        CTRL_MESSAGE_STRATEGY_MAP.put(CONTROL_ACK_REPORT + ":" + QUERY_DEVICE_HISTORICAL_DATA, new DeviceHistoricalDataRspMsgStrategy());
+        CTRL_MESSAGE_STRATEGY_MAP.put(String.format("0x%02X:0x%02X",CONTROL_ACK_REPORT ,DEVICE_RESET), new DeviceResetRspMsgStrategy());
+        CTRL_MESSAGE_STRATEGY_MAP.put(String.format("0x%02X:0x%02X",CONTROL_ACK_REPORT ,PARAMETER_SETTING), new ParamSettingRspMsgStrategy());
+        CTRL_MESSAGE_STRATEGY_MAP.put(String.format("0x%02X:0x%02X",CONTROL_ACK_REPORT ,PARAMETER_READING), new ParamReadingRspMsgStrategy());
+        CTRL_MESSAGE_STRATEGY_MAP.put(String.format("0x%02X:0x%02X",CONTROL_ACK_REPORT ,PROGRAM_UPGRADE), new ProgramUpgradeRspMsgStrategy());
+        CTRL_MESSAGE_STRATEGY_MAP.put(String.format("0x%02X:0x%02X",CONTROL_ACK_REPORT ,QUERY_DEVICE_HISTORICAL_DATA), new DeviceHistoricalDataRspMsgStrategy());
     }
 
     public static Map<String, CtrlMsgParserStrategy> getMessageStrategyMap() {
         return UNMODIFIABLE_CTRL_MESSAGE_STRATEGY_MAP;
     }
 
-    private CtrlMsgStrategyRegistry() {
-    }
+    private CtrlMsgStrategyRegistry() {}
+
 
 }

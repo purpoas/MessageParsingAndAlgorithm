@@ -26,8 +26,9 @@ import static com.hy.biz.dataParsing.constants.MessageConstants.*;
 import static com.hy.biz.dataParsing.constants.MessageType.*;
 
 /**
- *
- * 解析 Helper 类
+ *==================
+ * 解析器 Helper 类   ｜
+ *==================
  *
  * @author shiwentao
  * @package com.hy.biz.dataParsing.algorithmUtil
@@ -90,7 +91,7 @@ public class ParserHelper {
         String msg = createMsg(frameType, messageType);
         jsonObject.addProperty("msg", msg);
         jsonObject.addProperty("msgType", String.format("0x%02X:0x%02X", frameType, messageType));
-        jsonObject.addProperty("timestamp", timeStamp);
+        jsonObject.addProperty("timestamp", Instant.ofEpochMilli(timeStamp).getEpochSecond());
         jsonObject.addProperty("deviceCode", deviceCode);
         jsonObject.add("param", params);
 
@@ -98,11 +99,10 @@ public class ParserHelper {
         redisTemplate.convertAndSend(hyConfigProperty.getDataQueue().getDnmTopicChannelPb(), jsonObject.toString());
     }
 
-    public void maintainDeviceStatus(DeviceStatus deviceStatus, String deviceCode) {
-
+    public void maintainDeviceStatusInRedis(DeviceStatus deviceStatus, String deviceCode) {
         String dnmLatestDeviceStatus = hyConfigProperty.getConstant().getDnmLatestDeviceStatus();
-        String batteryVoltage = String.valueOf(deviceStatus.getBatteryVoltage());
 
+        String batteryVoltage = String.valueOf(deviceStatus.getBatteryVoltage());
         Map<String, String> map = new HashMap<>();
         map.put("batteryVoltage", batteryVoltage);
         map.put("updateTime", String.valueOf(Instant.now().getEpochSecond()));
@@ -110,54 +110,53 @@ public class ParserHelper {
         redisTemplate.opsForHash().putAll(dnmLatestDeviceStatus + ":" + deviceCode, map);
     }
 
-    public void maintainDeviceStatus(DeviceInfo deviceInfo, String deviceCode) {
-
+    public void maintainDeviceStatusInRedis(DeviceInfo deviceInfo, String deviceCode) {
         String dnmLatestDeviceStatus = hyConfigProperty.getConstant().getDnmLatestDeviceStatus();
-        HashMap<String, String> map = new HashMap<>();
+
+        Map<String, String> map = new HashMap<>();
         map.put("lastTime", deviceInfo.getCollectionTime().toString());
         map.put("updateTime", String.valueOf(Instant.now().getEpochSecond()));
 
         redisTemplate.opsForHash().putAll(dnmLatestDeviceStatus + ":" + deviceCode, map);
     }
 
-    public void maintainDeviceStatus(JsonObject jsonObject) {
-
+    public void maintainDeviceStatusInRedis(JsonObject jsonObject) {
         String dnmLatestDeviceStatus = hyConfigProperty.getConstant().getDnmLatestDeviceStatus();
 
-        HashMap<String, String> map = new HashMap<>();
-
+        Map<String, String> map = new HashMap<>();
         if (jsonObject.has("status")) {
-            if (jsonObject.get("status").getAsString().equals("设备上线")) {
-                map.put("onlineTime", String.valueOf(jsonObject.get("timestamp").getAsLong()));
-            }
-            if (jsonObject.get("status").getAsString().equals("设备下线")) {
-                map.put("offlineTime", String.valueOf(jsonObject.get("timestamp").getAsLong()));
-            }
+            if (jsonObject.get("status").getAsString().equals("true"))
+                map.put("onlineTime", String.valueOf(Instant.ofEpochMilli(jsonObject.get("timestamp").getAsLong()).getEpochSecond()));
+            if (jsonObject.get("status").getAsString().equals("false"))
+                map.put("offlineTime", String.valueOf(Instant.ofEpochMilli(jsonObject.get("timestamp").getAsLong()).getEpochSecond()));
+            map.put("updateTime", String.valueOf(Instant.now().getEpochSecond()));
         }
 
-        if (jsonObject.has("deviceCode")) {
+        if (jsonObject.has("deviceCode"))
             redisTemplate.opsForHash().putAll(dnmLatestDeviceStatus + ":" + jsonObject.get("deviceCode").getAsString(), map);
-        }
     }
 
     public JsonObject createJsonMsg(ByteBuffer buffer, String messageSignature, String deviceCode, long timeStamp, String operationName) {
         JsonObject jsonObject = new JsonObject();
         byte isSuccessful = buffer.get();
-        boolean status = false;
         String operationResult;
+        boolean status;
+
         if (isSuccessful == MESSAGE_STATUS_SUCCESSFUL) {
             operationResult = OPERATION_SUCCESSFUL;
             status = true;
         } else if (isSuccessful == MESSAGE_STATUS_FAILED) {
             operationResult = OPERATION_FAILED;
+            status = false;
         } else {
             operationResult = UNKNOWN_OPERATION_RESULT;
+            status = false;
         }
 
         jsonObject.addProperty("status", status);
-        jsonObject.addProperty("msg", operationName + operationResult);
+        jsonObject.addProperty("msg", String.format("%s：%s", operationName, operationResult));
         jsonObject.addProperty("msgType", messageSignature);
-        jsonObject.addProperty("timestamp", timeStamp);
+        jsonObject.addProperty("timestamp", timeStamp / 1000);
         jsonObject.addProperty("deviceCode", deviceCode);
 
         return jsonObject;

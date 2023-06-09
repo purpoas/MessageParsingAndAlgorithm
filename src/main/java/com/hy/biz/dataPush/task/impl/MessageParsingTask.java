@@ -13,9 +13,19 @@ import java.util.Map;
 
 import static com.hy.biz.dataPush.dto.PushDataType.*;
 
+/**
+ * ========================================
+ * 报文解析任务（负责阻塞队列中的报文数据）       ｜
+ * ========================================
+ *
+ * @author shiwentao
+ * @package com.hy.biz.dataPush.task.impl
+ * @create 2023-05-23 09:27
+ **/
 public class MessageParsingTask extends Task {
 
     private static final Map<Class<? extends BaseMessage>, PushDataType> messageTypeMap = new HashMap<>();
+
     static {
         messageTypeMap.put(DeviceFaultMessage.class, DEVICE_FAULT);
         messageTypeMap.put(DeviceInfoMessage.class, DEVICE_INFO);
@@ -23,6 +33,7 @@ public class MessageParsingTask extends Task {
         messageTypeMap.put(WorkStatusMessage.class, WORK_STATUS);
         messageTypeMap.put(WaveDataMessage.class, WAVE);
     }
+
     private final RedisTemplate<String, String> redisTemplate;
     private final String dataBakQueue;
     private final DataParserService dataParserService;
@@ -47,10 +58,8 @@ public class MessageParsingTask extends Task {
 
         messageTypeMap.forEach((messageClass, pushType) -> {
             if (messageClass.isInstance(baseMessage)) {
-                // 数据上送
                 boolean flag = dataPushService.push(message, baseMessage, pushType);
 
-                // 数据分析 针对波形数据
                 if (pushType == WAVE) {
                     WaveDataMessage wave = (WaveDataMessage) baseMessage;
                     dataAnalysisService.createAlgorithmTask(wave);

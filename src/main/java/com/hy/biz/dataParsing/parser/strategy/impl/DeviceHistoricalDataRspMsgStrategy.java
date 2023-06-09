@@ -3,7 +3,6 @@ package com.hy.biz.dataParsing.parser.strategy.impl;
 import com.google.gson.JsonObject;
 import com.hy.biz.dataParsing.parser.ParserHelper;
 import com.hy.biz.dataParsing.parser.strategy.CtrlMsgParserStrategy;
-import org.springframework.stereotype.Component;
 
 import java.nio.ByteBuffer;
 
@@ -13,7 +12,6 @@ import java.nio.ByteBuffer;
  * @description
  * @create 2023-05-23 09:49
  **/
-@Component
 public class DeviceHistoricalDataRspMsgStrategy implements CtrlMsgParserStrategy {
 
     @Override

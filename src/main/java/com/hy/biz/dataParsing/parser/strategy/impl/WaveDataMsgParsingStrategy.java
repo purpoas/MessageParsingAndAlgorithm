@@ -24,7 +24,7 @@ public class WaveDataMsgParsingStrategy implements MessageParserStrategy {
     private final TreeMap<Integer, String> waveSegments = new TreeMap<>();
 
     @Override
-    public BaseMessage parse(ByteBuffer contentBuffer, BaseMessage specificMessage) {
+    public BaseMessage parse(ByteBuffer contentBuffer, BaseMessage specificMessage, long timeStamp) {
         WaveDataMessage message = new WaveDataMessage();
 
         message.setFrameType(specificMessage.getFrameType());

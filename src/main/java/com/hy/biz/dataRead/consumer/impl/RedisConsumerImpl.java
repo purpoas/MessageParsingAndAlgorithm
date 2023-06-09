@@ -1,12 +1,12 @@
 package com.hy.biz.dataRead.consumer.impl;
 
-import com.hy.biz.dataRead.consumer.RedisConsumer;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.hy.biz.dataPush.task.TaskFactory;
 import com.hy.biz.dataPush.task.TaskQueue;
+import com.hy.biz.dataRead.consumer.RedisConsumer;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import javax.annotation.PreDestroy;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 /**
@@ -22,7 +22,8 @@ public class RedisConsumerImpl extends RedisConsumer {
     }
 
     public void executeCommand() {
-        final ThreadFactory threadFactory = Executors.defaultThreadFactory();
+        final ThreadFactory threadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("Idds-redis-consumer").build();
         super.executeCommand(threadFactory);
     }
 
@@ -30,5 +31,6 @@ public class RedisConsumerImpl extends RedisConsumer {
     protected void beanDestroy() {
         super.stop();
     }
+
 
 }

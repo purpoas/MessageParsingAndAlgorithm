@@ -88,65 +88,89 @@ public class ExtraAlgorithmUtil {
     /**
      * 合闸涌流判断
      *
-     * @param freqWaveDataA phase A current data
-     * @param freqWaveDataB phase B current data
-     * @param freqWaveDataC phase C current data
-     * @return A pair where first element is a boolean indicating if any phase has second harmonic content > 15%
-     * of fundamental and second element is the maximum second harmonic content across the phases
+     * @param freqWaveDataA Frequency waveform data for Phase A
+     * @param freqWaveDataB Frequency waveform data for Phase B
+     * @param freqWaveDataC Frequency waveform data for Phase C
+     * @param hyConfigProperty Configuration properties for the system
+     * @return Pair<Boolean, Double> A pair indicating if a surge is detected (true/false) and the maximum second harmonic content across the phases
      */
     public static Pair<Boolean, Double> isSurge(Double[] freqWaveDataA, Double[] freqWaveDataB, Double[] freqWaveDataC, HyConfigProperty hyConfigProperty) {
         long deviceSampleRate = hyConfigProperty.getConstant().getDeviceSampleRate();
+
         // Compute FFT and extract 50Hz and 100Hz component for each phase
         Double[] fftPhaseA = fftGetSpecificFrequencies(freqWaveDataA, deviceSampleRate);
         Double[] fftPhaseB = fftGetSpecificFrequencies(freqWaveDataB, deviceSampleRate);
         Double[] fftPhaseC = fftGetSpecificFrequencies(freqWaveDataC, deviceSampleRate);
 
-        // Calculate second harmonic content for each phase
+        // Calculate second harmonic content for each phase by dividing 100Hz component by 50Hz component
         double IA2X = fftPhaseA[1] / fftPhaseA[0];
         double IB2X = fftPhaseB[1] / fftPhaseB[0];
         double IC2X = fftPhaseC[1] / fftPhaseC[0];
 
         // Find the maximum second harmonic content across the phases
         double maxSecondHarmonic = Math.max(IA2X, Math.max(IB2X, IC2X));
-        // Check if any second harmonic content is > 15% of fundamental
+
+        // Determine if a surge is present. A surge is detected if the second harmonic content is greater than 15% of the fundamental frequency for any phase.
         boolean isSurge = IA2X > 0.15 || IB2X > 0.15 || IC2X > 0.15;
 
+        // Return a pair with the surge detection result and the maximum second harmonic content
         return new Pair<>(isSurge, maxSecondHarmonic);
     }
 
-    public static Boolean loadFluctuationDetection(List<FaultWave> faultWaves, HyConfigProperty hyConfigProperty) {
-        // 找三相电流三相电压杆塔
-        List<FaultIdentifyPoleDTO> threePhaseCurrents = CommonAlgorithmUtil.filterThreePhaseCurrentPole(faultWaves);
-        List<String> poleIds = threePhaseCurrents.stream().map(FaultIdentifyPoleDTO::getPoleId).distinct().collect(Collectors.toList());
-        List<FaultIdentifyPoleDTO> threePhaseCurrentsAndVoltages = CommonAlgorithmUtil.filterThreePhaseCurrentAndVoltagePole(poleIds, faultWaves);
 
-        boolean isFluctuation = false;
-        for (FaultIdentifyPoleDTO pole : threePhaseCurrentsAndVoltages) {
+    /**
+     * 负荷波动判断
+     *
+     * @param faultWaves The list of fault waves in the system.
+     * @param hyConfigProperty The system's configuration properties.
+     * @return boolean Indicates whether load fluctuation is detected.
+     */
+    public static Boolean loadFluctuationDetection(List<FaultWave> faultWaves, HyConfigProperty hyConfigProperty) {
+        // Filter out three-phase current poles
+        List<FaultIdentifyPoleDTO> threePhaseCurrents = CommonAlgorithmUtil.filterThreePhaseCurrentPole(faultWaves);
+
+        // Get distinct pole IDs
+        List<String> poleIds = threePhaseCurrents.stream()
+                .map(FaultIdentifyPoleDTO::getPoleId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // Filter out poles with both three-phase currents and voltages
+        List<FaultIdentifyPoleDTO> threePhaseCurrentsAndVoltages =
+                CommonAlgorithmUtil.filterThreePhaseCurrentAndVoltagePole(poleIds, faultWaves);
+
+        // TODO Define the minimum current required for load fluctuation
+        double IMIN = hyConfigProperty.getConstant().getDeviceSampleRate();
+
+        // Detect load fluctuation by examining each pole
+        return threePhaseCurrentsAndVoltages.stream().anyMatch(pole -> {
+            // Calculate current and voltage jumps for each phase
             double IAJMP = FrequencyCharacterUtil.IJMP(pole.getAPhaseCurrentData());
             double IBJMP = FrequencyCharacterUtil.IJMP(pole.getBPhaseCurrentData());
             double ICJMP = FrequencyCharacterUtil.IJMP(pole.getCPhaseCurrentData());
 
+            // Calculate the 10th harmonic for each phase
             double IA10 = FrequencyCharacterUtil.I10(pole.getAPhaseCurrentData());
             double IB10 = FrequencyCharacterUtil.I10(pole.getBPhaseCurrentData());
             double IC10 = FrequencyCharacterUtil.I10(pole.getCPhaseCurrentData());
 
+            // Calculate the voltage jumps for each phase
             double UAJMP = FrequencyCharacterUtil.UJMP(pole.getAPhaseVoltageData());
             double UBJMP = FrequencyCharacterUtil.UJMP(pole.getBPhaseVoltageData());
             double UCJMP = FrequencyCharacterUtil.UJMP(pole.getCPhaseVoltageData());
 
+            // Calculate the 1st harmonic for each phase
             double IA1 = FrequencyCharacterUtil.I1(pole.getAPhaseCurrentData());
             double IB1 = FrequencyCharacterUtil.I1(pole.getBPhaseCurrentData());
             double IC1 = FrequencyCharacterUtil.I1(pole.getCPhaseCurrentData());
 
-            double IMIN = hyConfigProperty.getConstant().getDeviceSampleRate();
-
-            boolean condition = (((IAJMP<0&&ICJMP<0&&IBJMP<0)&&(IA10>IMIN&&IB10>IMIN&&IC10>IMIN))||((IAJMP>0&&ICJMP>0&&IBJMP>0)&&(IA10>IA1&&IB10>IB1&&IC10>IC1)))&&(UBJMP<0&&UAJMP<0&&UCJMP<0);
-            if (condition)
-                isFluctuation = true ;
-        }
-
-        return isFluctuation;
+            // Check the load fluctuation conditions
+            return (((IAJMP < 0 && ICJMP < 0 && IBJMP < 0) && (IA10 > IMIN && IB10 > IMIN && IC10 > IMIN))
+                    || ((IAJMP > 0 && ICJMP > 0 && IBJMP > 0) && (IA10 > IA1 && IB10 > IB1 && IC10 > IC1)))
+                    && (UBJMP < 0 && UAJMP < 0 && UCJMP < 0);
+        });
     }
+
 
 
     // 私有方法==========================================================================================================
