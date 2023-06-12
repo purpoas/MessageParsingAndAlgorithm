@@ -8,17 +8,23 @@ import com.hy.biz.dataPush.dto.PushDataType;
 import com.hy.biz.dataResolver.dto.*;
 import com.hy.biz.dataResolver.exception.MessageParsingException;
 import com.hy.biz.dataResolver.parser.ParserHelper;
+import com.hy.biz.util.GsonUtil;
 import com.hy.domain.*;
 import com.hy.repository.*;
 import lombok.extern.slf4j.Slf4j;
+import org.aspectj.weaver.ast.Or;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.Map;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.hy.biz.dataResolver.constants.MessageConstants.JSON_TO_DTO_ERROR;
 import static com.hy.biz.dataResolver.constants.MessageConstants.MESSAGE_TO_ENTITY_ERROR;
@@ -34,9 +40,12 @@ public class HyDataPushServiceImpl implements DataPushService {
     private final WorkStatusRepository workStatusRepository;
     private final DeviceInfoRepository deviceInfoRepository;
     private final DeviceStatusRepository deviceStatusRepository;
+    private final CircuitPathRepository circuitPathRepository;
+    private final PoleRepository poleRepository;
+    private final OrgRepository orgRepository;
 
     public HyDataPushServiceImpl(ParserHelper parserHelper, WaveDataRepository waveDataRepository, DeviceRepository deviceRepository, DeviceFaultRepository deviceFaultRepository, DeviceInfoRepository deviceInfoRepository, DeviceStatusRepository deviceStatusRepository,
-                                 WorkStatusRepository workStatusRepository) {
+                                 WorkStatusRepository workStatusRepository, CircuitPathRepository circuitPathRepository, PoleRepository poleRepository, OrgRepository orgRepository) {
         this.parserHelper = parserHelper;
         this.waveDataRepository = waveDataRepository;
         this.deviceRepository = deviceRepository;
@@ -44,6 +53,9 @@ public class HyDataPushServiceImpl implements DataPushService {
         this.deviceInfoRepository = deviceInfoRepository;
         this.deviceStatusRepository = deviceStatusRepository;
         this.workStatusRepository = workStatusRepository;
+        this.circuitPathRepository = circuitPathRepository;
+        this.poleRepository = poleRepository;
+        this.orgRepository = orgRepository;
     }
 
     @Override
@@ -84,22 +96,75 @@ public class HyDataPushServiceImpl implements DataPushService {
     @Override
     public DeviceDTO findDeviceByCode(String deviceCode) {
         Device device = deviceRepository.findDeviceByCodeAndDeletedFalse(deviceCode);
+        if(device == null) return null;
         return new DeviceDTO().from(device);
     }
 
     @Override
     public LineDTO findLineByLineId(String lineId) {
-        return null;
+        Org line = orgRepository.findByIdAndDeletedFalse(Long.valueOf(lineId));
+
+        if (line == null || !StringUtils.hasText(line.getProperties())) return null;
+
+        JsonObject pro = JsonParser.parseString(line.getProperties()).getAsJsonObject();
+
+        if (!pro.has("length") || pro.get("length").isJsonNull()) return null;
+
+        return new LineDTO(lineId, pro.get("length").getAsDouble());
     }
 
     @Override
     public List<PoleDTO> findPolesByLineId(String lineId) {
-        return null;
+
+        List<Pole> poleList = poleRepository.findByOrgIdAndDeletedFalse(Long.valueOf(lineId));
+
+        if(CollectionUtils.isEmpty(poleList)) return null;
+
+        List<PoleDTO> dto = poleList.stream().map(PoleDTO::new).collect(Collectors.toList());
+
+        return dto;
     }
 
     @Override
     public PoleDTO getPoleByPoleId(String lineId, String poleId) {
-        return null;
+        Pole pole = poleRepository.findByIdAndDeletedFalse(Long.valueOf(poleId));
+
+        if (pole == null) return null;
+
+        // 线路隶属关系结构
+        List<Long> circuitPathList = circuitPathRepository.findByAllDescendantByLineId(Long.valueOf(lineId));
+
+        if (CollectionUtils.isEmpty(circuitPathList)) return null;
+
+        // 找出depth最大的线路Id
+        String topMainLineId = String.valueOf(circuitPathList.get(circuitPathList.size() - 1));
+
+        // 计算当前线路所属杆塔到起始杆塔的距离
+        Double d1 = poleRepository.calculatePoleDistanceToHeadStation(Long.valueOf(lineId), pole.getOrderNum());
+
+        // 查询线路Id和主线Id相同 直接返回杆塔到起始变电站距离
+        if (topMainLineId.equals(lineId)) {
+            return new PoleDTO(topMainLineId, lineId, poleId, pole.getOrderNum(), d1);
+        }
+
+        double distance = d1;
+
+        // 最大层级的元素不进行计算距离
+        for (int i = 0; i < circuitPathList.size() - 1; i++) {
+            Long item = circuitPathList.get(i);
+            CircuitPath parentPath = circuitPathRepository.findByDescendantAndDepthFix1(item);
+
+            if (parentPath == null) continue;
+
+            Pole parentPole = poleRepository.findByIdAndDeletedFalse(parentPath.getHeadPole());
+
+            if (parentPole == null) continue;
+
+            Double d = poleRepository.calculatePoleDistanceToHeadStation(parentPath.getAncestor(), parentPole.getOrderNum());
+            distance = distance + d;
+        }
+
+        return new PoleDTO(topMainLineId, lineId, poleId, pole.getOrderNum(), distance);
     }
 
 

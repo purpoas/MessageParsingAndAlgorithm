@@ -8,11 +8,17 @@ import lombok.Data;
 @Data
 public class FeatureGroundDTO {
 
-    private int faultPhaseId;   //1-A相接地, 2-B相接地，3-C相接地
-    private int faultType;      //0-瞬时故障，1-永久故障
-    private int isBreak;        //是否分闸，0-未分闸，1-保护分闸
-    private int areStat;        //重合闸状态，0-重合闸失败，1-重合闸成功
-    private double zeroSeqCur;  //零序电流值，单位A
-    private int duration;       //瞬时故障持续时间，单位s
+    private Integer faultPhaseId;   //1-A相接地, 2-B相接地，3-C相接地
+    private Integer faultType;      //0-瞬时故障，1-永久故障
+    private Integer isBreak;        //是否分闸，0-未分闸，1-保护分闸
+    private Integer areStat;        //重合闸状态，0-重合闸失败，1-重合闸成功
+    private Double zeroSeqCur;  //零序电流值，单位A
+    private Integer duration;       //瞬时故障持续时间，单位s
+    private String type = "Ground";        //特征类型 Break-断路 Short-短路 Ground-接地
 
+    public FeatureGroundDTO(Integer faultPhaseId, Integer isBreak, Double zeroSeqCur) {
+        this.faultPhaseId = faultPhaseId;
+        this.isBreak = isBreak;
+        this.zeroSeqCur = zeroSeqCur;
+    }
 }

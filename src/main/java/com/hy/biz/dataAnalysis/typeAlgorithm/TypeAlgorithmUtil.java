@@ -5,6 +5,7 @@ import com.hy.biz.dataAnalysis.dto.FaultWave;
 import com.hy.biz.dataAnalysis.extraAlgorithm.ExtraAlgorithmUtil;
 import com.hy.biz.util.ListUtil;
 import com.hy.config.HyConfigProperty;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,15 +40,7 @@ public class TypeAlgorithmUtil {
      */
     public static int judgeFrequencyCurrentWaveFaultType(List<FaultWave> faultWaves) {
 
-        List<Double[]> doubles = faultWaves.stream().map(FaultWave::getData).map(s -> {
-            String[] strings = s.split(",");
-            Double[] in = new Double[strings.length];
-            for (int i = 0; i < strings.length; i++) {
-                in[i] = Double.valueOf(strings[i]);
-            }
-            return in;
-        }).collect(Collectors.toList());
-
+        List<double[]> doubles = faultWaves.stream().map(FaultWave::getData).map(CommonAlgorithmUtil::shiftWave).collect(Collectors.toList());
 
         // 判断方法是否大于
 
@@ -75,23 +68,9 @@ public class TypeAlgorithmUtil {
             String bDataStr = f.stream().filter(faultWave -> 2 == faultWave.getPhase()).findFirst().get().getData();
             String cDataStr = f.stream().filter(faultWave -> 3 == faultWave.getPhase()).findFirst().get().getData();
 
-            String[] aDataStrs = aDataStr.split(",");
-            Double[] aData = new Double[aDataStrs.length];
-            for (int i = 0; i < aDataStrs.length; i++) {
-                aData[i] = Double.valueOf(aDataStrs[i]);
-            }
-
-            String[] bDataStrs = bDataStr.split(",");
-            Double[] bData = new Double[bDataStrs.length];
-            for (int i = 0; i < bDataStrs.length; i++) {
-                bData[i] = Double.valueOf(bDataStrs[i]);
-            }
-
-            String[] cDataStrs = cDataStr.split(",");
-            Double[] cData = new Double[cDataStrs.length];
-            for (int i = 0; i < cDataStrs.length; i++) {
-                cData[i] = Double.valueOf(cDataStrs[i]);
-            }
+            double[] aData = CommonAlgorithmUtil.shiftWave(aDataStr);
+            double[] bData = CommonAlgorithmUtil.shiftWave(bDataStr);
+            double[] cData = CommonAlgorithmUtil.shiftWave(cDataStr);
 
             I0List.add(calculateZeroCurrent(aData, bData, cData));
         }
@@ -113,7 +92,7 @@ public class TypeAlgorithmUtil {
      * @param cyclicWaveLength 周波长度 默认256
      * @return 周波对应有效值
      */
-    public static double calculateCyclicWavePH(Double[] data, int cyclicWaveSerial, int cyclicWaveLength) {
+    public static double calculateCyclicWavePH(double[] data, int cyclicWaveSerial, int cyclicWaveLength) {
 
         // 工频波形长度不满足大于10倍周波长度 不参与判断
         if (data.length < 10 * cyclicWaveLength) return 0.0;
@@ -211,9 +190,9 @@ public class TypeAlgorithmUtil {
      * @param cData C相波形内容
      * @return 零序电流值
      */
-    public static double calculateZeroCurrent(Double[] aData, Double[] bData, Double[] cData) {
+    public static double calculateZeroCurrent(double[] aData, double[] bData, double[] cData) {
 
-        Double[] i0 = synthesisZeroCurrent(aData, bData, cData);
+        double[] i0 = synthesisZeroCurrent(aData, bData, cData);
 
         int cyclicWaveIndexSum = i0.length / 256;
 
@@ -236,7 +215,7 @@ public class TypeAlgorithmUtil {
      * @param cData C相波形内容
      * @return 合成零序电流
      */
-    public static Double[] synthesisZeroCurrent(Double[] aData, Double[] bData, Double[] cData) {
+    public static double[] synthesisZeroCurrent(double[] aData, double[] bData, double[] cData) {
         int aLength = aData.length;
         int bLength = bData.length;
         int cLength = cData.length;
@@ -256,7 +235,7 @@ public class TypeAlgorithmUtil {
         bData = ExtraAlgorithmUtil.preProcessFrequencyWave(aData);
         cData = ExtraAlgorithmUtil.preProcessFrequencyWave(aData);
 
-        Double[] i0 = new Double[i0Length];
+        double[] i0 = new double[i0Length];
 
         // 波形叠加
         for (int i = 0; i < i0Length; i++) {
@@ -272,7 +251,7 @@ public class TypeAlgorithmUtil {
      * @param data 波形内容
      * @return 零序电流极性
      */
-    public static boolean calculateZeroCurrentAbsolute(Double[] data) {
+    public static boolean calculateZeroCurrentAbsolute(double[] data) {
         int N = 256;        //一个周波对应点位
         int pos = calculateZeroCurrentPosLocation(data);    //触发位置
 
@@ -283,7 +262,7 @@ public class TypeAlgorithmUtil {
         int endIndex = Math.min(pos + sufPoint, data.length);
 
         // 数据处理后的原始波形
-        Double[] subData = new Double[endIndex - startIndex + 1];
+        double[] subData = new double[endIndex - startIndex + 1];
         System.arraycopy(data, startIndex, subData, 0, subData.length);
 
         // 计算突变量
@@ -320,7 +299,7 @@ public class TypeAlgorithmUtil {
      * @param data 波形内容
      * @return 零序电流极性
      */
-    public static double calculateZeroCurrentCoefficient(Double[] data) {
+    public static double calculateZeroCurrentCoefficient(double[] data) {
 
         if (ArrayUtils.isEmpty(data)) return 0.0;
 
@@ -368,7 +347,7 @@ public class TypeAlgorithmUtil {
      * @param data 波形内容
      * @return 触发位置
      */
-    private static int calculateZeroCurrentPosLocation(Double[] data) {
+    private static int calculateZeroCurrentPosLocation(double[] data) {
         int fpower = 12800; //设备采样率
         int threshold = 5;  //电流阈值
         int N = 256;        //一个周波对应点位
@@ -397,8 +376,6 @@ public class TypeAlgorithmUtil {
 
         return pos;
     }
-
-
 
 
 }

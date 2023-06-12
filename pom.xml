@@ -54,31 +54,31 @@
             <optional>true</optional>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>org.springframework.boot</groupId>-->
-<!--            <artifactId>spring-boot-starter-security</artifactId>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.springframework.boot</groupId>-->
+        <!--            <artifactId>spring-boot-starter-security</artifactId>-->
+        <!--        </dependency>-->
 
-<!--        <dependency>-->
-<!--            <groupId>org.springframework.boot</groupId>-->
-<!--            <artifactId>spring-boot-starter-tomcat</artifactId>-->
-<!--            <scope>provided</scope>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.springframework.boot</groupId>-->
+        <!--            <artifactId>spring-boot-starter-tomcat</artifactId>-->
+        <!--            <scope>provided</scope>-->
+        <!--        </dependency>-->
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>org.springframework.boot</groupId>-->
-<!--            <artifactId>spring-boot-starter-websocket</artifactId>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.springframework.boot</groupId>-->
+        <!--            <artifactId>spring-boot-starter-websocket</artifactId>-->
+        <!--        </dependency>-->
 
-<!--        <dependency>-->
-<!--            <groupId>org.springframework.security</groupId>-->
-<!--            <artifactId>spring-security-messaging</artifactId>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.springframework.security</groupId>-->
+        <!--            <artifactId>spring-security-messaging</artifactId>-->
+        <!--        </dependency>-->
 
         <dependency>
             <groupId>mysql</groupId>
@@ -100,31 +100,31 @@
             <scope>test</scope>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>org.springframework.security</groupId>-->
-<!--            <artifactId>spring-security-test</artifactId>-->
-<!--            <scope>test</scope>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.springframework.security</groupId>-->
+        <!--            <artifactId>spring-security-test</artifactId>-->
+        <!--            <scope>test</scope>-->
+        <!--        </dependency>-->
 
-<!--        <dependency>-->
-<!--            <groupId>io.jsonwebtoken</groupId>-->
-<!--            <artifactId>jjwt-api</artifactId>-->
-<!--            <version>0.10.7</version>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>io.jsonwebtoken</groupId>-->
+        <!--            <artifactId>jjwt-api</artifactId>-->
+        <!--            <version>0.10.7</version>-->
+        <!--        </dependency>-->
 
-<!--        <dependency>-->
-<!--            <groupId>io.jsonwebtoken</groupId>-->
-<!--            <artifactId>jjwt-impl</artifactId>-->
-<!--            <version> 0.10.7</version>-->
-<!--            <scope>runtime</scope>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>io.jsonwebtoken</groupId>-->
+        <!--            <artifactId>jjwt-impl</artifactId>-->
+        <!--            <version> 0.10.7</version>-->
+        <!--            <scope>runtime</scope>-->
+        <!--        </dependency>-->
 
-<!--        <dependency>-->
-<!--            <groupId>io.jsonwebtoken</groupId>-->
-<!--            <artifactId>jjwt-jackson</artifactId>-->
-<!--            <version>0.10.7</version>-->
-<!--            <scope>runtime</scope>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>io.jsonwebtoken</groupId>-->
+        <!--            <artifactId>jjwt-jackson</artifactId>-->
+        <!--            <version>0.10.7</version>-->
+        <!--            <scope>runtime</scope>-->
+        <!--        </dependency>-->
 
         <dependency>
             <groupId>javax.validation</groupId>
@@ -145,14 +145,14 @@
         </dependency>
 
         <!--操作Excel-->
-<!--        <dependency>-->
-<!--            <groupId>org.apache.poi</groupId>-->
-<!--            <artifactId>poi-ooxml</artifactId>-->
-<!--            <version>3.17</version>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.apache.poi</groupId>-->
+        <!--            <artifactId>poi-ooxml</artifactId>-->
+        <!--            <version>3.17</version>-->
+        <!--        </dependency>-->
 
         <dependency>
-            <groupId> org.apache.cassandra</groupId>
+            <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-all</artifactId>
             <version>0.8.1</version>
             <exclusions>
@@ -204,6 +204,13 @@
             <artifactId>annotations</artifactId>
             <version>13.0</version>
             <scope>compile</scope>
+        </dependency>
+
+        <!-- 矩阵线性代数运算 -->
+        <dependency>
+            <groupId>org.ejml</groupId>
+            <artifactId>ejml-all</artifactId>
+            <version>0.38</version>
         </dependency>
 
     </dependencies>

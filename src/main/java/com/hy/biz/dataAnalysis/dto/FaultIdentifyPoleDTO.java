@@ -13,17 +13,17 @@ public class FaultIdentifyPoleDTO {
     private Double distanceToHeadStation;
 
     // 工频电流三相波形内容
-    private Double[] aPhaseCurrentData;
-    private Double[] bPhaseCurrentData;
-    private Double[] cPhaseCurrentData;
+    private double[] aPhaseCurrentData;
+    private double[] bPhaseCurrentData;
+    private double[] cPhaseCurrentData;
 
     // 工频电压三相波形内容
-    private Double[] aPhaseVoltageData;
-    private Double[] bPhaseVoltageData;
-    private Double[] cPhaseVoltageData;
+    private double[] aPhaseVoltageData;
+    private double[] bPhaseVoltageData;
+    private double[] cPhaseVoltageData;
 
 
-    public FaultIdentifyPoleDTO(String lineId, String poleId, Double distanceToHeadStation, Double[] aPhaseCurrentData, Double[] bPhaseCurrentData, Double[] cPhaseCurrentData) {
+    public FaultIdentifyPoleDTO(String lineId, String poleId, Double distanceToHeadStation, double[] aPhaseCurrentData, double[] bPhaseCurrentData, double[] cPhaseCurrentData) {
         this.lineId = lineId;
         this.poleId = poleId;
         this.distanceToHeadStation = distanceToHeadStation;
@@ -32,7 +32,7 @@ public class FaultIdentifyPoleDTO {
         this.cPhaseCurrentData = cPhaseCurrentData;
     }
 
-    public FaultIdentifyPoleDTO(String lineId, String poleId, Double distanceToHeadStation, Double[] aPhaseCurrentData, Double[] bPhaseCurrentData, Double[] cPhaseCurrentData, Double[] aPhaseVoltageData, Double[] bPhaseVoltageData, Double[] cPhaseVoltageData) {
+    public FaultIdentifyPoleDTO(String lineId, String poleId, Double distanceToHeadStation, double[] aPhaseCurrentData, double[] bPhaseCurrentData, double[] cPhaseCurrentData, double[] aPhaseVoltageData, double[] bPhaseVoltageData, double[] cPhaseVoltageData) {
         this.lineId = lineId;
         this.poleId = poleId;
         this.distanceToHeadStation = distanceToHeadStation;

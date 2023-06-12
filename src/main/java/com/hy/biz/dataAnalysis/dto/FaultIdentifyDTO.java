@@ -9,14 +9,14 @@ public class FaultIdentifyDTO {
     private String faultType;
 
     // 工频电流三相波形内容
-    private Double[] aPhaseCurrentData;
-    private Double[] bPhaseCurrentData;
-    private Double[] cPhaseCurrentData;
+    private double[] aPhaseCurrentData;
+    private double[] bPhaseCurrentData;
+    private double[] cPhaseCurrentData;
 
     // 工频电压三相波形内容
-    private Double[] aPhaseVoltageData;
-    private Double[] bPhaseVoltageData;
-    private Double[] cPhaseVoltageData;
+    private double[] aPhaseVoltageData;
+    private double[] bPhaseVoltageData;
+    private double[] cPhaseVoltageData;
 
     // 是否是上游故障判断结果 默认是
     private boolean isUpstream = true;
@@ -25,14 +25,14 @@ public class FaultIdentifyDTO {
         this.faultType = faultType;
     }
 
-    public FaultIdentifyDTO(String faultType, Double[] aPhaseCurrentData, Double[] bPhaseCurrentData, Double[] cPhaseCurrentData) {
+    public FaultIdentifyDTO(String faultType, double[] aPhaseCurrentData, double[] bPhaseCurrentData, double[] cPhaseCurrentData) {
         this.faultType = faultType;
         this.aPhaseCurrentData = aPhaseCurrentData;
         this.bPhaseCurrentData = bPhaseCurrentData;
         this.cPhaseCurrentData = cPhaseCurrentData;
     }
 
-    public FaultIdentifyDTO(String faultType, Double[] aPhaseCurrentData, Double[] bPhaseCurrentData, Double[] cPhaseCurrentData, Double[] aPhaseVoltageData, Double[] bPhaseVoltageData, Double[] cPhaseVoltageData) {
+    public FaultIdentifyDTO(String faultType, double[] aPhaseCurrentData, double[] bPhaseCurrentData, double[] cPhaseCurrentData, double[] aPhaseVoltageData, double[] bPhaseVoltageData, double[] cPhaseVoltageData) {
         this.faultType = faultType;
         this.aPhaseCurrentData = aPhaseCurrentData;
         this.bPhaseCurrentData = bPhaseCurrentData;
@@ -42,7 +42,7 @@ public class FaultIdentifyDTO {
         this.cPhaseVoltageData = cPhaseVoltageData;
     }
 
-    public FaultIdentifyDTO(String faultType, Double[] aPhaseCurrentData, Double[] bPhaseCurrentData, Double[] cPhaseCurrentData, boolean isUpstream) {
+    public FaultIdentifyDTO(String faultType, double[] aPhaseCurrentData, double[] bPhaseCurrentData, double[] cPhaseCurrentData, boolean isUpstream) {
         this.faultType = faultType;
         this.aPhaseCurrentData = aPhaseCurrentData;
         this.bPhaseCurrentData = bPhaseCurrentData;
@@ -50,7 +50,7 @@ public class FaultIdentifyDTO {
         this.isUpstream = isUpstream;
     }
 
-    public FaultIdentifyDTO(String faultType, Double[] aPhaseCurrentData, Double[] bPhaseCurrentData, Double[] cPhaseCurrentData, Double[] aPhaseVoltageData, Double[] bPhaseVoltageData, Double[] cPhaseVoltageData, boolean isUpstream) {
+    public FaultIdentifyDTO(String faultType, double[] aPhaseCurrentData, double[] bPhaseCurrentData, double[] cPhaseCurrentData, double[] aPhaseVoltageData, double[] bPhaseVoltageData, double[] cPhaseVoltageData, boolean isUpstream) {
         this.faultType = faultType;
         this.aPhaseCurrentData = aPhaseCurrentData;
         this.bPhaseCurrentData = bPhaseCurrentData;

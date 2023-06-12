@@ -37,15 +37,15 @@ public class ExtraAlgorithmUtil {
      * @param freqWaveData 波形数据
      * @return 预处理后的波形数据
      */
-    public static Double[] preProcessFrequencyWave(Double[] freqWaveData) {
+    public static double[] preProcessFrequencyWave(double[] freqWaveData) {
         //校验数据长度
         if (freqWaveData.length < 768) return freqWaveData;
 
         // Calculate the average of the first 768 points
-        double avg = Arrays.stream(freqWaveData, 0, 768).mapToDouble(Double::doubleValue).sum() / 768;
+        double avg = Arrays.stream(freqWaveData, 0, 768).sum() / 768;
 
         // Subtract the average from each point in the freqWaveData
-        return Arrays.stream(freqWaveData).map(d -> d - avg).toArray(Double[]::new);
+        return Arrays.stream(freqWaveData).map(d -> d - avg).toArray();
     }
 
 

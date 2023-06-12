@@ -43,7 +43,7 @@ public class FeatureGroundCalculate {
      */
     public static double zeroSeqCur(FaultIdentifyDTO faultIdentifyDTO) {
 
-        Double[] i0 = TypeAlgorithmUtil.synthesisZeroCurrent(faultIdentifyDTO.getAPhaseCurrentData(), faultIdentifyDTO.getBPhaseCurrentData(), faultIdentifyDTO.getCPhaseCurrentData());
+        double[] i0 = TypeAlgorithmUtil.synthesisZeroCurrent(faultIdentifyDTO.getAPhaseCurrentData(), faultIdentifyDTO.getBPhaseCurrentData(), faultIdentifyDTO.getCPhaseCurrentData());
 
         double zero = TypeAlgorithmUtil.calculateCyclicWavePH(i0, 5, 256);
 
@@ -57,9 +57,9 @@ public class FeatureGroundCalculate {
      * @param faultWaveList
      * @return 0-未分闸，1-保护分闸 默认无结果返回0
      */
-    public static int isBreak(AreaLocateDTO areaLocateDTO, List<FaultWave> faultWaveList) {
+    public static Integer isBreak(AreaLocateDTO areaLocateDTO, List<FaultWave> faultWaveList) {
 
-        if (!StringUtils.hasText(areaLocateDTO.getFaultHeadTowerId())) return 0;
+        if (!StringUtils.hasText(areaLocateDTO.getFaultHeadTowerId())) return null;
 
         List<FaultWave> leftWave = faultWaveList.stream().filter(faultWave -> faultWave.getDistanceToHeadStation() < areaLocateDTO.getFaultHeadTowerDistanceToHeadStation()).collect(Collectors.toList());
 

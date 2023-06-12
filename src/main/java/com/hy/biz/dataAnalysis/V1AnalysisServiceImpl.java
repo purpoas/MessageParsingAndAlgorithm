@@ -1,14 +1,17 @@
 package com.hy.biz.dataAnalysis;
 
+import com.google.gson.JsonObject;
 import com.hy.biz.cache.service.AlgorithmCacheManager;
 import com.hy.biz.cache.service.GroundFaultCacheManager;
 import com.hy.biz.dataAnalysis.delay.DelayTaskQueue;
 import com.hy.biz.dataAnalysis.dto.*;
+import com.hy.biz.dataAnalysis.featureAlgorithm.FaultFeatureUtil;
 import com.hy.biz.dataAnalysis.intervalAlgorithm.IntervalAlgorithm;
 import com.hy.biz.dataAnalysis.positioningAlgorithm.PositioningAlgorithm;
 import com.hy.biz.dataAnalysis.typeAlgorithm.FaultIdentifyAlgorithmUtil;
 import com.hy.biz.dataPush.DataPushService;
 import com.hy.biz.dataPush.dto.DeviceDTO;
+import com.hy.biz.dataPush.dto.PoleDTO;
 import com.hy.biz.dataResolver.dto.WaveDataMessage;
 import com.hy.biz.util.TimeUtil;
 import com.hy.config.HyConfigProperty;
@@ -66,6 +69,7 @@ public class V1AnalysisServiceImpl implements DataAnalysisService {
         FaultIdentifyDTO faultType = FaultIdentifyAlgorithmUtil.judge(faultWaves, areaLocateDTO);
 
         // TODO 4.故障特性计算
+        JsonObject faultFeatureObject = FaultFeatureUtil.calculate(faultType, areaLocateDTO, faultWaves);
 
         // TODO 5.故障精确定位
         if (positioningAlgorithm.analyze(faultWaves).isPresent()) {
@@ -87,8 +91,12 @@ public class V1AnalysisServiceImpl implements DataAnalysisService {
 
         if (deviceDTO == null) return;
 
+        PoleDTO poleDTO = dataPushService.getPoleByPoleId(deviceDTO.getLineId(), deviceDTO.getPoleId());
+
+        if (poleDTO == null) return;
+
         // 生成FaultWave对象
-        FaultWave faultWave = waveDataMessage.transform(deviceDTO);
+        FaultWave faultWave = waveDataMessage.transform(deviceDTO, poleDTO);
         // 生成算法标识
         AlgorithmIdentify algorithmIdentify = new AlgorithmIdentify(String.valueOf(deviceDTO.getLineId()), TimeUtil.handleHeadTimeToTimestamp(waveDataMessage.getWaveStartTime()), hyConfigProperty.getAlgorithm().getDelayExecuteTime());
         // 从Cache中获取算法任务

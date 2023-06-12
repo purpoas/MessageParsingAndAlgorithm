@@ -20,11 +20,11 @@ public class CommonAlgorithmUtil {
      * @param data
      * @return
      */
-    public static Double[] shiftWave(String data) {
+    public static double[] shiftWave(String data) {
         String[] strings = data.split(",");
-        Double[] in = new Double[strings.length];
+        double[] in = new double[strings.length];
         for (int i = 0; i < strings.length; i++) {
-            in[i] = Double.valueOf(strings[i]);
+            in[i] = Double.parseDouble(strings[i]);
         }
         return in;
     }
@@ -37,7 +37,7 @@ public class CommonAlgorithmUtil {
      * @param deltaK 德尔塔K
      * @return
      */
-    public static List<Double> calculateCurrentMutationEnergy(Double[] data, int power, int deltaK) {
+    public static List<Double> calculateCurrentMutationEnergy(double[] data, int power, int deltaK) {
         List<Double> deltaI = new ArrayList<>();
 
         for (int i = 1; i < data.length; i++) {
@@ -88,9 +88,9 @@ public class CommonAlgorithmUtil {
         for (String poleId : matchPoleSet) {
             List<FaultWave> f = poleMap.get(poleId);
 
-            Double[] aPhaseData = null;
-            Double[] bPhaseData = null;
-            Double[] cPhaseData = null;
+            double[] aPhaseData = null;
+            double[] bPhaseData = null;
+            double[] cPhaseData = null;
 
             for (FaultWave faultWave : f) {
                 if (faultWave.getWaveType() == MessageType.FAULT_CURRENT && faultWave.getPhase() == 1) {
@@ -140,12 +140,12 @@ public class CommonAlgorithmUtil {
         for (String poleId : matchPoleSet) {
             List<FaultWave> f = poleMap.get(poleId);
 
-            Double[] aPhaseCurrentData = null;
-            Double[] bPhaseCurrentData = null;
-            Double[] cPhaseCurrentData = null;
-            Double[] aPhaseVoltageData = null;
-            Double[] bPhaseVoltageData = null;
-            Double[] cPhaseVoltageData = null;
+            double[] aPhaseCurrentData = null;
+            double[] bPhaseCurrentData = null;
+            double[] cPhaseCurrentData = null;
+            double[] aPhaseVoltageData = null;
+            double[] bPhaseVoltageData = null;
+            double[] cPhaseVoltageData = null;
 
             for (FaultWave faultWave : f) {
                 if (faultWave.getWaveType() == MessageType.FAULT_CURRENT && faultWave.getPhase() == 1) {

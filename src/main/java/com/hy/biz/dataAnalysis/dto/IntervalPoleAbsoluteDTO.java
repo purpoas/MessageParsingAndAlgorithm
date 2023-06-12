@@ -12,7 +12,7 @@ public class IntervalPoleAbsoluteDTO {
     private String poleId;
     private Double distanceToHeadStation;
     private Boolean absolute;
-    private Double[] data;
+    private double[] data;
 
     public IntervalPoleAbsoluteDTO() {
     }

@@ -64,6 +64,7 @@ public class WaveDataMsgParsingStrategy implements MessageParserStrategy {
                 waveDataStr.setLength(waveDataStr.length() - 1);
             }
             message.setWaveData(String.valueOf(waveDataStr));
+            message.calculateIsFault(null);
             waveDataStr.setLength(0);
         }
 

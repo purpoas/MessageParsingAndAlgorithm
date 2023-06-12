@@ -9,4 +9,11 @@ public class LineDTO {
 
     private Double lineLength;
 
+    public LineDTO() {
+    }
+
+    public LineDTO(String lineId, Double lineLength) {
+        this.lineId = lineId;
+        this.lineLength = lineLength;
+    }
 }

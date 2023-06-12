@@ -50,12 +50,12 @@ public class ZeroTransientAlgorithmUtil {
                 // C相
                 FaultWave cPhaseWave = faultWaves.stream().filter(faultWave -> 3 == faultWave.getPhase()).findAny().get();
 
-                Double[] aData = CommonAlgorithmUtil.shiftWave(aPhaseWave.getData());
-                Double[] bData = CommonAlgorithmUtil.shiftWave(bPhaseWave.getData());
-                Double[] cData = CommonAlgorithmUtil.shiftWave(cPhaseWave.getData());
+                double[] aData = CommonAlgorithmUtil.shiftWave(aPhaseWave.getData());
+                double[] bData = CommonAlgorithmUtil.shiftWave(bPhaseWave.getData());
+                double[] cData = CommonAlgorithmUtil.shiftWave(cPhaseWave.getData());
 
                 // 合成零序电流
-                Double[] synthesisDatas = TypeAlgorithmUtil.synthesisZeroCurrent(aData, bData, cData);
+                double[] synthesisDatas = TypeAlgorithmUtil.synthesisZeroCurrent(aData, bData, cData);
 
                 // 计算零序电流极性
                 boolean absolute = TypeAlgorithmUtil.calculateZeroCurrentAbsolute(synthesisDatas);
@@ -69,8 +69,8 @@ public class ZeroTransientAlgorithmUtil {
         AreaLocateDTO mainAreaLocateDTO = lookIntervalByPoleSerial(mainLineIntervalList);
 
         // 计算突变区间两侧零序电流相关系数
-        Double[] leftDatas = mainAreaLocateDTO.getHeadFaultWaveData();
-        Double[] rightDatas = mainAreaLocateDTO.getEndFaultWaveData();
+        double[] leftDatas = mainAreaLocateDTO.getHeadFaultWaveData();
+        double[] rightDatas = mainAreaLocateDTO.getEndFaultWaveData();
 
         double leftParam = TypeAlgorithmUtil.calculateZeroCurrentCoefficient(leftDatas);
         double rightParam = TypeAlgorithmUtil.calculateZeroCurrentCoefficient(rightDatas);
@@ -108,12 +108,12 @@ public class ZeroTransientAlgorithmUtil {
                         // C相
                         FaultWave cPhaseWave = faultWaves.stream().filter(faultWave -> 3 == faultWave.getPhase()).findAny().get();
 
-                        Double[] aData = CommonAlgorithmUtil.shiftWave(aPhaseWave.getData());
-                        Double[] bData = CommonAlgorithmUtil.shiftWave(bPhaseWave.getData());
-                        Double[] cData = CommonAlgorithmUtil.shiftWave(cPhaseWave.getData());
+                        double[] aData = CommonAlgorithmUtil.shiftWave(aPhaseWave.getData());
+                        double[] bData = CommonAlgorithmUtil.shiftWave(bPhaseWave.getData());
+                        double[] cData = CommonAlgorithmUtil.shiftWave(cPhaseWave.getData());
 
                         // 合成零序电流
-                        Double[] synthesisDatas = TypeAlgorithmUtil.synthesisZeroCurrent(aData, bData, cData);
+                        double[] synthesisDatas = TypeAlgorithmUtil.synthesisZeroCurrent(aData, bData, cData);
 
                         // 计算零序电流极性
                         boolean absolute = TypeAlgorithmUtil.calculateZeroCurrentAbsolute(synthesisDatas);

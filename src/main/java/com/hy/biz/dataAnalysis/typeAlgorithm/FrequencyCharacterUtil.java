@@ -18,7 +18,7 @@ public class FrequencyCharacterUtil {
      * @param data
      * @return
      */
-    public static double IJMP(Double[] data) {
+    public static double IJMP(double[] data) {
         double i5 = TypeAlgorithmUtil.calculateCyclicWavePH(data, 5, 256);
         double i6 = TypeAlgorithmUtil.calculateCyclicWavePH(data, 6, 256);
         double diff = i6 - i5;
@@ -33,7 +33,7 @@ public class FrequencyCharacterUtil {
      * @param data
      * @return
      */
-    public static double UJMP(Double[] data) {
+    public static double UJMP(double[] data) {
         double u5 = TypeAlgorithmUtil.calculateCyclicWavePH(data, 5, 256);
         double u6 = TypeAlgorithmUtil.calculateCyclicWavePH(data, 6, 256);
         double diff = u6 - u5;
@@ -47,7 +47,7 @@ public class FrequencyCharacterUtil {
      * @param data
      * @return
      */
-    public static double I10(Double[] data) {
+    public static double I10(double[] data) {
         return TypeAlgorithmUtil.calculateCyclicWavePH(data, 10, 256);
     }
 
@@ -58,7 +58,7 @@ public class FrequencyCharacterUtil {
      * @param data
      * @return
      */
-    public static double U10(Double[] data) {
+    public static double U10(double[] data) {
         return TypeAlgorithmUtil.calculateCyclicWavePH(data, 10, 256);
     }
 
@@ -68,7 +68,17 @@ public class FrequencyCharacterUtil {
      * @param data
      * @return
      */
-    public static double I1(Double[] data) {
+    public static double I1(double[] data) {
+        return TypeAlgorithmUtil.calculateCyclicWavePH(data, 1, 256);
+    }
+
+    /**
+     * X相电压中第1个周波有效值
+     *
+     * @param data
+     * @return
+     */
+    public static double U1(double[] data) {
         return TypeAlgorithmUtil.calculateCyclicWavePH(data, 1, 256);
     }
 
@@ -108,7 +118,7 @@ public class FrequencyCharacterUtil {
      * @param data
      * @return
      */
-    public static double IMAX10(Double[] data) {
+    public static double IMAX10(double[] data) {
         List<Double> I0List = new ArrayList<>();
 
         for (int i = 0; i < 10; i++) {
@@ -126,7 +136,7 @@ public class FrequencyCharacterUtil {
      * @param data
      * @return
      */
-    public static double IMIN10(Double[] data) {
+    public static double IMIN10(double[] data) {
         List<Double> I0List = new ArrayList<>();
 
         for (int i = 0; i < 10; i++) {
@@ -151,11 +161,11 @@ public class FrequencyCharacterUtil {
      * @return
      */
     public static double IBPH(double IAMAX10, double IBMAX10, double ICMAX10, double IAMIN10, double IBMIN10, double ICMIN10) {
-        Double[] max = {IAMAX10, IBMAX10, ICMAX10};
-        Double[] min = {IAMIN10, IBMIN10, ICMIN10};
+        double[] max = {IAMAX10, IBMAX10, ICMAX10};
+        double[] min = {IAMIN10, IBMIN10, ICMIN10};
 
-        double IMAX = Arrays.stream(max).max(Double::compareTo).get();
-        double IMIN = Arrays.stream(min).max(Double::compareTo).get();
+        double IMAX = Arrays.stream(max).max().getAsDouble();
+        double IMIN = Arrays.stream(min).max().getAsDouble();
 
         return (IMAX - IMIN) / IMAX;
     }

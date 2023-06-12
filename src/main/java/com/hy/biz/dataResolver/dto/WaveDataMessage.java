@@ -1,9 +1,13 @@
 package com.hy.biz.dataResolver.dto;
 
+import com.hy.biz.dataAnalysis.extraAlgorithm.ExtraAlgorithmUtil;
+import com.hy.biz.dataPush.dto.PoleDTO;
 import com.hy.biz.dataResolver.parser.ParserHelper;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
 import com.hy.biz.dataPush.dto.DeviceDTO;
 import com.hy.biz.dataResolver.util.WaveDataParserHelper;
+import com.hy.config.HyConfigProperty;
+import com.hy.domain.Pole;
 import com.hy.domain.WaveData;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -69,9 +73,42 @@ public class WaveDataMessage extends BaseMessage {
         return parserHelper.setWaveDataProperty(this, timeStamp, deviceCode);
     }
 
-    public FaultWave transform(DeviceDTO deviceDTO){
+    public void calculateIsFault(HyConfigProperty hyConfigProperty) {
+        // 根据波形类型判断是否是故障波形
+        int waveType = getMessageType();
+        boolean flag = false;
+        switch (waveType) {
+            case 1:
+                flag = ExtraAlgorithmUtil.isValidTravellingWave(getWaveData());
+                break;
+            case 3:
+            case 5:
+                flag = ExtraAlgorithmUtil.isValidPowerFreqCurrentOrVoltage(getWaveData(), hyConfigProperty);
+                break;
+            default:
+                break;
+        }
 
-        return null;
+        this.isFault = flag;
+    }
+
+    public FaultWave transform(DeviceDTO deviceDTO, PoleDTO poleDTO) {
+        FaultWave faultWave = new FaultWave();
+        faultWave.setDeviceId(deviceDTO.getDeviceId());
+        faultWave.setDeviceCode(deviceDTO.getDeviceCode());
+        faultWave.setPhase(deviceDTO.getPhase());
+
+        faultWave.setLineId(poleDTO.getLineId());
+        faultWave.setTopMainLineId(poleDTO.getTopMainLineId());
+        faultWave.setPoleId(poleDTO.getPoleId());
+        faultWave.setPoleSerial(poleDTO.getPoleSerial());
+        faultWave.setDistanceToHeadStation(poleDTO.getDistanceToHeadStation());
+
+        faultWave.setWaveType(this.getMessageType());
+        faultWave.setHeadTime(this.getWaveStartTime());
+        faultWave.setData(this.getWaveData());
+
+        return faultWave;
     }
 
 }
