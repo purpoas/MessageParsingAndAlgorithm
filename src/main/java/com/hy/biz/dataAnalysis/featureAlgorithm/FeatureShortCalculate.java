@@ -8,7 +8,7 @@ import com.hy.biz.dataAnalysis.dto.FaultWave;
 import com.hy.biz.dataAnalysis.typeAlgorithm.FaultIdentifyAlgorithmUtil;
 import com.hy.biz.dataAnalysis.typeAlgorithm.FrequencyCharacterUtil;
 import com.hy.biz.dataAnalysis.typeAlgorithm.TypeAlgorithmUtil;
-import com.hy.biz.dataResolver.constants.MessageType;
+import com.hy.biz.dataParsing.constants.MessageType;
 import com.hy.config.AnalysisConstants;
 import org.springframework.util.CollectionUtils;
 

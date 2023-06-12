@@ -19,7 +19,6 @@ public class DelayTaskQueue {
 
     public DelayTaskQueue() {
         queue = new DelayQueue<>();
-        log.info("创建延迟任务队列");
     }
 
     /**

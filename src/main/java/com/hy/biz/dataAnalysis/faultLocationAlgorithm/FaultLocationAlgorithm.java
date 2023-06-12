@@ -1,5 +1,6 @@
 package com.hy.biz.dataAnalysis.faultLocationAlgorithm;
 
+import com.hy.biz.dataAnalysis.commonAlgorithm.CommonAlgorithmUtil;
 import com.hy.biz.dataAnalysis.dto.FaultLocalizationAnalysisResult;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
 import com.hy.biz.dataAnalysis.extraAlgorithm.ExtraAlgorithmUtil;
@@ -63,12 +64,13 @@ public class FaultLocationAlgorithm {
         return faultWaveSet.stream()
                 .filter(faultWave -> {
                     int waveType = faultWave.getWaveType();
+                    double[] data = CommonAlgorithmUtil.shiftWave(faultWave.getData());
                     switch (waveType) {
                         case 1:
-                            return ExtraAlgorithmUtil.isValidTravellingWave(faultWave.getData());
+                            return ExtraAlgorithmUtil.isValidTravellingWave(data, hyConfigProperty.getConstant().getTravelThreshold());
                         case 3:
                         case 5:
-                            return ExtraAlgorithmUtil.isValidPowerFreqCurrentOrVoltage(faultWave.getData(), hyConfigProperty);
+                            return ExtraAlgorithmUtil.isValidPowerFreqCurrentOrVoltage(data, hyConfigProperty);
                         default:
                             throw new RuntimeException("未知波形数据类型");
                     }
@@ -78,7 +80,7 @@ public class FaultLocationAlgorithm {
     private List<FaultWave> sortByPhaseAndHeadTime(List<FaultWave> validWaves) {
         if (validWaves.isEmpty()) throw new RuntimeException("无通过校验的故障波形");
         return validWaves.stream().sorted(Comparator.comparing(FaultWave::getPhase)
-                        .thenComparing(FaultWave::getHeadTime))
+                .thenComparing(FaultWave::getHeadTime))
                 .collect(Collectors.toList());
     }
 

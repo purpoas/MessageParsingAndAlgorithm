@@ -157,7 +157,7 @@ public class FFT {
      * @param arr2 The second array
      * @return The circular convolution of the two arrays
      */
-    public static Double[] linearConvolve(Double[] arr1, Double[] arr2) {
+    public static Double[] linearConvolve(double[] arr1, double[] arr2) {
         // Adjust the length of arr1 and arr2 to be a power of 2 by appending zeros
         arr1 = pow2DoubleArr(arr1);
         arr2 = pow2DoubleArr(arr2);
@@ -333,7 +333,7 @@ public class FFT {
     /**
      * 将数组数据重组成2的幂次方输出
      */
-    private static Double[] pow2DoubleArr(Double[] data) {
+    private static double[] pow2DoubleArr(double[] data) {
         int originalLength = data.length;
 
         // Calculate the next power of 2
@@ -344,7 +344,7 @@ public class FFT {
             return data;
 
         // Extend and fill the array with zeroes
-        Double[] extendedData = Arrays.copyOf(data, nextPowerOfTwo);
+        double[] extendedData = Arrays.copyOf(data, nextPowerOfTwo);
         Arrays.fill(extendedData, originalLength, nextPowerOfTwo, 0d);
 
         return extendedData;

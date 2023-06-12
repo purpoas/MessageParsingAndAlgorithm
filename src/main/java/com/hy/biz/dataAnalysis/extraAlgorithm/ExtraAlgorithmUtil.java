@@ -25,18 +25,17 @@ public class ExtraAlgorithmUtil {
     /**
      * 行波波形预处理
      *
-     * @param trvlWaveData 波形数据
+     * @param data 波形数据
      * @return 预处理后的波形数据
      */
-    public static Double[] preProcessTravellingWave(String trvlWaveData) {
-        Double[] data = preProcessInputData(trvlWaveData);
+    public static double[] preProcessTravellingWave(double[] data) {
         if (data.length < 200) return data;
 
         // Calculate average of first 200 elements
-        double avg = Arrays.stream(data, 0, 200).mapToDouble(Double::doubleValue).sum() / 200;
+        double avg = Arrays.stream(data, 0, 200).sum() / 200;
 
         // Subtract avg from each element
-        return Arrays.stream(data).map(d -> d - avg).toArray(Double[]::new);
+        return Arrays.stream(data).map(d -> d - avg).toArray();
     }
 
     /**
@@ -60,37 +59,45 @@ public class ExtraAlgorithmUtil {
     /**
      * 行波电流有效性检验(是否是故障波形)
      *
+     * @param data            波形内容数组
+     * @param travelThreshold 设备默认阈值：5A
      * @return 是否为故障波形
      */
-    public static boolean isValidTravellingWave(String trvlWaveData) {
+    public static boolean isValidTravellingWave(double[] data, double travelThreshold) {
 
-        Double[] data = preProcessInputData(trvlWaveData);
-        DoubleSummaryStatistics stats = Arrays.stream(data).collect(Collectors.summarizingDouble(Double::doubleValue));
+        double maxValue = data[0];
+        double minValue = data[0];
+        for (double d : data) {
+            if (maxValue > d) {
+                maxValue = d;
+            }
+            if (minValue < d) {
+                minValue = d;
+            }
+        }
 
-        double maxMinDif = Math.abs(stats.getMax() - stats.getMin());
-        double threshold = 5.0;  // 设备默认阈值：5A
+        double maxMinDif = Math.abs(maxValue - minValue);
 
-        return maxMinDif >= threshold;
+        return maxMinDif >= travelThreshold;
     }
 
 
     /**
      * 分析该波形的工频电流是否有效(是否是故障波形)
      *
-     * @param inputData 数据
+     * @param data 数据
      * @return 工频电流是否有效
      */
-    public static boolean isValidPowerFreqCurrentOrVoltage(String inputData, HyConfigProperty hyConfigProperty) {
-        Double[] data = preProcessInputData(inputData);
+    public static boolean isValidPowerFreqCurrentOrVoltage(double[] data, HyConfigProperty hyConfigProperty) {
         return checkFundamentalFrequency(data, hyConfigProperty) && checkPhaseCurrentAbruptChange(data, hyConfigProperty);
     }
 
     /**
      * 合闸涌流判断
      *
-     * @param freqWaveDataA Frequency waveform data for Phase A
-     * @param freqWaveDataB Frequency waveform data for Phase B
-     * @param freqWaveDataC Frequency waveform data for Phase C
+     * @param freqWaveDataA    Frequency waveform data for Phase A
+     * @param freqWaveDataB    Frequency waveform data for Phase B
+     * @param freqWaveDataC    Frequency waveform data for Phase C
      * @param hyConfigProperty Configuration properties for the system
      * @return Pair<Boolean, Double> A pair indicating if a surge is detected (true/false) and the maximum second harmonic content across the phases
      */
@@ -121,7 +128,7 @@ public class ExtraAlgorithmUtil {
     /**
      * 负荷波动判断
      *
-     * @param faultWaves The list of fault waves in the system.
+     * @param faultWaves       The list of fault waves in the system.
      * @param hyConfigProperty The system's configuration properties.
      * @return boolean Indicates whether load fluctuation is detected.
      */
@@ -172,7 +179,6 @@ public class ExtraAlgorithmUtil {
     }
 
 
-
     // 私有方法==========================================================================================================
 
     /**
@@ -180,16 +186,16 @@ public class ExtraAlgorithmUtil {
      *
      * @return 是否为故障波形
      */
-    private static boolean checkFundamentalFrequency(Double[] signalData, HyConfigProperty hyConfigProperty) {
+    private static boolean checkFundamentalFrequency(double[] signalData, HyConfigProperty hyConfigProperty) {
         double maxSignalThreshold = hyConfigProperty.getConstant().getFrequencyMaxThreshold();
         long frequencySamplingRate = hyConfigProperty.getConstant().getDeviceSampleRate();
 
-        double maxSignalValue = Arrays.stream(signalData).mapToDouble(Math::abs).max().orElse(0.0);
+        double maxSignalValue = Arrays.stream(signalData).map(Math::abs).max().orElse(0.0);
 
         if (maxSignalValue > maxSignalThreshold) return false;
 
         // 低通滤波器
-        Double[] lowPassFilter = {0.00149176912699628, 0.00113338606406803, 0.000286402296623436, -0.00169769035032670,
+        double[] lowPassFilter = {0.00149176912699628, 0.00113338606406803, 0.000286402296623436, -0.00169769035032670,
                 -0.00517520815333871, -0.00964292315834651, -0.0134164361793712, -0.0137898593712167, -0.00773459964570550,
                 0.00703454548213997, 0.0309850620686805, 0.0621043298912804, 0.0959667403435662, 0.126609163946671,
                 0.148003498647870, 0.155683637980818, 0.148003498647870, 0.126609163946671, 0.0959667403435662, 0.0621043298912804,
@@ -222,7 +228,7 @@ public class ExtraAlgorithmUtil {
      *
      * @return 是否为故障波形
      */
-    private static boolean checkPhaseCurrentAbruptChange(Double[] data, HyConfigProperty hyConfigProperty) {
+    private static boolean checkPhaseCurrentAbruptChange(double[] data, HyConfigProperty hyConfigProperty) {
         double sampleRate = hyConfigProperty.getConstant().getDeviceSampleRate();   // 设备采样率 12800
         double threshold = hyConfigProperty.getConstant().getFaultFrequencyCurrentThreshold(); // 工频电流故障触发阈值 5
 

@@ -24,7 +24,7 @@ public class CommonAlgorithmUtil {
      */
     public static double[] shiftWave(String data) {
         return Stream.of(data.split(","))
-                .map(Double::valueOf)
+                .mapToDouble(Double::parseDouble)
                 .toArray();
     }
 
@@ -36,7 +36,7 @@ public class CommonAlgorithmUtil {
      * @param deltaK 德尔塔K
      * @return
      */
-    public static List<Double> calculateCurrentMutationEnergy(Double[] data, int power, int deltaK) {
+    public static List<Double> calculateCurrentMutationEnergy(double[] data, int power, int deltaK) {
         if (data == null || data.length < deltaK)
             throw new IllegalArgumentException("Data 数组不应为null 且元素数量不应小雨deltaK");
 
@@ -234,7 +234,6 @@ public class CommonAlgorithmUtil {
     private static Integer getMaxValueIndex(Map<Integer, Double> indexToValueMap) {
         return Collections.max(indexToValueMap.entrySet(), Map.Entry.comparingByValue()).getKey();
     }
-
 
 
     /**

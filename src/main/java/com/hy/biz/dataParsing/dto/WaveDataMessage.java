@@ -1,8 +1,13 @@
 package com.hy.biz.dataParsing.dto;
 
+import com.hy.biz.dataAnalysis.commonAlgorithm.CommonAlgorithmUtil;
+import com.hy.biz.dataAnalysis.extraAlgorithm.ExtraAlgorithmUtil;
+import com.hy.biz.dataParsing.constants.MessageType;
 import com.hy.biz.dataParsing.parser.ParserHelper;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
 import com.hy.biz.dataPush.dto.DeviceDTO;
+import com.hy.biz.dataPush.dto.PoleDTO;
+import com.hy.config.HyConfigProperty;
 import com.hy.domain.WaveData;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -72,13 +77,21 @@ public class WaveDataMessage extends BaseMessage {
         // 根据波形类型判断是否是故障波形
         int waveType = getMessageType();
         boolean flag = false;
+        double[] data = CommonAlgorithmUtil.shiftWave(getWaveData());
         switch (waveType) {
-            case 1:
-                flag = ExtraAlgorithmUtil.isValidTravellingWave(getWaveData());
+            case MessageType
+                    .TRAVELLING_WAVE_CURRENT:
+                // 波形预处理
+                double[] preTravelWaveData = ExtraAlgorithmUtil.preProcessTravellingWave(data);
+                // 故障波形判断
+                flag = ExtraAlgorithmUtil.isValidTravellingWave(preTravelWaveData, hyConfigProperty.getConstant().getTravelThreshold());
                 break;
             case 3:
             case 5:
-                flag = ExtraAlgorithmUtil.isValidPowerFreqCurrentOrVoltage(getWaveData(), hyConfigProperty);
+                // 波形预处理
+                double[] frequencyWaveData = ExtraAlgorithmUtil.preProcessFrequencyWave(data);
+                // 故障波形判断
+                flag = ExtraAlgorithmUtil.isValidPowerFreqCurrentOrVoltage(frequencyWaveData, hyConfigProperty);
                 break;
             default:
                 break;
