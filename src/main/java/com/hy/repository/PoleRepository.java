@@ -12,10 +12,10 @@ import java.util.List;
 @Repository
 public interface PoleRepository extends JpaRepository<Pole, Long> {
 
+    Pole findPoleById(Long poleId);
 
     @Query(value = "SELECT sum(distance_to_last_pole) from pole WHERE org_id = :orgId and order_num <= :orderNum", nativeQuery = true)
     Double calculatePoleDistanceToHeadStation(@Param("orgId") Long orgId, @Param("orderNum") Integer orderNum);
-
 
     Pole findByIdAndDeletedFalse(Long poleId);
 

@@ -5,10 +5,7 @@ import com.hy.biz.dataAnalysis.dto.AreaLocateDTO;
 import com.hy.biz.dataAnalysis.dto.FaultIdentifyDTO;
 import com.hy.biz.dataAnalysis.dto.FaultIdentifyPoleDTO;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
-import com.hy.biz.dataResolver.constants.MessageType;
-import com.hy.biz.util.ListUtil;
 import com.hy.config.AnalysisConstants;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
@@ -91,9 +88,7 @@ public class FaultIdentifyAlgorithmUtil {
                 // 找三相电流三相电压杆塔
                 List<FaultIdentifyPoleDTO> downThreePhaseVoltages = CommonAlgorithmUtil.filterThreePhaseCurrentAndVoltagePole(downPoleIds, rightWave);
                 // 计算三相电流三相电压波形的故障性质
-                FaultIdentifyDTO downVoltageFaultType = calculateDownStreamVoltageFaultType(downThreePhaseVoltages);
-
-                if (downVoltageFaultType != null) return downVoltageFaultType;
+                return calculateDownStreamVoltageFaultType(downThreePhaseVoltages);
             }
         }
 
@@ -254,7 +249,7 @@ public class FaultIdentifyAlgorithmUtil {
      * @param faultIdentifyPoles
      * @return
      */
-    private static FaultIdentifyDTO calculateDownstreamCurrentFaultType(List<FaultIdentifyPoleDTO> faultIdentifyPoles) {
+    public static FaultIdentifyDTO calculateDownstreamCurrentFaultType(List<FaultIdentifyPoleDTO> faultIdentifyPoles) {
 
         for (FaultIdentifyPoleDTO faultIdentify : faultIdentifyPoles) {
 
@@ -291,7 +286,7 @@ public class FaultIdentifyAlgorithmUtil {
      * @param faultIdentifyPoles
      * @return
      */
-    private static FaultIdentifyDTO calculateDownStreamVoltageFaultType(List<FaultIdentifyPoleDTO> faultIdentifyPoles) {
+    public static FaultIdentifyDTO calculateDownStreamVoltageFaultType(List<FaultIdentifyPoleDTO> faultIdentifyPoles) {
         for (FaultIdentifyPoleDTO faultIdentify : faultIdentifyPoles) {
 
             double IAJMP = FrequencyCharacterUtil.IJMP(faultIdentify.getAPhaseCurrentData());

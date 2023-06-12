@@ -1,7 +1,7 @@
 package com.hy.biz.dataAnalysis;
 
 import com.hy.biz.dataAnalysis.dto.FaultWave;
-import com.hy.biz.dataResolver.dto.WaveDataMessage;
+import com.hy.biz.dataParsing.dto.WaveDataMessage;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
@@ -14,7 +14,7 @@ public interface DataAnalysisService {
      *
      * @param faultWaves 故障波形
      */
-    public void executeAlgorithmAnalysis(Set<FaultWave> faultWaves);
+    void executeAlgorithmAnalysis(Set<FaultWave> faultWaves);
 
 
     /**
@@ -22,7 +22,7 @@ public interface DataAnalysisService {
      *
      * @param waveDataMessage 报文类型
      */
-    public void createAlgorithmTask(WaveDataMessage waveDataMessage);
+    void createAlgorithmTask(WaveDataMessage waveDataMessage);
 
 
 }

@@ -4,7 +4,7 @@ import com.hy.biz.dataPush.dto.DeviceDTO;
 import com.hy.biz.dataPush.dto.LineDTO;
 import com.hy.biz.dataPush.dto.PoleDTO;
 import com.hy.biz.dataPush.dto.PushDataType;
-import com.hy.biz.dataResolver.dto.BaseMessage;
+import com.hy.biz.dataParsing.dto.BaseMessage;
 
 import java.util.List;
 

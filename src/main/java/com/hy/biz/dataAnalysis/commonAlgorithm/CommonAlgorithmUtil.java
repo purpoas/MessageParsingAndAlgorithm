@@ -2,12 +2,14 @@ package com.hy.biz.dataAnalysis.commonAlgorithm;
 
 import com.hy.biz.dataAnalysis.dto.FaultIdentifyPoleDTO;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
-import com.hy.biz.dataResolver.constants.MessageType;
+import com.hy.biz.dataParsing.constants.MessageType;
 import com.hy.biz.util.ListUtil;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * 通用算法计算相关函数
@@ -21,12 +23,9 @@ public class CommonAlgorithmUtil {
      * @return
      */
     public static double[] shiftWave(String data) {
-        String[] strings = data.split(",");
-        double[] in = new double[strings.length];
-        for (int i = 0; i < strings.length; i++) {
-            in[i] = Double.parseDouble(strings[i]);
-        }
-        return in;
+        return Stream.of(data.split(","))
+                .map(Double::valueOf)
+                .toArray();
     }
 
     /**
@@ -37,25 +36,20 @@ public class CommonAlgorithmUtil {
      * @param deltaK 德尔塔K
      * @return
      */
-    public static List<Double> calculateCurrentMutationEnergy(double[] data, int power, int deltaK) {
-        List<Double> deltaI = new ArrayList<>();
+    public static List<Double> calculateCurrentMutationEnergy(Double[] data, int power, int deltaK) {
+        if (data == null || data.length < deltaK)
+            throw new IllegalArgumentException("Data 数组不应为null 且元素数量不应小雨deltaK");
 
-        for (int i = 1; i < data.length; i++) {
-            Double value = data[i] - data[i - 1];
-            deltaI.add(value);
-        }
+        List<Double> deltaI = IntStream.range(1, data.length)
+                .mapToObj(i -> data[i] - data[i - 1])
+                .collect(Collectors.toList());
 
-        List<Double> E = new ArrayList<>();
-
-        for (int i = 0; i < deltaI.size() - deltaK + 1; i++) {
-            double value = 0d;
-            for (int j = 0; j < deltaK; j++) {
-                value += Math.pow(deltaI.get(i + j), power);
-            }
-            E.add(value);
-        }
-
-        return E;
+        return IntStream.range(0, deltaI.size() - deltaK + 1)
+                .mapToObj(i -> deltaI.subList(i, i + deltaK)
+                        .stream()
+                        .mapToDouble(a -> Math.pow(a, power))
+                        .sum())
+                .collect(Collectors.toList());
     }
 
     /**
@@ -67,46 +61,46 @@ public class CommonAlgorithmUtil {
     public static List<FaultIdentifyPoleDTO> filterThreePhaseCurrentPole(List<FaultWave> faultWaveList) {
         List<FaultIdentifyPoleDTO> result = new ArrayList<>();
 
+        // Group FaultWave by poleId
         Map<String, List<FaultWave>> poleMap = ListUtil.convertListToMapList(faultWaveList, FaultWave::getPoleId);
 
         Set<String> matchPoleSet = new HashSet<>();
+        // Iterate over all poles
         for (String poleId : poleMap.keySet()) {
-            List<FaultWave> f = poleMap.get(poleId);
-
-            long aPhaseAmount = f.stream().filter(faultWave -> 1 == faultWave.getPhase() && (faultWave.getWaveType() == MessageType.FAULT_CURRENT)).count();
-            long bPhaseAmount = f.stream().filter(faultWave -> 2 == faultWave.getPhase() && (faultWave.getWaveType() == MessageType.FAULT_CURRENT)).count();
-            long cPhaseAmount = f.stream().filter(faultWave -> 3 == faultWave.getPhase() && (faultWave.getWaveType() == MessageType.FAULT_CURRENT)).count();
-
-            if (aPhaseAmount >= 1 && bPhaseAmount >= 1 && cPhaseAmount >= 1) {
+            List<FaultWave> faultWaves = poleMap.get(poleId);
+            long[] phaseCounts = new long[3];
+            // Count the number of FaultWave for each phase in one pass
+            faultWaves.stream().filter(faultWave -> faultWave.getWaveType() == MessageType.FAULT_CURRENT)
+                    .forEach(faultWave -> phaseCounts[faultWave.getPhase() - 1]++);
+            // If all phases have at least one FaultWave, add pole to match set
+            if (Arrays.stream(phaseCounts).allMatch(count -> count >= 1)) {
                 matchPoleSet.add(poleId);
             }
         }
 
-        if (CollectionUtils.isEmpty(matchPoleSet)) return result;
+        // If no matching pole, return the result early
+        if (matchPoleSet.isEmpty()) return result;
 
-        List<FaultIdentifyPoleDTO> faultIdentifyPoleDTOList = new ArrayList<>();
+        // Iterate over all matching poles
         for (String poleId : matchPoleSet) {
             List<FaultWave> f = poleMap.get(poleId);
 
-            double[] aPhaseData = null;
-            double[] bPhaseData = null;
-            double[] cPhaseData = null;
+            double[][] phaseData = new double[3][];
 
+            // Populate phase data for each FaultWave in one pass
             for (FaultWave faultWave : f) {
-                if (faultWave.getWaveType() == MessageType.FAULT_CURRENT && faultWave.getPhase() == 1) {
-                    aPhaseData = CommonAlgorithmUtil.shiftWave(faultWave.getData());
-                } else if (faultWave.getWaveType() == MessageType.FAULT_CURRENT && faultWave.getPhase() == 2) {
-                    bPhaseData = CommonAlgorithmUtil.shiftWave(faultWave.getData());
-                } else if (faultWave.getWaveType() == MessageType.FAULT_CURRENT && faultWave.getPhase() == 3) {
-                    cPhaseData = CommonAlgorithmUtil.shiftWave(faultWave.getData());
+                if (faultWave.getWaveType() == MessageType.FAULT_CURRENT && faultWave.getPhase() >= 1 && faultWave.getPhase() <= 3) {
+                    phaseData[faultWave.getPhase() - 1] = CommonAlgorithmUtil.shiftWave(faultWave.getData());
                 }
             }
 
-            faultIdentifyPoleDTOList.add(new FaultIdentifyPoleDTO(f.get(0).getLineId(), f.get(0).getPoleId(), f.get(0).getDistanceToHeadStation()
-                    , aPhaseData, bPhaseData, cPhaseData));
+            result.add(new FaultIdentifyPoleDTO(f.get(0).getLineId(), f.get(0).getPoleId(), f.get(0).getDistanceToHeadStation()
+                    , phaseData[0], phaseData[1], phaseData[2]));
         }
-        return faultIdentifyPoleDTOList;
+
+        return result;
     }
+
 
     /**
      * 寻找筛选出杆塔下有三相电流和三相电压的集合
@@ -119,56 +113,58 @@ public class CommonAlgorithmUtil {
     public static List<FaultIdentifyPoleDTO> filterThreePhaseCurrentAndVoltagePole(List<String> poleIdList, List<FaultWave> faultWaveList) {
         List<FaultIdentifyPoleDTO> result = new ArrayList<>();
 
+        // Group FaultWave by poleId
         Map<String, List<FaultWave>> poleMap = ListUtil.convertListToMapList(faultWaveList, FaultWave::getPoleId);
 
         Set<String> matchPoleSet = new HashSet<>();
+
         for (String poleId : poleIdList) {
             List<FaultWave> f = poleMap.get(poleId);
 
-            long aPhaseAmount = f.stream().filter(faultWave -> 1 == faultWave.getPhase() && (faultWave.getWaveType() == MessageType.FAULT_VOLTAGE)).count();
-            long bPhaseAmount = f.stream().filter(faultWave -> 2 == faultWave.getPhase() && (faultWave.getWaveType() == MessageType.FAULT_VOLTAGE)).count();
-            long cPhaseAmount = f.stream().filter(faultWave -> 3 == faultWave.getPhase() && (faultWave.getWaveType() == MessageType.FAULT_VOLTAGE)).count();
+            if (f == null) continue;
 
-            if (aPhaseAmount >= 1 && bPhaseAmount >= 1 && cPhaseAmount >= 1) {
+            long[] phaseCounts = new long[6];
+
+            // Count the number of FaultWave for each phase and type in one pass
+            f.forEach(faultWave -> {
+                if (faultWave.getWaveType() == MessageType.FAULT_VOLTAGE && faultWave.getPhase() >= 1 && faultWave.getPhase() <= 3) {
+                    phaseCounts[faultWave.getPhase() - 1]++;
+                }
+            });
+
+            // If all phases have at least one FaultWave of type FAULT_VOLTAGE, add pole to match set
+            if (Arrays.stream(phaseCounts).limit(3).allMatch(count -> count >= 1)) {
                 matchPoleSet.add(poleId);
             }
         }
 
-        if (CollectionUtils.isEmpty(matchPoleSet)) return result;
+        // If no matching pole, return the result early
+        if (matchPoleSet.isEmpty()) {
+            return result;
+        }
 
-        List<FaultIdentifyPoleDTO> faultIdentifyPoleDTOList = new ArrayList<>();
+        // Iterate over all matching poles
         for (String poleId : matchPoleSet) {
             List<FaultWave> f = poleMap.get(poleId);
 
-            double[] aPhaseCurrentData = null;
-            double[] bPhaseCurrentData = null;
-            double[] cPhaseCurrentData = null;
-            double[] aPhaseVoltageData = null;
-            double[] bPhaseVoltageData = null;
-            double[] cPhaseVoltageData = null;
+            double[][] currentData = new double[3][];
+            double[][] voltageData = new double[3][];
 
+            // Populate current and voltage data for each FaultWave in one pass
             for (FaultWave faultWave : f) {
-                if (faultWave.getWaveType() == MessageType.FAULT_CURRENT && faultWave.getPhase() == 1) {
-                    aPhaseCurrentData = CommonAlgorithmUtil.shiftWave(faultWave.getData());
-                } else if (faultWave.getWaveType() == MessageType.FAULT_CURRENT && faultWave.getPhase() == 2) {
-                    bPhaseCurrentData = CommonAlgorithmUtil.shiftWave(faultWave.getData());
-                } else if (faultWave.getWaveType() == MessageType.FAULT_CURRENT && faultWave.getPhase() == 3) {
-                    cPhaseCurrentData = CommonAlgorithmUtil.shiftWave(faultWave.getData());
-                } else if (faultWave.getWaveType() == MessageType.FAULT_VOLTAGE && faultWave.getPhase() == 1) {
-                    aPhaseVoltageData = CommonAlgorithmUtil.shiftWave(faultWave.getData());
-                } else if (faultWave.getWaveType() == MessageType.FAULT_VOLTAGE && faultWave.getPhase() == 2) {
-                    bPhaseVoltageData = CommonAlgorithmUtil.shiftWave(faultWave.getData());
-                } else if (faultWave.getWaveType() == MessageType.FAULT_VOLTAGE && faultWave.getPhase() == 3) {
-                    cPhaseVoltageData = CommonAlgorithmUtil.shiftWave(faultWave.getData());
+                if (faultWave.getWaveType() == MessageType.FAULT_CURRENT && faultWave.getPhase() >= 1 && faultWave.getPhase() <= 3) {
+                    currentData[faultWave.getPhase() - 1] = CommonAlgorithmUtil.shiftWave(faultWave.getData());
+                } else if (faultWave.getWaveType() == MessageType.FAULT_VOLTAGE && faultWave.getPhase() >= 1 && faultWave.getPhase() <= 3) {
+                    voltageData[faultWave.getPhase() - 1] = CommonAlgorithmUtil.shiftWave(faultWave.getData());
                 }
             }
 
-            faultIdentifyPoleDTOList.add(new FaultIdentifyPoleDTO(f.get(0).getLineId(), f.get(0).getPoleId(), f.get(0).getDistanceToHeadStation()
-                    , aPhaseCurrentData, bPhaseCurrentData, cPhaseCurrentData, aPhaseVoltageData, bPhaseVoltageData, cPhaseVoltageData));
+            result.add(new FaultIdentifyPoleDTO(f.get(0).getLineId(), f.get(0).getPoleId(), f.get(0).getDistanceToHeadStation(),
+                    currentData[0], currentData[1], currentData[2], voltageData[0], voltageData[1], voltageData[2]));
         }
-        return faultIdentifyPoleDTOList;
-    }
 
+        return result;
+    }
 
     // TODO 计算波形极值点坐标函数  -------------- START
 
@@ -180,23 +176,25 @@ public class CommonAlgorithmUtil {
      * @return
      */
     public static List<Integer> calculateWaveExtremePoint(List<Double> data, int kickPointRange) {
-
-        List<Integer> integerList = new ArrayList<>();
-        Map<Integer, Double> integerDoubleMap = new HashMap<>();
+        // Replace integerDoubleMap and integerList with a single LinkedHashMap
+        Map<Integer, Double> extremePointMap = new LinkedHashMap<>();
+        // Add the first extreme point
         if (data.get(0) > data.get(1)) {
-            integerList.add(0);
-            integerDoubleMap.put(0, data.get(0));
+            extremePointMap.put(0, data.get(0));
         }
+        // Find other extreme points
         for (int i = 1; i < data.size() - 1; i++) {
             if (data.get(i) > data.get(i - 1) && data.get(i) > data.get(i + 1)) {
-                integerList.add(i);
-                integerDoubleMap.put(i, data.get(i));
+                extremePointMap.put(i, data.get(i));
             }
         }
+        // Get indices to be removed
+        List<Integer> indicesToRemove = getRemoveIndexList(new ArrayList<>(extremePointMap.keySet()), extremePointMap, kickPointRange);
+        // Get the list of extreme point indices, and remove unwanted indices
+        List<Integer> extremePointIndices = new ArrayList<>(extremePointMap.keySet());
+        extremePointIndices.removeAll(indicesToRemove);
 
-        List<Integer> delList = getRemoveIndexList(integerList, integerDoubleMap, kickPointRange);
-
-        return integerList.stream().filter(integer -> !delList.contains(integer)).collect(Collectors.toList());
+        return extremePointIndices;
     }
 
     /**
@@ -206,33 +204,25 @@ public class CommonAlgorithmUtil {
      * @param integerDoubleMap
      * @return
      */
-    private static List<Integer> getRemoveIndexList(List<Integer> integerList, Map<Integer, Double> integerDoubleMap, int kickPointRange) {
-
-        if (CollectionUtils.isEmpty(integerList) || integerList.size() == 1) return null;
-
-        List<Integer> result = new ArrayList<>();
+    private static List<Integer> getRemoveIndexList(List<Integer> indexList, Map<Integer, Double> indexToValueMap, int kickPointRange) {
+        if (CollectionUtils.isEmpty(indexList) || indexList.size() == 1) return Collections.emptyList();
 
         // 找到最大值坐标 maxIndex
-        Integer maxIndex = getMaxValueIndex(integerDoubleMap);
+        Integer maxIndex = getMaxValueIndex(indexToValueMap);
 
-        integerDoubleMap.remove(maxIndex);
+        indexToValueMap.remove(maxIndex);
 
         // 找出当前index需要剔除的坐标集合
-        List<Integer> removeList = deleteMaxIndex(maxIndex, integerList, integerDoubleMap, kickPointRange);
+        List<Integer> currentRemovedIndices = deleteMaxIndex(maxIndex, indexList, indexToValueMap, kickPointRange);
 
-        result.addAll(removeList);
+        List<Integer> indicesToRemove = new ArrayList<>(currentRemovedIndices);
 
         // 根据现有map 生成新的坐标值集合
-        Set<Integer> integers = integerDoubleMap.keySet();
-        List<Integer> nextIndexes = new ArrayList<>(integers);
+        List<Integer> nextIndexes = new ArrayList<>(indexToValueMap.keySet());
 
-        List<Integer> tempList = getRemoveIndexList(nextIndexes, integerDoubleMap, kickPointRange);
-        if (!CollectionUtils.isEmpty(tempList)) {
-            result.addAll(tempList);
-        }
+        indicesToRemove.addAll(getRemoveIndexList(nextIndexes, indexToValueMap, kickPointRange));
 
-        return result;
-
+        return indicesToRemove;
     }
 
     /**
@@ -241,20 +231,10 @@ public class CommonAlgorithmUtil {
      * @param integerDoubleMap
      * @return
      */
-    private static Integer getMaxValueIndex(Map<Integer, Double> integerDoubleMap) {
-        Set<Integer> integerSet = integerDoubleMap.keySet();
-
-        Double max = integerDoubleMap.get(integerSet.iterator().next());
-        Integer maxIndex = integerSet.iterator().next();
-        for (Integer integer : integerSet) {
-            if (integerDoubleMap.get(integer) > max) {
-                maxIndex = integer;
-                max = integerDoubleMap.get(integer);
-            }
-        }
-
-        return maxIndex;
+    private static Integer getMaxValueIndex(Map<Integer, Double> indexToValueMap) {
+        return Collections.max(indexToValueMap.entrySet(), Map.Entry.comparingByValue()).getKey();
     }
+
 
 
     /**
@@ -266,21 +246,14 @@ public class CommonAlgorithmUtil {
      * @param kickPointRange   剔除极值点坐标附近点的范围
      * @return 剔除坐标点集合
      */
-    private static List<Integer> deleteMaxIndex(Integer maxIndex, List<Integer> integerList, Map<Integer, Double> integerDoubleMap, int kickPointRange) {
-        List<Integer> removeList = new ArrayList<>();
-        for (int i = 0; i < integerList.size(); i++) {
-            if (Math.abs(integerList.get(i) - maxIndex) == 0) {
-                // integerList 中包含 maxIndex 需要去除这种情况
-                continue;
-            }
-            if (Math.abs(integerList.get(i) - maxIndex) <= kickPointRange) {
-                // 移除
-                integerDoubleMap.remove(integerList.get(i));
-                // 新增
-                removeList.add(integerList.get(i));
-            }
-        }
-        return removeList;
+    private static List<Integer> deleteMaxIndex(Integer maxIndex, List<Integer> indexList, Map<Integer, Double> indexToValueMap, int kickPointRange) {
+        return indexList.stream()
+                .filter(index -> {
+                    int difference = Math.abs(index - maxIndex);
+                    return difference > 0 && difference <= kickPointRange;
+                })
+                .peek(indexToValueMap::remove)
+                .collect(Collectors.toList());
     }
 
     // TODO 计算波形极值点坐标函数  -------------- END

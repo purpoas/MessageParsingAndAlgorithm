@@ -43,4 +43,6 @@ public class FaultIdentifyPoleDTO {
         this.bPhaseVoltageData = bPhaseVoltageData;
         this.cPhaseVoltageData = cPhaseVoltageData;
     }
+
+
 }

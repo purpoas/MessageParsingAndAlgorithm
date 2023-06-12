@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hy.biz.dataPush.subscriber.handler.MessageHandler;
-import com.hy.biz.dataResolver.exception.MessageParsingException;
+import com.hy.biz.dataParsing.exception.MessageParsingException;
 import com.hy.config.HyConfigProperty;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.Message;
@@ -13,8 +13,8 @@ import org.springframework.lang.NonNull;
 
 import java.util.List;
 
-import static com.hy.biz.dataResolver.constants.MessageConstants.*;
-import static com.hy.biz.dataResolver.util.TypeConverter.byteArrToStr;
+import static com.hy.biz.dataParsing.constants.MessageConstants.*;
+import static com.hy.biz.dataParsing.util.TypeConverter.byteArrToStr;
 
 /**
  *
@@ -68,5 +68,6 @@ public class StateChannelSubscriber implements MessageListener {
 
         throw new MessageParsingException(ILLEGAL_SUBSCRIBED_MESSAGE_SIGNATURE_ERROR);
     }
+
 
 }

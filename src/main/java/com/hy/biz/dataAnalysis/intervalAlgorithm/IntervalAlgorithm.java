@@ -3,8 +3,7 @@ package com.hy.biz.dataAnalysis.intervalAlgorithm;
 import com.hy.biz.dataAnalysis.dto.AreaLocateDTO;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
 import com.hy.biz.dataAnalysis.typeAlgorithm.TypeAlgorithmUtil;
-import com.hy.biz.dataResolver.constants.MessageType;
-import org.springframework.stereotype.Component;
+import com.hy.biz.dataParsing.constants.MessageType;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;

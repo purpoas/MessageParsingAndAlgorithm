@@ -23,17 +23,19 @@ spring:
     database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
     show-sql: true
   redis:
-    host: 172.16.16.132
+#    host: 172.16.16.132
+    host: 192.168.0.19
     port: 6379
     timeout: 0
     password:
-    database: 0  # default db index
+    database: 0
     lettuce:
       pool:
-        max-active: 200
         max-wait: 10000
+        max-active: 200
         max-idle: 20
         min-idle: 2
+      shutdown-timeout: 100
 hy:
   async: # 异步任务线程池配置
     core-pool-size: 2
@@ -58,9 +60,9 @@ hy:
     device-sample-rate: 12800 # updated
     fault-frequency-current-threshold: 5  # 工频电流故障触发阈值
     speed: 290                #默认单位 m/us
-    accident-file-path: "D:\\C365\\accident.txt"   #存储事故ID文件位置
-    fault-file-path: "D:\\C365\\analysisResult\\"      #存储故障波形推送失败的文件夹
-    battery-file-path: "classpath:ElecQuantity.txt"    #电池电量对应关联文件位置
-    dnm-latest-device-status: hydnm:cache:status #设备最新状态维护
+    accident-file-path: "D:\\C365\\accident.txt"   # 存储事故ID文件位置
+    fault-file-path: "D:\\C365\\analysisResult\\"      # 存储故障波形推送失败的文件夹
+    battery-file-path: "classpath:ElecQuantity.txt"    # 电池电量对应关联文件位置
+    dnm-latest-device-status: hydnm:cache:status # 设备最新状态维护
   algorithm:
     delay-execute-time: 10
