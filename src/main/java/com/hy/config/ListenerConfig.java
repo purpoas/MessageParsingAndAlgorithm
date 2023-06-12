@@ -19,13 +19,13 @@ import java.util.Map;
  * @description
  * @create 2023-05-04 16:06
  **/
-@Configuration
-public class RedisMessageListenerConfig {
+@Configuration(value = "RedisMessageListener")
+public class ListenerConfig {
     private final ApplicationContext context;
     private final HyConfigProperty hyConfigProperty;
     private final ObjectMapper mapper;
 
-    public RedisMessageListenerConfig(ApplicationContext context, HyConfigProperty hyConfigProperty, ObjectMapper mapper) {
+    public ListenerConfig(ApplicationContext context, HyConfigProperty hyConfigProperty, ObjectMapper mapper) {
         this.context = context;
         this.hyConfigProperty = hyConfigProperty;
         this.mapper = mapper;
@@ -44,5 +44,6 @@ public class RedisMessageListenerConfig {
         Map<String, MessageHandler> messageHandlers = context.getBeansOfType(MessageHandler.class);
         return new StateChannelSubscriber(hyConfigProperty, new ArrayList<>(messageHandlers.values()), mapper);
     }
+
 
 }

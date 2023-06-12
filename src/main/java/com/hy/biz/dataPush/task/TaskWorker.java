@@ -37,7 +37,6 @@ public class TaskWorker {
                 .setNameFormat("idds-task-worker-thread").build();
         executorService = Executors.newSingleThreadExecutor(threadFactory);
         executorService.execute(this::command);
-        executorService.shutdown();
     }
 
     /**
@@ -46,7 +45,7 @@ public class TaskWorker {
     private void command() {
         Task lastTask = null;
 
-        while (!threadStopped) {
+        while (!threadStopped  && !Thread.currentThread().isInterrupted()) {
             Task task = null;
 
             try {
@@ -63,9 +62,8 @@ public class TaskWorker {
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                log.error("TaskWorker InterruptedException Error: {}", e.getMessage());
+                break;
             } catch (RejectedExecutionException e) {
-                log.error("Task Queue RejectedExecutionException Error: {}", e.getMessage());
                 lastTask = task;
             }
         }
@@ -80,20 +78,10 @@ public class TaskWorker {
         if (executorService != null) {
             executorService.shutdown();
             try {
-                if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
-                    log.info("TaskWorker thread [{}] shutdown failed", Thread.currentThread().getName());
+                if (!executorService.awaitTermination(1, TimeUnit.SECONDS))
                     executorService.shutdownNow();
-                    if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
-                        log.info("RedisConsumer thread [{}] force shutdown failed", Thread.currentThread().getName());
-                    } else {
-                        log.info("RedisConsumer thread [{}] force shutdown succeeded", Thread.currentThread().getName());
-                    }
-                } else {
-                    log.info("TaskWorker thread [{}] shutdown succeeded", Thread.currentThread().getName());
-                }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                e.printStackTrace();
             }
         }
     }

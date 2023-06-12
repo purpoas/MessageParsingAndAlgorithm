@@ -5,7 +5,7 @@ import com.hy.biz.dataAnalysis.dto.AreaLocateDTO;
 import com.hy.biz.dataAnalysis.dto.FaultIdentifyDTO;
 import com.hy.biz.dataAnalysis.dto.FaultIdentifyPoleDTO;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
-import com.hy.config.AnalysisConstants;
+import com.hy.biz.dataAnalysis.algorithmUtil.AnalysisConstants;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
