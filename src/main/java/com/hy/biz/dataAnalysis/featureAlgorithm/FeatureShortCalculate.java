@@ -1,5 +1,6 @@
 package com.hy.biz.dataAnalysis.featureAlgorithm;
 
+import com.hy.biz.dataAnalysis.algorithmUtil.AnalysisConstants;
 import com.hy.biz.dataAnalysis.algorithmUtil.EjmlUtil;
 import com.hy.biz.dataAnalysis.commonAlgorithm.CommonAlgorithmUtil;
 import com.hy.biz.dataAnalysis.dto.FaultIdentifyDTO;
@@ -9,7 +10,6 @@ import com.hy.biz.dataAnalysis.typeAlgorithm.FaultIdentifyAlgorithmUtil;
 import com.hy.biz.dataAnalysis.typeAlgorithm.FrequencyCharacterUtil;
 import com.hy.biz.dataAnalysis.typeAlgorithm.TypeAlgorithmUtil;
 import com.hy.biz.dataParsing.constants.MessageType;
-import com.hy.config.AnalysisConstants;
 import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
