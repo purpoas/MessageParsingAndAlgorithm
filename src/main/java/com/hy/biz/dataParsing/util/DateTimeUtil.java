@@ -32,11 +32,6 @@ public class DateTimeUtil {
         return zonedDateTime.format(formatter);
     }
 
-    public static Instant parseDateTimeToInst(byte[] timestamp) {
-        ZonedDateTime zonedDateTime = parseDateTimeToZonedDateTime(timestamp);
-        return zonedDateTime.toInstant();
-    }
-
     public static byte[] longToDateTimeBytes(long timestamp) {
         LocalDateTime dateTime = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
 
@@ -64,8 +59,7 @@ public class DateTimeUtil {
     }
 
     private static ZonedDateTime parseDateTimeToZonedDateTime(byte[] timestamp) {
-        ByteBuffer buffer = ByteBuffer.wrap(timestamp);
-        buffer.order(ByteOrder.BIG_ENDIAN);
+        ByteBuffer buffer = ByteBuffer.wrap(timestamp).order(ByteOrder.BIG_ENDIAN);
 
         int year = 2000 + buffer.get();
         int month = buffer.get();

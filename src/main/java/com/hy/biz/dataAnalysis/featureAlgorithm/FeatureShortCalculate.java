@@ -1,10 +1,9 @@
 package com.hy.biz.dataAnalysis.featureAlgorithm;
 
 import com.hy.biz.dataAnalysis.dto.FaultIdentifyDTO;
-import com.hy.config.AnalysisConstants;
+import com.hy.biz.dataAnalysis.algorithmUtil.AnalysisConstants;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class FeatureShortCalculate {

@@ -5,7 +5,7 @@ import com.hy.biz.dataAnalysis.dto.*;
 import com.hy.biz.dataAnalysis.typeAlgorithm.FaultIdentifyAlgorithmUtil;
 import com.hy.biz.dataAnalysis.typeAlgorithm.FrequencyCharacterUtil;
 import com.hy.biz.dataAnalysis.typeAlgorithm.TypeAlgorithmUtil;
-import com.hy.config.AnalysisConstants;
+import com.hy.biz.dataAnalysis.algorithmUtil.AnalysisConstants;
 import org.springframework.util.StringUtils;
 
 import java.util.List;

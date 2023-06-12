@@ -1,6 +1,5 @@
 package com.hy;
 
-import com.hy.biz.dataPush.task.TaskQueue;
 import com.hy.biz.dataPush.task.TaskWorker;
 import com.hy.biz.dataRead.DataReadService;
 import lombok.NonNull;
@@ -17,12 +16,10 @@ import org.springframework.stereotype.Component;
 public class AppStartUp implements ApplicationListener<ContextRefreshedEvent> {
 
     private final TaskWorker taskWorker;
-    private final TaskQueue taskQueue;
     private final DataReadService dataReadService;
 
-    public AppStartUp(TaskWorker taskWorker, TaskQueue taskQueue, DataReadService dataReadService) {
+    public AppStartUp(TaskWorker taskWorker, DataReadService dataReadService) {
         this.taskWorker = taskWorker;
-        this.taskQueue = taskQueue;
         this.dataReadService = dataReadService;
     }
 

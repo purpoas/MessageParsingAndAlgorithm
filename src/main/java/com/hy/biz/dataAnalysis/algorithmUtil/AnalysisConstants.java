@@ -1,4 +1,4 @@
-package com.hy.config;
+package com.hy.biz.dataAnalysis.algorithmUtil;
 
 public class AnalysisConstants {
 
