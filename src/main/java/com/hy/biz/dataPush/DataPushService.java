@@ -1,5 +1,6 @@
 package com.hy.biz.dataPush;
 
+import com.hy.biz.dataAnalysis.dto.FaultAnalysisResultDTO;
 import com.hy.biz.dataPush.dto.DeviceDTO;
 import com.hy.biz.dataPush.dto.LineDTO;
 import com.hy.biz.dataPush.dto.PoleDTO;
@@ -17,6 +18,14 @@ public interface DataPushService {
      * @return 数据推送结果
      */
     boolean push(String data, BaseMessage message, PushDataType pushDataType);
+
+    /**
+     * 告警数据推送
+     *
+     * @param faultAnalysisResult 故障分析结果转换类
+     * @return
+     */
+    boolean pushFaultAlarm(FaultAnalysisResultDTO faultAnalysisResult);
 
     /**
      * 根据设备编号，从第三方平台获取该设备的详细信息

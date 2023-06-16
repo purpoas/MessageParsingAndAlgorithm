@@ -1,6 +1,10 @@
 package com.hy.biz.dataPush;
 
 import com.google.gson.*;
+import com.hy.biz.cache.service.GroundFaultCacheManager;
+import com.hy.biz.dataAnalysis.algorithmUtil.AnalysisConstants;
+import com.hy.biz.dataAnalysis.dto.FaultAnalysisResultDTO;
+import com.hy.biz.dataAnalysis.featureAlgorithm.FaultFeatureUtil;
 import com.hy.biz.dataPush.dto.DeviceDTO;
 import com.hy.biz.dataPush.dto.LineDTO;
 import com.hy.biz.dataPush.dto.PoleDTO;
@@ -41,9 +45,11 @@ public class HyDataPushServiceImpl implements DataPushService {
     private final CircuitPathRepository circuitPathRepository;
     private final PoleRepository poleRepository;
     private final OrgRepository orgRepository;
+    private final DeviceAlarmRepository deviceAlarmRepository;
+    private final GroundFaultCacheManager groundFaultCacheManager;
 
     public HyDataPushServiceImpl(ParserHelper parserHelper, WaveDataRepository waveDataRepository, DeviceRepository deviceRepository, DeviceFaultRepository deviceFaultRepository, DeviceInfoRepository deviceInfoRepository, DeviceStatusRepository deviceStatusRepository,
-                                 WorkStatusRepository workStatusRepository, CircuitPathRepository circuitPathRepository, PoleRepository poleRepository, OrgRepository orgRepository) {
+                                 WorkStatusRepository workStatusRepository, CircuitPathRepository circuitPathRepository, PoleRepository poleRepository, OrgRepository orgRepository, DeviceAlarmRepository deviceAlarmRepository, GroundFaultCacheManager groundFaultCacheManager) {
         this.parserHelper = parserHelper;
         this.waveDataRepository = waveDataRepository;
         this.deviceRepository = deviceRepository;
@@ -54,6 +60,8 @@ public class HyDataPushServiceImpl implements DataPushService {
         this.circuitPathRepository = circuitPathRepository;
         this.poleRepository = poleRepository;
         this.orgRepository = orgRepository;
+        this.deviceAlarmRepository = deviceAlarmRepository;
+        this.groundFaultCacheManager = groundFaultCacheManager;
     }
 
     @Override
@@ -92,9 +100,77 @@ public class HyDataPushServiceImpl implements DataPushService {
     }
 
     @Override
+    public boolean pushFaultAlarm(FaultAnalysisResultDTO faultAnalysisResult) {
+
+        DeviceAlarm alarm = new DeviceAlarm();
+        alarm.setFaultLineId(Long.valueOf(faultAnalysisResult.getFaultLineId()));
+        alarm.setFaultTime(faultAnalysisResult.getFaultTime());
+        alarm.setFaultType(faultAnalysisResult.getFaultType());
+        alarm.setFaultWaveSets(faultAnalysisResult.getFaultWaveSets());
+
+        alarm.setFaultPoleId(StringUtils.hasText(faultAnalysisResult.getNearestPoleId()) ? Long.valueOf(faultAnalysisResult.getNearestPoleId()) : null);
+        alarm.setDistToFaultPole(faultAnalysisResult.getDistToFaultPole());
+        alarm.setFaultHeadPoleId(StringUtils.hasText(faultAnalysisResult.getFaultHeadPoleId()) ? Long.valueOf(faultAnalysisResult.getFaultHeadPoleId()) : null);
+        alarm.setFaultEndPoleId(StringUtils.hasText(faultAnalysisResult.getFaultEndPoleId()) ? Long.valueOf(faultAnalysisResult.getFaultEndPoleId()) : null);
+
+        // 故障区间描述
+        if (StringUtils.hasText(faultAnalysisResult.getFaultHeadPoleId()) && StringUtils.hasText(faultAnalysisResult.getFaultEndPoleId())) {
+            Pole headPole = poleRepository.findByIdAndDeletedFalse(Long.valueOf(faultAnalysisResult.getFaultHeadPoleId()));
+            Pole endPole = poleRepository.findByIdAndDeletedFalse(Long.valueOf(faultAnalysisResult.getFaultEndPoleId()));
+
+            StringBuilder faultArea = new StringBuilder();
+
+            Org headOrg = headPole.getOrg();
+            Org endOrg = endPole.getOrg();
+
+            if (headOrg != null) {
+                faultArea.append(JsonParser.parseString(headOrg.getProperties()).getAsJsonObject().get("name").getAsString()).append(headOrg.getName()).append(" - ");
+            }
+
+            if (endOrg != null) {
+                faultArea.append(JsonParser.parseString(endOrg.getProperties()).getAsJsonObject().get("name").getAsString()).append(endOrg.getName());
+            }
+
+            alarm.setFaultArea(faultArea.toString());
+        }
+
+        // 故障距离描述
+        if (StringUtils.hasText(faultAnalysisResult.getNearestPoleId())) {
+            StringBuilder faultDistance = new StringBuilder();
+
+            Pole nearestPole = poleRepository.findByIdAndDeletedFalse(Long.valueOf(faultAnalysisResult.getNearestPoleId()));
+
+            Org nearestOrg = nearestPole.getOrg();
+
+            if (nearestOrg != null) {
+                faultDistance.append(JsonParser.parseString(nearestOrg.getProperties()).getAsJsonObject().get("name").getAsString()).append(nearestOrg.getName());
+            }
+
+            faultDistance.append(nearestPole.getName()).append("附近").append(faultAnalysisResult.getDistToFaultPole()).append("米");
+            alarm.setFaultDistance(faultDistance.toString());
+        }
+
+        // 故障特征描述
+        if (StringUtils.hasText(faultAnalysisResult.getFaultFeature())) {
+            String faultFeature = FaultFeatureUtil.createFaultFeatureDescription(faultAnalysisResult.getFaultFeature());
+            faultAnalysisResult.setFaultFeature(faultFeature);
+        }
+
+        alarm = deviceAlarmRepository.save(alarm);
+
+        // 判断是否是接地故障 是则放入Ground Cache中
+        if (AnalysisConstants.FAULT_NATURE_GROUND_A.equals(faultAnalysisResult.getFaultType()) || AnalysisConstants.FAULT_NATURE_GROUND_B.equals(faultAnalysisResult.getFaultType()) || AnalysisConstants.FAULT_NATURE_GROUND_C.equals(faultAnalysisResult.getFaultType())) {
+            faultAnalysisResult.setSerial(alarm.getId());
+            groundFaultCacheManager.put(faultAnalysisResult.getFaultLineId(), faultAnalysisResult);
+        }
+
+        return true;
+    }
+
+    @Override
     public DeviceDTO findDeviceByCode(String deviceCode) {
         Device device = deviceRepository.findDeviceByCodeAndDeletedFalse(deviceCode);
-        if(device == null) return null;
+        if (device == null) return null;
         return new DeviceDTO().from(device);
     }
 
@@ -116,7 +192,7 @@ public class HyDataPushServiceImpl implements DataPushService {
 
         List<Pole> poleList = poleRepository.findByOrgIdAndDeletedFalse(Long.valueOf(lineId));
 
-        if(CollectionUtils.isEmpty(poleList)) return null;
+        if (CollectionUtils.isEmpty(poleList)) return null;
 
         List<PoleDTO> dto = poleList.stream().map(PoleDTO::new).collect(Collectors.toList());
 

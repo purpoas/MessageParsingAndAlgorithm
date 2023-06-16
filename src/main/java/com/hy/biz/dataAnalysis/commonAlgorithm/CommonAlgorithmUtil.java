@@ -1,5 +1,7 @@
 package com.hy.biz.dataAnalysis.commonAlgorithm;
 
+import com.hy.biz.dataAnalysis.algorithmUtil.Complex;
+import com.hy.biz.dataAnalysis.algorithmUtil.FFT;
 import com.hy.biz.dataAnalysis.dto.FaultIdentifyPoleDTO;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
 import com.hy.biz.dataParsing.constants.MessageType;
@@ -26,6 +28,24 @@ public class CommonAlgorithmUtil {
         return Stream.of(data.split(","))
                 .mapToDouble(Double::parseDouble)
                 .toArray();
+    }
+
+    /**
+     * 进行4096点FFT
+     *
+     * @param data
+     * @return
+     */
+    public static Complex[] fft4096(double[] data) {
+        Complex[] complexes = new Complex[4096];
+        for (int i = 0; i < complexes.length; i++) {
+            if (i < data.length) {
+                complexes[i] = new Complex(data[i], 0);
+            } else {
+                complexes[i] = new Complex(0, 0);
+            }
+        }
+        return FFT.fft(complexes);
     }
 
     /**
@@ -257,5 +277,40 @@ public class CommonAlgorithmUtil {
 
     // TODO 计算波形极值点坐标函数  -------------- END
 
+    /**
+     * 在指定频率区间中 求极大值对应的幅值
+     *
+     * @param complexes fft变换后的数组
+     * @param fftLength 进行fft变换的值 eg 1024 4096
+     * @param sampRate  波形采样率
+     * @param minHz     最小频率
+     * @param maxHz     最大频率
+     * @return
+     */
+    public static Double getMaxHzNew(Complex[] complexes, Integer fftLength, Integer sampRate, Integer minHz, Integer maxHz) {
+        Double[] amplitude = new Double[complexes.length];
+
+        for (int i = 0; i < complexes.length; i++) {
+            // 将complexes转化为对应幅值数组
+            amplitude[i] = complexes[i].abs() * 2 / fftLength;
+        }
+
+        // 计算最小频率对应的坐标点 最大频率对应的坐标点
+        int i1 = minHz * fftLength / sampRate;
+        int i2 = maxHz * fftLength / sampRate;
+
+        // 找出 amplitude 中 i1 - i2 之间对应的最大值
+        Integer maxIndex = i1 - 1;
+        Double max = amplitude[maxIndex];
+
+        for (int i = i1; i < i2; i++) {
+            if (max < amplitude[i]) {
+                max = amplitude[i];
+                maxIndex = i;
+            }
+        }
+
+        return max;
+    }
 
 }

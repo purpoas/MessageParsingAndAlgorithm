@@ -1,5 +1,6 @@
 package com.hy.biz.dataAnalysis.dto;
 
+import com.hy.biz.dataAnalysis.featureAlgorithm.FaultFeatureUtil;
 import lombok.Data;
 
 /**
@@ -13,7 +14,7 @@ public class FeatureBreakDTO {
     private Double zeroSeqCur;  //零序电流值，单位A
     private Double negSeqCur;   //负序电流值，单位A
     private Double negSeqVol;   //负序电压值，单位V
-    private String type = "Break";        //特征类型 Break-断路 Short-短路 Ground-接地
+    private String type = FaultFeatureUtil.FEATURE_BREAK;        //特征类型 Break-断路 Short-短路 Ground-接地
 
     public FeatureBreakDTO(int faultPhaseId, int isBreak, double zeroSeqCur, double negSeqCur, double negSeqVol) {
         this.faultPhaseId = faultPhaseId;

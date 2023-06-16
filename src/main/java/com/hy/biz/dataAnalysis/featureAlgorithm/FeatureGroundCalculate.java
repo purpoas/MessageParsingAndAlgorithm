@@ -8,7 +8,9 @@ import com.hy.biz.dataAnalysis.typeAlgorithm.TypeAlgorithmUtil;
 import com.hy.biz.dataAnalysis.algorithmUtil.AnalysisConstants;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class FeatureGroundCalculate {
@@ -33,6 +35,39 @@ public class FeatureGroundCalculate {
         } else {
             return 3;
         }
+    }
+
+    public static Integer groundFaultType(Set<FaultWave> faultWaveSet) {
+
+
+        List<FaultWave> faultWaveList = new ArrayList<>(faultWaveSet);
+
+        // 找三相电流杆塔
+        List<FaultIdentifyPoleDTO> threePhaseCurrents = CommonAlgorithmUtil.filterThreePhaseCurrentPole(faultWaveList);
+
+        List<String> poleIds = threePhaseCurrents.stream().map(FaultIdentifyPoleDTO::getPoleId).distinct().collect(Collectors.toList());
+        // 找三相电流三相电压杆塔
+        List<FaultIdentifyPoleDTO> threePhaseVoltages = CommonAlgorithmUtil.filterThreePhaseCurrentAndVoltagePole(poleIds, faultWaveList);
+
+        for (FaultIdentifyPoleDTO faultIdentify : threePhaseVoltages) {
+            double IAJMP = FrequencyCharacterUtil.IJMP(faultIdentify.getAPhaseCurrentData());
+            double IBJMP = FrequencyCharacterUtil.IJMP(faultIdentify.getBPhaseCurrentData());
+            double ICJMP = FrequencyCharacterUtil.IJMP(faultIdentify.getCPhaseCurrentData());
+
+            double UAJMP = FrequencyCharacterUtil.UJMP(faultIdentify.getAPhaseVoltageData());
+            double UBJMP = FrequencyCharacterUtil.UJMP(faultIdentify.getBPhaseVoltageData());
+            double UCJMP = FrequencyCharacterUtil.UJMP(faultIdentify.getCPhaseVoltageData());
+
+            double IA10 = FrequencyCharacterUtil.I10(faultIdentify.getAPhaseCurrentData());
+            double IB10 = FrequencyCharacterUtil.I10(faultIdentify.getBPhaseCurrentData());
+            double IC10 = FrequencyCharacterUtil.I10(faultIdentify.getCPhaseCurrentData());
+
+            double UA10 = FrequencyCharacterUtil.U10(faultIdentify.getAPhaseVoltageData());
+            double UB10 = FrequencyCharacterUtil.U10(faultIdentify.getBPhaseVoltageData());
+            double UC10 = FrequencyCharacterUtil.U10(faultIdentify.getCPhaseVoltageData());
+
+        }
+        return 0;
     }
 
     /**

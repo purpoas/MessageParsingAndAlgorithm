@@ -18,6 +18,7 @@ public class FaultWave {
     private byte waveType;    // 波形类型 0x01 || 0x03 || 0x05
 
     private Boolean absolute;   //极性
+    private String waveCode;    //波形编号
     private String headTime;    //波形起始时间
     private String data;        //波形内容
 

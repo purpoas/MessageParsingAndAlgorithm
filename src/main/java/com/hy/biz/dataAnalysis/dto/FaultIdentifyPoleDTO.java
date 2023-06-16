@@ -12,6 +12,8 @@ public class FaultIdentifyPoleDTO {
     private String poleId;
     private Double distanceToHeadStation;
 
+    private String faultTime;   // 默认A相工频电流波形起始时间
+
     // 工频电流三相波形内容
     private double[] aPhaseCurrentData;
     private double[] bPhaseCurrentData;

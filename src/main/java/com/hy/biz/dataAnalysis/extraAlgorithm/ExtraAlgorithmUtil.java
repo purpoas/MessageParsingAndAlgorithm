@@ -5,13 +5,15 @@ import com.hy.biz.dataAnalysis.algorithmUtil.FFT;
 import com.hy.biz.dataAnalysis.commonAlgorithm.CommonAlgorithmUtil;
 import com.hy.biz.dataAnalysis.dto.FaultIdentifyPoleDTO;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
+import com.hy.biz.dataAnalysis.dto.FeatureFlowDTO;
+import com.hy.biz.dataAnalysis.dto.FeatureUndulateDTO;
 import com.hy.biz.dataAnalysis.typeAlgorithm.FrequencyCharacterUtil;
+import com.hy.biz.dataParsing.constants.MessageType;
 import com.hy.config.HyConfigProperty;
 import javafx.util.Pair;
+import org.springframework.util.CollectionUtils;
 
-import java.util.Arrays;
-import java.util.DoubleSummaryStatistics;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -124,6 +126,57 @@ public class ExtraAlgorithmUtil {
         return new Pair<>(isSurge, maxSecondHarmonic);
     }
 
+    /**
+     * 合闸涌流判断
+     *
+     * @param hyConfigProperty Configuration properties for the system
+     * @return Pair<Boolean, Double> A pair indicating if a surge is detected (true/false) and the maximum second harmonic content across the phases
+     */
+    public static FeatureFlowDTO isSurge2(Set<FaultWave> faultWaves, HyConfigProperty hyConfigProperty) {
+        FeatureFlowDTO result = null;
+
+        List<FaultWave> faultWaveList = new ArrayList<>(faultWaves);
+
+        List<FaultIdentifyPoleDTO> threePhaseCurrents = CommonAlgorithmUtil.filterThreePhaseCurrentPole(faultWaveList);
+
+        for (FaultIdentifyPoleDTO pole : threePhaseCurrents) {
+
+            double[] aData = pole.getAPhaseCurrentData();
+            double[] bData = pole.getBPhaseCurrentData();
+            double[] cData = pole.getCPhaseCurrentData();
+
+            Complex[] aComplex = CommonAlgorithmUtil.fft4096(aData);
+            Complex[] bComplex = CommonAlgorithmUtil.fft4096(bData);
+            Complex[] cComplex = CommonAlgorithmUtil.fft4096(cData);
+
+            Double aH1hz = CommonAlgorithmUtil.getMaxHzNew(aComplex, 4096, hyConfigProperty.getConstant().getDeviceSampleRate().intValue(), 45, 55);
+            Double aH2hz = CommonAlgorithmUtil.getMaxHzNew(aComplex, 4096, hyConfigProperty.getConstant().getDeviceSampleRate().intValue(), 95, 105);
+
+            Double bH1hz = CommonAlgorithmUtil.getMaxHzNew(bComplex, 4096, hyConfigProperty.getConstant().getDeviceSampleRate().intValue(), 45, 55);
+            Double bH2hz = CommonAlgorithmUtil.getMaxHzNew(bComplex, 4096, hyConfigProperty.getConstant().getDeviceSampleRate().intValue(), 95, 105);
+
+            Double cH1hz = CommonAlgorithmUtil.getMaxHzNew(cComplex, 4096, hyConfigProperty.getConstant().getDeviceSampleRate().intValue(), 45, 55);
+            Double cH2hz = CommonAlgorithmUtil.getMaxHzNew(cComplex, 4096, hyConfigProperty.getConstant().getDeviceSampleRate().intValue(), 95, 105);
+
+            if (aH2hz > 0.15 * aH1hz || bH2hz > 0.15 * bH1hz || cH2hz > 0.15 * cH1hz) {
+                double IA2X = aH1hz / aH2hz;
+                double IB2X = bH1hz / bH2hz;
+                double IC2X = cH1hz / cH2hz;
+
+                if (IA2X > IB2X && IA2X > IC2X) {
+                    result = new FeatureFlowDTO(pole.getFaultTime(), aH1hz, aH2hz, IA2X);
+                } else if (IB2X > IA2X && IB2X > IC2X) {
+                    result = new FeatureFlowDTO(pole.getFaultTime(), bH1hz, bH2hz, IB2X);
+                } else if (IC2X > IA2X && IC2X > IB2X) {
+                    result = new FeatureFlowDTO(pole.getFaultTime(), cH1hz, cH2hz, IC2X);
+                }
+                break;
+            }
+        }
+
+        return result;
+    }
+
 
     /**
      * 负荷波动判断
@@ -176,6 +229,74 @@ public class ExtraAlgorithmUtil {
                     || ((IAJMP > 0 && ICJMP > 0 && IBJMP > 0) && (IA10 > IA1 && IB10 > IB1 && IC10 > IC1)))
                     && (UBJMP < 0 && UAJMP < 0 && UCJMP < 0);
         });
+    }
+
+    /**
+     * 负荷波动判断
+     *
+     * @param faultWaves       The list of fault waves in the system.
+     * @param hyConfigProperty The system's configuration properties.
+     * @return boolean Indicates whether load fluctuation is detected.
+     */
+    public static FeatureUndulateDTO loadFluctuationDetection2(Set<FaultWave> faultWaves, HyConfigProperty hyConfigProperty) {
+
+        List<FaultWave> faultWaveList = new ArrayList<>(faultWaves);
+
+        // Filter out three-phase current poles
+        List<FaultIdentifyPoleDTO> threePhaseCurrents = CommonAlgorithmUtil.filterThreePhaseCurrentPole(faultWaveList);
+
+        // Get distinct pole IDs
+        List<String> poleIds = threePhaseCurrents.stream()
+                .map(FaultIdentifyPoleDTO::getPoleId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // Filter out poles with both three-phase currents and voltages
+        List<FaultIdentifyPoleDTO> threePhaseCurrentsAndVoltages =
+                CommonAlgorithmUtil.filterThreePhaseCurrentAndVoltagePole(poleIds, faultWaveList);
+
+        // TODO Define the minimum current required for load fluctuation
+        double IMIN = hyConfigProperty.getConstant().getDeviceSampleRate();
+
+        FeatureUndulateDTO result = null;
+        for (FaultIdentifyPoleDTO pole : threePhaseCurrentsAndVoltages) {
+
+            // Calculate current and voltage jumps for each phase
+            double IAJMP = FrequencyCharacterUtil.IJMP(pole.getAPhaseCurrentData());
+            double IBJMP = FrequencyCharacterUtil.IJMP(pole.getBPhaseCurrentData());
+            double ICJMP = FrequencyCharacterUtil.IJMP(pole.getCPhaseCurrentData());
+
+            // Calculate the 10th harmonic for each phase
+            double IA10 = FrequencyCharacterUtil.I10(pole.getAPhaseCurrentData());
+            double IB10 = FrequencyCharacterUtil.I10(pole.getBPhaseCurrentData());
+            double IC10 = FrequencyCharacterUtil.I10(pole.getCPhaseCurrentData());
+
+            // Calculate the voltage jumps for each phase
+            double UAJMP = FrequencyCharacterUtil.UJMP(pole.getAPhaseVoltageData());
+            double UBJMP = FrequencyCharacterUtil.UJMP(pole.getBPhaseVoltageData());
+            double UCJMP = FrequencyCharacterUtil.UJMP(pole.getCPhaseVoltageData());
+
+            // Calculate the 1st harmonic for each phase
+            double IA1 = FrequencyCharacterUtil.I1(pole.getAPhaseCurrentData());
+            double IB1 = FrequencyCharacterUtil.I1(pole.getBPhaseCurrentData());
+            double IC1 = FrequencyCharacterUtil.I1(pole.getCPhaseCurrentData());
+
+            if ((((IAJMP < 0 && ICJMP < 0 && IBJMP < 0) && (IA10 > IMIN && IB10 > IMIN && IC10 > IMIN))
+                    || ((IAJMP > 0 && ICJMP > 0 && IBJMP > 0) && (IA10 > IA1 && IB10 > IB1 && IC10 > IC1)))
+                    && (UBJMP < 0 && UAJMP < 0 && UCJMP < 0)) {
+                List<Double> changeCurrList = new ArrayList<>();
+                changeCurrList.add(IA10 - IA1);
+                changeCurrList.add(IB10 - IB1);
+                changeCurrList.add(IC10 - IC1);
+
+                result = new FeatureUndulateDTO();
+                result.setVariationTime(pole.getFaultTime());
+                result.setChangeCurr(Collections.max(changeCurrList));
+                break;
+            }
+        }
+        // Detect load fluctuation by examining each pole
+        return result;
     }
 
 
