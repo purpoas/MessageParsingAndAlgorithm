@@ -24,8 +24,8 @@ public class DeviceFaultMessage extends BaseMessage {
 
         DeviceFault deviceFault = new DeviceFault();
         deviceFault.setDeviceId(deviceId);
-        deviceFault.setCollectionTime(this.getFaultDataCollectionTime());
-        deviceFault.setFaultDescribe(this.getDeviceFaultInfo());
+        deviceFault.setCollectionTime(this.faultDataCollectionTime);
+        deviceFault.setFaultDescribe(this.deviceFaultInfo);
 
         return deviceFault;
     }

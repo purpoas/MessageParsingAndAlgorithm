@@ -12,12 +12,17 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 故障类型识别：
- * 合闸涌流 、
- * AB两相短路 、AC两相短路 、BC两相短路 、三相短路 、
- * AB两相断路 、AC两相断路 、BC两相断路 、A相断路 、B相断路 、C相断路 、
- * 正常运行状态 、增负荷 、
- * A相接地 、B相接地 、C相接地
+ * ==========================
+ * 故障波形识别算法工具类       ｜
+ * ==========================
+ *
+ * @description 故障类型识别：
+ *                          合闸涌流
+ *                          AB两相短路、AC两相短路、BC两相短路、三相短路
+ *                          AB两相断路 、AC两相断路 、BC两相断路 、A相断路 、B相断路 、C相断路 、
+ *                          正常运行状态 、增负荷 、
+ *                          A相接地 、B相接地 、C相接地
+ * @author hls、shiwentao
  */
 public class FaultIdentifyAlgorithmUtil {
 
@@ -30,66 +35,36 @@ public class FaultIdentifyAlgorithmUtil {
 
 
     public static FaultIdentifyDTO judge(Set<FaultWave> faultWaves, AreaLocateDTO areaLocateDTO) {
+        boolean isDownstream = !StringUtils.hasText(areaLocateDTO.getFaultHeadTowerId());
 
-        // TODO 判断故障左区间是否是小号测 是则进行下游故障类型判断 否则进行上游设备故障类型判断
+        List<FaultWave> filteredWaves = faultWaves.stream()
+                .filter(faultWave -> isDownstream
+                        ? faultWave.getDistanceToHeadStation() > areaLocateDTO.getFaultEndTowerDistanceToHeadStation()
+                        : faultWave.getDistanceToHeadStation() < areaLocateDTO.getFaultHeadTowerDistanceToHeadStation())
+                .collect(Collectors.toList());
 
-        // 左区间是小号测
-        if (!StringUtils.hasText(areaLocateDTO.getFaultHeadTowerId())) {
-            // TODO 下游分析
+        List<FaultIdentifyPoleDTO> threePhaseCurrents = CommonAlgorithmUtil.filterThreePhaseCurrentPole(filteredWaves);
+        FaultIdentifyDTO currentFaultType = isDownstream ? calculateDownstreamCurrentFaultType(threePhaseCurrents)
+                : calculateUpstreamCurrentFaultType(threePhaseCurrents);
+        if (currentFaultType != null) return currentFaultType;
+
+        List<String> poleIds = threePhaseCurrents.stream().map(FaultIdentifyPoleDTO::getPoleId).distinct().collect(Collectors.toList());
+        List<FaultIdentifyPoleDTO> threePhaseVoltages = CommonAlgorithmUtil.filterThreePhaseCurrentAndVoltagePole(poleIds, filteredWaves);
+        FaultIdentifyDTO voltageFaultType = isDownstream ? calculateDownStreamVoltageFaultType(threePhaseVoltages)
+                : calculateUpStreamVoltageFaultType(threePhaseVoltages);
+        if (voltageFaultType != null) return voltageFaultType;
+
+        if (!isDownstream && StringUtils.hasText(areaLocateDTO.getFaultEndTowerId())) {
             List<FaultWave> rightWave = faultWaves.stream().filter(faultWave -> faultWave.getDistanceToHeadStation() > areaLocateDTO.getFaultEndTowerDistanceToHeadStation()).collect(Collectors.toList());
+            List<FaultIdentifyPoleDTO> downThreePhaseCurrents = CommonAlgorithmUtil.filterThreePhaseCurrentPole(rightWave);
+            FaultIdentifyDTO downCurrentFaultType = calculateDownstreamCurrentFaultType(downThreePhaseCurrents);
 
-            // 找三相电流杆塔
-            List<FaultIdentifyPoleDTO> threePhaseCurrents = CommonAlgorithmUtil.filterThreePhaseCurrentPole(rightWave);
-            // 计算三相电流波形的故障性质
-            FaultIdentifyDTO currentFaultType = calculateDownstreamCurrentFaultType(threePhaseCurrents);
+            if (downCurrentFaultType != null) return downCurrentFaultType;
 
-            if (currentFaultType != null) return currentFaultType;
+            List<String> downPoleIds = threePhaseCurrents.stream().map(FaultIdentifyPoleDTO::getPoleId).distinct().collect(Collectors.toList());
+            List<FaultIdentifyPoleDTO> downThreePhaseVoltages = CommonAlgorithmUtil.filterThreePhaseCurrentAndVoltagePole(downPoleIds, rightWave);
 
-            List<String> poleIds = threePhaseCurrents.stream().map(FaultIdentifyPoleDTO::getPoleId).distinct().collect(Collectors.toList());
-            // 找三相电流三相电压杆塔
-            List<FaultIdentifyPoleDTO> threePhaseVoltages = CommonAlgorithmUtil.filterThreePhaseCurrentAndVoltagePole(poleIds, rightWave);
-            // 计算三相电流三相电压波形的故障性质
-            FaultIdentifyDTO voltageFaultType = calculateDownStreamVoltageFaultType(threePhaseVoltages);
-
-            if (voltageFaultType != null) return voltageFaultType;
-
-        } else {
-            // TODO 上游分析
-            List<FaultWave> leftWave = faultWaves.stream().filter(faultWave -> faultWave.getDistanceToHeadStation() < areaLocateDTO.getFaultHeadTowerDistanceToHeadStation()).collect(Collectors.toList());
-
-            // 找三相电流杆塔
-            List<FaultIdentifyPoleDTO> threePhaseCurrents = CommonAlgorithmUtil.filterThreePhaseCurrentPole(leftWave);
-            // 计算三相电流波形的故障性质
-            FaultIdentifyDTO currentFaultType = calculateUpstreamCurrentFaultType(threePhaseCurrents);
-
-            if (currentFaultType != null) return currentFaultType;
-
-            List<String> poleIds = threePhaseCurrents.stream().map(FaultIdentifyPoleDTO::getPoleId).distinct().collect(Collectors.toList());
-            // 找三相电流三相电压杆塔
-            List<FaultIdentifyPoleDTO> threePhaseVoltages = CommonAlgorithmUtil.filterThreePhaseCurrentAndVoltagePole(poleIds, leftWave);
-            // 计算三相电流三相电压波形的故障性质
-            FaultIdentifyDTO voltageFaultType = calculateUpStreamVoltageFaultType(threePhaseVoltages);
-
-            if (voltageFaultType != null) return voltageFaultType;
-
-            // 右区间是大号测
-            if (StringUtils.hasText(areaLocateDTO.getFaultEndTowerId())) {
-                // TODO 下游分析
-                List<FaultWave> rightWave = faultWaves.stream().filter(faultWave -> faultWave.getDistanceToHeadStation() > areaLocateDTO.getFaultEndTowerDistanceToHeadStation()).collect(Collectors.toList());
-
-                // 找三相电流杆塔
-                List<FaultIdentifyPoleDTO> downThreePhaseCurrents = CommonAlgorithmUtil.filterThreePhaseCurrentPole(rightWave);
-                // 计算三相电流波形的故障性质
-                FaultIdentifyDTO downCurrentFaultType = calculateDownstreamCurrentFaultType(downThreePhaseCurrents);
-
-                if (downCurrentFaultType != null) return downCurrentFaultType;
-
-                List<String> downPoleIds = threePhaseCurrents.stream().map(FaultIdentifyPoleDTO::getPoleId).distinct().collect(Collectors.toList());
-                // 找三相电流三相电压杆塔
-                List<FaultIdentifyPoleDTO> downThreePhaseVoltages = CommonAlgorithmUtil.filterThreePhaseCurrentAndVoltagePole(downPoleIds, rightWave);
-                // 计算三相电流三相电压波形的故障性质
-                return calculateDownStreamVoltageFaultType(downThreePhaseVoltages);
-            }
+            return calculateDownStreamVoltageFaultType(downThreePhaseVoltages);
         }
 
         return null;
@@ -97,66 +72,60 @@ public class FaultIdentifyAlgorithmUtil {
 
     /**
      * 具备三相电流的杆塔进行故障性质判断 - TODO 上游判断
-     *
-     * @param faultIdentifyPoles
-     * @return
      */
     private static FaultIdentifyDTO calculateUpstreamCurrentFaultType(List<FaultIdentifyPoleDTO> faultIdentifyPoles) {
 
         for (FaultIdentifyPoleDTO faultIdentify : faultIdentifyPoles) {
 
-            double IAJMP = FrequencyCharacterUtil.IJMP(faultIdentify.getAPhaseCurrentData());
-            double IBJMP = FrequencyCharacterUtil.IJMP(faultIdentify.getBPhaseCurrentData());
-            double ICJMP = FrequencyCharacterUtil.IJMP(faultIdentify.getCPhaseCurrentData());
+            double[] APhaseCurrentData = faultIdentify.getAPhaseCurrentData();
+            double[] BPhaseCurrentData = faultIdentify.getBPhaseCurrentData();
+            double[] CPhaseCurrentData = faultIdentify.getCPhaseCurrentData();
 
-            double IA10 = FrequencyCharacterUtil.I10(faultIdentify.getAPhaseCurrentData());
-            double IB10 = FrequencyCharacterUtil.I10(faultIdentify.getBPhaseCurrentData());
-            double IC10 = FrequencyCharacterUtil.I10(faultIdentify.getCPhaseCurrentData());
+            double IAJMP = FrequencyCharacterUtil.IJMP(APhaseCurrentData);
+            double IBJMP = FrequencyCharacterUtil.IJMP(BPhaseCurrentData);
+            double ICJMP = FrequencyCharacterUtil.IJMP(CPhaseCurrentData);
 
-            if (
-                    IAJMP > 0 && IBJMP > 0 && ICJMP <= 0 && IA10 < IMIN && IB10 < IMIN && IC10 < IMIN
-            ) {
-                return new FaultIdentifyDTO(AnalysisConstants.FAULT_NATURE_SHORT_AB, faultIdentify.getAPhaseCurrentData(), faultIdentify.getBPhaseCurrentData(), faultIdentify.getCPhaseCurrentData());
-            } else if (
-                    IAJMP > 0 && IBJMP <= 0 && ICJMP > 0 && IA10 < IMIN && IB10 < IMIN && IC10 < IMIN
-            ) {
-                return new FaultIdentifyDTO(AnalysisConstants.FAULT_NATURE_SHORT_AC, faultIdentify.getAPhaseCurrentData(), faultIdentify.getBPhaseCurrentData(), faultIdentify.getCPhaseCurrentData());
-            } else if (
-                    IAJMP <= 0 && IBJMP > 0 && ICJMP > 0 && IA10 < IMIN && IB10 < IMIN && IC10 < IMIN
-            ) {
-                return new FaultIdentifyDTO(AnalysisConstants.FAULT_NATURE_SHORT_BC, faultIdentify.getAPhaseCurrentData(), faultIdentify.getBPhaseCurrentData(), faultIdentify.getCPhaseCurrentData());
+            double IA10 = FrequencyCharacterUtil.I10(APhaseCurrentData);
+            double IB10 = FrequencyCharacterUtil.I10(BPhaseCurrentData);
+            double IC10 = FrequencyCharacterUtil.I10(CPhaseCurrentData);
+
+            if (IAJMP > 0 && IBJMP > 0 && ICJMP <= 0 &&
+                    IA10 < IMIN && IB10 < IMIN && IC10 < IMIN) {
+                return new FaultIdentifyDTO(AnalysisConstants.FAULT_NATURE_SHORT_AB, APhaseCurrentData, BPhaseCurrentData, CPhaseCurrentData);
+            }
+            if (IAJMP > 0 && IBJMP <= 0 && ICJMP > 0 &&
+                    IA10 < IMIN && IB10 < IMIN && IC10 < IMIN) {
+                return new FaultIdentifyDTO(AnalysisConstants.FAULT_NATURE_SHORT_AC, APhaseCurrentData, BPhaseCurrentData, CPhaseCurrentData);
+            }
+            if (IAJMP <= 0 && IBJMP > 0 && ICJMP > 0 &&
+                    IA10 < IMIN && IB10 < IMIN && IC10 < IMIN) {
+                return new FaultIdentifyDTO(AnalysisConstants.FAULT_NATURE_SHORT_BC, APhaseCurrentData, BPhaseCurrentData, CPhaseCurrentData);
             }
 
             if (!(IAJMP <= 0 && IBJMP > 0 && ICJMP > 0)) {
-                // 结束本杆塔分析 切换下一组
                 continue;
             }
 
-            // 计算零序电流I0
-            double I0 = TypeAlgorithmUtil.calculateZeroCurrent(faultIdentify.getAPhaseCurrentData(), faultIdentify.getBPhaseCurrentData(), faultIdentify.getCPhaseCurrentData());
+            double I0 = TypeAlgorithmUtil.calculateZeroCurrent(APhaseCurrentData, BPhaseCurrentData, CPhaseCurrentData);
 
-            double IA1 = FrequencyCharacterUtil.I1(faultIdentify.getAPhaseCurrentData());
-            double IB1 = FrequencyCharacterUtil.I1(faultIdentify.getBPhaseCurrentData());
-            double IC1 = FrequencyCharacterUtil.I1(faultIdentify.getCPhaseCurrentData());
+            double IA1 = FrequencyCharacterUtil.I1(APhaseCurrentData);
+            double IB1 = FrequencyCharacterUtil.I1(BPhaseCurrentData);
+            double IC1 = FrequencyCharacterUtil.I1(CPhaseCurrentData);
 
             if (I0 <= I0AM && IA1 >= IMIN && IB1 >= IMIN && IC1 >= IMIN && IA10 < IMIN && IB10 < IMIN && IC10 < IMIN) {
-                // 三相短路
-                return new FaultIdentifyDTO(AnalysisConstants.FAULT_NATURE_SHORT_ABC, faultIdentify.getAPhaseCurrentData(), faultIdentify.getBPhaseCurrentData(), faultIdentify.getCPhaseCurrentData());
-            } else if (I0 <= I0AM && IA1 >= IMIN && IB1 >= IMIN && IC1 >= IMIN) {
-                // 负荷波动
-                return new FaultIdentifyDTO(AnalysisConstants.FAULT_NATURE_LOAD_UNDULATE, faultIdentify.getAPhaseCurrentData(), faultIdentify.getBPhaseCurrentData(), faultIdentify.getCPhaseCurrentData());
+                return new FaultIdentifyDTO(AnalysisConstants.FAULT_NATURE_SHORT_ABC, APhaseCurrentData, BPhaseCurrentData, CPhaseCurrentData);
+            }
+            if (I0 <= I0AM && IA1 >= IMIN && IB1 >= IMIN && IC1 >= IMIN) {
+                return new FaultIdentifyDTO(AnalysisConstants.FAULT_NATURE_LOAD_UNDULATE, APhaseCurrentData, BPhaseCurrentData, CPhaseCurrentData);
             }
         }
 
         return null;
-
     }
+
 
     /**
      * 具备三相电压的杆塔进行故障性质判断 - TODO 上游判断
-     *
-     * @param faultIdentifyPoles
-     * @return
      */
     private static FaultIdentifyDTO calculateUpStreamVoltageFaultType(List<FaultIdentifyPoleDTO> faultIdentifyPoles) {
         for (FaultIdentifyPoleDTO faultIdentify : faultIdentifyPoles) {
@@ -245,11 +214,8 @@ public class FaultIdentifyAlgorithmUtil {
 
     /**
      * 具备三相电流的杆塔进行故障性质判断 - TODO 下游判断
-     *
-     * @param faultIdentifyPoles
-     * @return
      */
-    public static FaultIdentifyDTO calculateDownstreamCurrentFaultType(List<FaultIdentifyPoleDTO> faultIdentifyPoles) {
+    private static FaultIdentifyDTO calculateDownstreamCurrentFaultType(List<FaultIdentifyPoleDTO> faultIdentifyPoles) {
 
         for (FaultIdentifyPoleDTO faultIdentify : faultIdentifyPoles) {
 
@@ -282,11 +248,8 @@ public class FaultIdentifyAlgorithmUtil {
 
     /**
      * 具备三相电压的杆塔进行故障性质判断 - TODO 下游判断
-     *
-     * @param faultIdentifyPoles
-     * @return
      */
-    public static FaultIdentifyDTO calculateDownStreamVoltageFaultType(List<FaultIdentifyPoleDTO> faultIdentifyPoles) {
+    private static FaultIdentifyDTO calculateDownStreamVoltageFaultType(List<FaultIdentifyPoleDTO> faultIdentifyPoles) {
         for (FaultIdentifyPoleDTO faultIdentify : faultIdentifyPoles) {
 
             double IAJMP = FrequencyCharacterUtil.IJMP(faultIdentify.getAPhaseCurrentData());
@@ -378,6 +341,7 @@ public class FaultIdentifyAlgorithmUtil {
                 }
             }
         }
+
         return null;
     }
 

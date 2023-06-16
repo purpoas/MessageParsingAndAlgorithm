@@ -32,17 +32,17 @@ public class ListenerConfig {
     }
 
     @Bean
+    StateChannelSubscriber stateChannelSubscriber() {
+        Map<String, MessageHandler> messageHandlers = context.getBeansOfType(MessageHandler.class);
+        return new StateChannelSubscriber(hyConfigProperty, new ArrayList<>(messageHandlers.values()), mapper);
+    }
+
+    @Bean
     RedisMessageListenerContainer container(RedisConnectionFactory connectionFactory, StateChannelSubscriber stateChannelSubscriber) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
         container.addMessageListener(stateChannelSubscriber, new PatternTopic(hyConfigProperty.getDataQueue().getDnmTopicChannelSb()));
         return container;
-    }
-
-    @Bean
-    StateChannelSubscriber stateChannelSubscriber() {
-        Map<String, MessageHandler> messageHandlers = context.getBeansOfType(MessageHandler.class);
-        return new StateChannelSubscriber(hyConfigProperty, new ArrayList<>(messageHandlers.values()), mapper);
     }
 
 

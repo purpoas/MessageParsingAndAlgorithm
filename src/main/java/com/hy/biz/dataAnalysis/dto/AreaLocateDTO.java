@@ -2,7 +2,6 @@ package com.hy.biz.dataAnalysis.dto;
 
 import com.hy.biz.util.GsonUtil;
 import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
 
 
 /**
@@ -73,4 +72,6 @@ public class AreaLocateDTO {
     public String toString() {
         return GsonUtil.getInstance().toJson(this);
     }
+
+
 }

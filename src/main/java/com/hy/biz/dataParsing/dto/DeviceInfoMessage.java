@@ -47,14 +47,13 @@ public class DeviceInfoMessage extends BaseMessage {
 
 
     public DeviceInfo transform(long deviceId, long timeStamp) {
-
         DeviceInfo deviceInfo = new DeviceInfo();
         deviceInfo.setDeviceId(deviceId);
         deviceInfo.setTerminalName(this.monitoringTerminalName);
         deviceInfo.setTerminalType(this.monitoringTerminalModel);
         deviceInfo.setTerminalEdition(this.monitoringTerminalInfoVersion);
         deviceInfo.setProducer(this.manufacturer);
-        deviceInfo.setProductionDate(this.productionDate);
+        deviceInfo.setProducerTime(this.productionDate);
         deviceInfo.setProducerCode(this.factoryNumber);
         deviceInfo.setCollectionTime(Instant.ofEpochMilli(timeStamp));
 

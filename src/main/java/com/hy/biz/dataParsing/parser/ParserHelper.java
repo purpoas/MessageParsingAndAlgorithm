@@ -2,7 +2,7 @@ package com.hy.biz.dataParsing.parser;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 import com.hy.biz.dataParsing.dto.MessageDTO;
 import com.hy.biz.dataParsing.dto.WaveDataMessage;
 import com.hy.biz.dataParsing.exception.MessageParsingException;
@@ -18,6 +18,8 @@ import org.springframework.stereotype.Component;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,9 +28,9 @@ import static com.hy.biz.dataParsing.constants.MessageConstants.*;
 import static com.hy.biz.dataParsing.constants.MessageType.*;
 
 /**
- *==================
+ *===================
  * 解析器 Helper 类   ｜
- *==================
+ *===================
  *
  * @author shiwentao
  * @package com.hy.biz.dataParsing.algorithmUtil
@@ -114,7 +116,7 @@ public class ParserHelper {
         String dnmLatestDeviceStatus = hyConfigProperty.getConstant().getDnmLatestDeviceStatus();
 
         Map<String, String> map = new HashMap<>();
-        map.put("lastTime", deviceInfo.getCollectionTime().toString());
+        map.put("lastTime", String.valueOf(deviceInfo.getCollectionTime().getEpochSecond()));
         map.put("updateTime", String.valueOf(Instant.now().getEpochSecond()));
 
         redisTemplate.opsForHash().putAll(dnmLatestDeviceStatus + ":" + deviceCode, map);
@@ -163,7 +165,6 @@ public class ParserHelper {
     }
 
     public WaveData setWaveDataProperty(WaveDataMessage message, long timeStamp, String deviceCode) {
-
         WaveData waveData = new WaveData();
 
         waveData.setCollectionTime(Instant.ofEpochMilli(timeStamp));
@@ -188,7 +189,28 @@ public class ParserHelper {
         return waveData;
     }
 
+    public void publishWaveData(WaveData waveData, WaveDataMessage message, long timeStamp, String deviceCode) {
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(Instant.class, (JsonSerializer<Instant>) (src, typeOfSrc, context) -> new JsonPrimitive(
+                        DateTimeFormatter.ofPattern("yyyy:MM:dd'T'HH:mm:ss'Z'")
+                                .withZone(ZoneId.of("Z"))
+                                .format(src)))
+                .create();
+
+        JsonObject waveDataJson = JsonParser.parseString(gson.toJson(waveData)).getAsJsonObject();
+
+        JsonObject params = new JsonObject();
+
+        for (Map.Entry<String, JsonElement> entry : waveDataJson.entrySet()) {
+            params.add(entry.getKey(), entry.getValue());
+        }
+
+        publishToRedis(message.getFrameType(), message.getMessageType(), timeStamp, deviceCode, params);
+    }
+
+
     // 私有方法==========================================================================================================
+
 
     private String createMsg(byte frameType, byte messageType) {
         if (frameType == MONITORING_DATA_REPORT && messageType == TRAVELLING_WAVE_CURRENT) {
@@ -200,11 +222,12 @@ public class ParserHelper {
         if (frameType == MONITORING_DATA_REPORT && messageType == FAULT_VOLTAGE) {
             return "故障电压";
         }
+
         return "";
     }
 
     private String generateWaveDataCode(long timeStamp, byte frameType, byte messageType, String deviceCode) {
-        byte[] dateTimeBytes = DateTimeUtil.longToDateTimeBytes(timeStamp);
+        byte[] dateTimeBytes = DateTimeUtil.parseLongDateToBytes(timeStamp);
         String ymd = String.format("20%02d%02d%02d", dateTimeBytes[0] & 0xFF, dateTimeBytes[1] & 0xFF, dateTimeBytes[2] & 0xFF);
         String hms = String.format("%02d%02d%02d", dateTimeBytes[3] & 0xFF, dateTimeBytes[4] & 0xFF, dateTimeBytes[5] & 0xFF);
         String ns = String.format("%03d%03d%03d",
@@ -216,8 +239,7 @@ public class ParserHelper {
         String frameTypeStr = String.format("%02d", frameType);
         String messageTypeStr = String.format("%02d", messageType);
 
-        return String.format("W%s-%s-%s-%s%s-%s",
-                ymd, hms, ns, frameTypeStr, messageTypeStr, deviceCode);
+        return String.format("W%s-%s-%s-%s%s-%s", ymd, hms, ns, frameTypeStr, messageTypeStr, deviceCode);
     }
 
     //todo 需结合算法

@@ -50,9 +50,8 @@ public class V1AnalysisServiceImpl implements DataAnalysisService {
     @Override
     public void executeAlgorithmAnalysis(Set<FaultWave> faultWaves) {
         if (CollectionUtils.isEmpty(faultWaves)) return;
-
-        // 执行算法分析主要逻辑
         log.info("[ANALYSIS] 故障波形 size : {}", faultWaves.size());
+        // 执行算法分析主要逻辑
 
         // TODO 1.查询该线路上次故障类型是否是接地 且瞬时型故障判断延时时间未完成 ---->> 是 ： 补充接地故障瞬时特性 否 ： 涌流、负荷波形判断
 
@@ -61,9 +60,7 @@ public class V1AnalysisServiceImpl implements DataAnalysisService {
         AreaLocateDTO areaLocateDTO = IntervalAlgorithm.analysis(faultWaves);
 
         // TODO 3.故障类型判断
-
         if (areaLocateDTO == null) return;
-
         FaultIdentifyDTO faultType = FaultIdentifyAlgorithmUtil.judge(faultWaves, areaLocateDTO);
 
         // TODO 4.故障特性计算
@@ -71,7 +68,7 @@ public class V1AnalysisServiceImpl implements DataAnalysisService {
 
         // TODO 5.故障精确定位
         faultLocationAlgorithm.locate(faultWaves).ifPresent(result -> {
-            // todo 执行相关操作
+            // 对 result 执行相关操作
         });
 
         // TODO 6.工频故障特征量计算

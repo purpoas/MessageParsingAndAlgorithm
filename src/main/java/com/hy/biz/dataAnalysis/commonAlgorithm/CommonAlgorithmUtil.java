@@ -18,9 +18,6 @@ public class CommonAlgorithmUtil {
 
     /**
      * 转换波形 eg : 1,2,3 ---> [1.0,2.0,3.0]
-     *
-     * @param data
-     * @return
      */
     public static double[] shiftWave(String data) {
         return Stream.of(data.split(","))
@@ -30,11 +27,6 @@ public class CommonAlgorithmUtil {
 
     /**
      * 计算相邻两个电流值之差，并计算电流突变量能量 E(k)
-     *
-     * @param data   波形数据
-     * @param power  突变量次方
-     * @param deltaK 德尔塔K
-     * @return
      */
     public static List<Double> calculateCurrentMutationEnergy(double[] data, int power, int deltaK) {
         if (data == null || data.length < deltaK)
@@ -54,9 +46,6 @@ public class CommonAlgorithmUtil {
 
     /**
      * 寻找筛选出杆塔下有三相电流的集合
-     *
-     * @param faultWaveList 故障波形
-     * @return
      */
     public static List<FaultIdentifyPoleDTO> filterThreePhaseCurrentPole(List<FaultWave> faultWaveList) {
         List<FaultIdentifyPoleDTO> result = new ArrayList<>();
@@ -104,11 +93,7 @@ public class CommonAlgorithmUtil {
 
     /**
      * 寻找筛选出杆塔下有三相电流和三相电压的集合
-     * <p>
      * 用筛选出三相电流的故障波形集合进行过了
-     *
-     * @param faultWaveList 故障波形
-     * @return
      */
     public static List<FaultIdentifyPoleDTO> filterThreePhaseCurrentAndVoltagePole(List<String> poleIdList, List<FaultWave> faultWaveList) {
         List<FaultIdentifyPoleDTO> result = new ArrayList<>();
@@ -170,10 +155,6 @@ public class CommonAlgorithmUtil {
 
     /**
      * 计算波形极值点坐标集合
-     *
-     * @param data           波形内容
-     * @param kickPointRange 剔除极值点坐标附近点的范围
-     * @return
      */
     public static List<Integer> calculateWaveExtremePoint(List<Double> data, int kickPointRange) {
         // Replace integerDoubleMap and integerList with a single LinkedHashMap
@@ -199,10 +180,6 @@ public class CommonAlgorithmUtil {
 
     /**
      * 根据坐标集 以及坐标对应值 找出 最大值坐标附近40个点的坐标集合 即需要剔除的点位
-     *
-     * @param integerList
-     * @param integerDoubleMap
-     * @return
      */
     private static List<Integer> getRemoveIndexList(List<Integer> indexList, Map<Integer, Double> indexToValueMap, int kickPointRange) {
         if (CollectionUtils.isEmpty(indexList) || indexList.size() == 1) return Collections.emptyList();
@@ -227,9 +204,6 @@ public class CommonAlgorithmUtil {
 
     /**
      * 找最大值坐标点 即map集合中value值最大对应的key
-     *
-     * @param integerDoubleMap
-     * @return
      */
     private static Integer getMaxValueIndex(Map<Integer, Double> indexToValueMap) {
         return Collections.max(indexToValueMap.entrySet(), Map.Entry.comparingByValue()).getKey();
@@ -238,12 +212,6 @@ public class CommonAlgorithmUtil {
 
     /**
      * 根据最大值坐标点 、坐标集合 、 坐标map 找出需要剔除的点位
-     *
-     * @param maxIndex
-     * @param integerList
-     * @param integerDoubleMap
-     * @param kickPointRange   剔除极值点坐标附近点的范围
-     * @return 剔除坐标点集合
      */
     private static List<Integer> deleteMaxIndex(Integer maxIndex, List<Integer> indexList, Map<Integer, Double> indexToValueMap, int kickPointRange) {
         return indexList.stream()

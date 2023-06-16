@@ -19,6 +19,7 @@ import java.util.Set;
 public class FaultFeatureUtil {
 
     public static JsonObject calculate(FaultIdentifyDTO faultType, AreaLocateDTO areaLocateDTO, Set<FaultWave> faultWaveSet) {
+        if (faultType == null) throw new IllegalArgumentException("faultType 不能为 null");
 
         List<FaultWave> faultWaveList = new ArrayList<>(faultWaveSet);
 

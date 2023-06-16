@@ -39,10 +39,11 @@ public class DeviceInfo {
     @Column(name = "producer_code")
     private String producerCode;
 
-    @Column(name = "production_date")
-    private String productionDate;
+    @Column(name = "producer_time")
+    private String producerTime;
 
     @Column(name = "collection_time")
     private Instant collectionTime;
+
 
 }

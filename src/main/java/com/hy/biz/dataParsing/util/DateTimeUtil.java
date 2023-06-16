@@ -20,20 +20,21 @@ import java.time.format.DateTimeFormatter;
  **/
 public class DateTimeUtil {
 
-    public static String parseDateToStr(byte[] timeStamp) {
+    public static String parseDateBytesToStr(byte[] timeStamp) {
         String dateStr = new String(timeStamp, StandardCharsets.UTF_8);
         return dateStr.substring(0, 4);
     }
 
-
-    public static String parseDateTimeToStr(byte[] timestamp) {
+    public static String parseWaveDateBytesToStr(byte[] timestamp) {
         ZonedDateTime zonedDateTime = parseDateTimeToZonedDateTime(timestamp);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSSSSS");
         return zonedDateTime.format(formatter);
     }
 
-    public static byte[] longToDateTimeBytes(long timestamp) {
-        LocalDateTime dateTime = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
+    public static byte[] parseLongDateToBytes(long timestamp) {
+        LocalDateTime dateTime = Instant.ofEpochMilli(timestamp)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
 
         int year = dateTime.getYear() % 100;
         int month = dateTime.getMonthValue();
@@ -43,8 +44,7 @@ public class DateTimeUtil {
         int second = dateTime.getSecond();
         int nanos = dateTime.getNano();
 
-        ByteBuffer buffer = ByteBuffer.allocate(12);
-        buffer.order(ByteOrder.BIG_ENDIAN);
+        ByteBuffer buffer = ByteBuffer.allocate(12).order(ByteOrder.BIG_ENDIAN);
         buffer.put((byte) year);
         buffer.put((byte) month);
         buffer.put((byte) day);
@@ -57,6 +57,10 @@ public class DateTimeUtil {
 
         return buffer.array();
     }
+
+
+    //=========================private=========================private=========================private================================
+
 
     private static ZonedDateTime parseDateTimeToZonedDateTime(byte[] timestamp) {
         ByteBuffer buffer = ByteBuffer.wrap(timestamp).order(ByteOrder.BIG_ENDIAN);
@@ -76,5 +80,6 @@ public class DateTimeUtil {
         LocalDateTime localDateTime = LocalDateTime.of(year, month, day, hour, minute, second, totalNanos);
         return localDateTime.atZone(ZoneId.systemDefault());
     }
+
 
 }

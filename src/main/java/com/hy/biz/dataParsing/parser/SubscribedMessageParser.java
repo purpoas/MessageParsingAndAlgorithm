@@ -35,7 +35,7 @@ public class SubscribedMessageParser {
     private static final String OFFLINE_STATUS_MESSAGE = "设备下线";
     private static final String ONLINE_STATUS = "online";
     private static final String MSG_TYPE = "0x04:0x08";
-    private final Map<String, CtrlMsgParserStrategy> strategies = CtrlMsgStrategyRegistry.getMessageStrategyMap();
+    private final Map<String, CtrlMsgParserStrategy> strategies = CtrlMsgStrategyRegistry.getCtrlMessageStrategyMap();
 
     private final DataPushService dataPushService;
     private final ParserHelper parserHelper;
@@ -106,7 +106,7 @@ public class SubscribedMessageParser {
         jsonObject.addProperty("msg", isOnline ? ONLINE_STATUS_MESSAGE : OFFLINE_STATUS_MESSAGE);
         jsonObject.addProperty("msgType", MSG_TYPE);
         jsonObject.addProperty("timestamp", deviceOnlineStatusDTO.getHeader().getTimeStamp());
-        jsonObject.addProperty("deviceCode", deviceOnlineStatusDTO.getResult().getMsg().split(" ")[0]);
+        jsonObject.addProperty("deviceCode", deviceOnlineStatusDTO.getHeader().getDeviceCode());
 
         return jsonObject;
     }

@@ -1,26 +1,20 @@
 package com.hy.biz.dataPush;
 
-import com.google.gson.*;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.hy.biz.dataParsing.dto.*;
+import com.hy.biz.dataParsing.exception.MessageParsingException;
+import com.hy.biz.dataParsing.parser.ParserHelper;
 import com.hy.biz.dataPush.dto.DeviceDTO;
 import com.hy.biz.dataPush.dto.LineDTO;
 import com.hy.biz.dataPush.dto.PoleDTO;
 import com.hy.biz.dataPush.dto.PushDataType;
-import com.hy.biz.dataParsing.dto.*;
-import com.hy.biz.dataParsing.exception.MessageParsingException;
-import com.hy.biz.dataParsing.parser.ParserHelper;
 import com.hy.domain.*;
 import com.hy.repository.*;
 import lombok.extern.slf4j.Slf4j;
-import org.aspectj.weaver.ast.Or;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
-import java.util.Map;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -94,7 +88,8 @@ public class HyDataPushServiceImpl implements DataPushService {
     @Override
     public DeviceDTO findDeviceByCode(String deviceCode) {
         Device device = deviceRepository.findDeviceByCodeAndDeletedFalse(deviceCode);
-        if(device == null) return null;
+        if (device == null) return null;
+
         return new DeviceDTO().from(device);
     }
 
@@ -104,11 +99,11 @@ public class HyDataPushServiceImpl implements DataPushService {
 
         if (line == null || !StringUtils.hasText(line.getProperties())) return null;
 
-        JsonObject pro = JsonParser.parseString(line.getProperties()).getAsJsonObject();
+        JsonObject properties = JsonParser.parseString(line.getProperties()).getAsJsonObject();
 
-        if (!pro.has("length") || pro.get("length").isJsonNull()) return null;
+        if (!properties.has("length") || properties.get("length").isJsonNull()) return null;
 
-        return new LineDTO(lineId, pro.get("length").getAsDouble());
+        return new LineDTO(lineId, properties.get("length").getAsDouble());
     }
 
     @Override
@@ -118,9 +113,7 @@ public class HyDataPushServiceImpl implements DataPushService {
 
         if(CollectionUtils.isEmpty(poleList)) return null;
 
-        List<PoleDTO> dto = poleList.stream().map(PoleDTO::new).collect(Collectors.toList());
-
-        return dto;
+        return poleList.stream().map(PoleDTO::new).collect(Collectors.toList());
     }
 
     @Override
@@ -233,28 +226,9 @@ public class HyDataPushServiceImpl implements DataPushService {
 
         waveDataRepository.save(waveData);
 
-        publishWaveData(waveData, message, timeStamp, deviceCode);
+        parserHelper.publishWaveData(waveData, message, timeStamp, deviceCode);
 
         return true;
-    }
-
-    private void publishWaveData(WaveData waveData, WaveDataMessage message, long timeStamp, String deviceCode) {
-        Gson gson = new GsonBuilder()
-                .registerTypeAdapter(Instant.class, (JsonSerializer<Instant>) (src, typeOfSrc, context) -> new JsonPrimitive(
-                        DateTimeFormatter.ofPattern("yyyy:MM:dd'T'HH:mm:ss'Z'")
-                                .withZone(ZoneId.of("Z"))
-                                .format(src)))
-                .create();
-
-        JsonObject waveDataJson = JsonParser.parseString(gson.toJson(waveData)).getAsJsonObject();
-
-        JsonObject params = new JsonObject();
-
-        for (Map.Entry<String, JsonElement> entry : waveDataJson.entrySet()) {
-            params.add(entry.getKey(), entry.getValue());
-        }
-
-        parserHelper.publishToRedis(message.getFrameType(), message.getMessageType(), timeStamp, deviceCode, params);
     }
 
 

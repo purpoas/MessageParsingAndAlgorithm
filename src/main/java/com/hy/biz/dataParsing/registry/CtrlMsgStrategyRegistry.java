@@ -36,7 +36,7 @@ public class CtrlMsgStrategyRegistry {
         CTRL_MESSAGE_STRATEGY_MAP.put(String.format("0x%02X:0x%02X",CONTROL_ACK_REPORT ,QUERY_DEVICE_HISTORICAL_DATA), new DeviceHistoricalDataRspMsgStrategy());
     }
 
-    public static Map<String, CtrlMsgParserStrategy> getMessageStrategyMap() {
+    public static Map<String, CtrlMsgParserStrategy> getCtrlMessageStrategyMap() {
         return UNMODIFIABLE_CTRL_MESSAGE_STRATEGY_MAP;
     }
 
