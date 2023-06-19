@@ -40,8 +40,9 @@ public class LettuceConfig {
                         ClientOptions.builder()
                                 .autoReconnect(true)
                                 .disconnectedBehavior(ClientOptions.DisconnectedBehavior.REJECT_COMMANDS)
-                                .socketOptions(SocketOptions.builder().connectTimeout(Duration.ofSeconds(10)).build())
+                                .socketOptions(SocketOptions.builder().connectTimeout(Duration.ofSeconds(30)).build())
                                 .build())
+                .commandTimeout(Duration.ofSeconds(300)) // 命令timeout时限：5分钟
                 .clientResources(clientResources)
                 .build();
 

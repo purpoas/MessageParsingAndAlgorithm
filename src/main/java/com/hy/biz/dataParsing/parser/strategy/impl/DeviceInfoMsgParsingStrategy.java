@@ -10,8 +10,9 @@ import java.nio.ByteBuffer;
 
 import static com.hy.biz.dataParsing.constants.MessageConstants.*;
 import static com.hy.biz.dataParsing.constants.MessageConstants.RESERVED_LENGTH;
-import static com.hy.biz.dataParsing.util.DateTimeUtil.parseDateToStr;
+import static com.hy.biz.dataParsing.util.DateTimeUtil.parseDateBytesToStr;
 import static com.hy.biz.dataParsing.util.TypeConverter.byteArrToStr;
+import static com.hy.biz.dataParsing.util.TypeConverter.byteArrToNullTrimmedStr;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
@@ -29,7 +30,7 @@ public class DeviceInfoMsgParsingStrategy implements MessageParserStrategy {
 
         byte[] terminalName = new byte[MONITORING_TERMINAL_NAME_LENGTH];
         buffer.get(terminalName);
-        message.setMonitoringTerminalName(byteArrToStr(terminalName));
+        message.setMonitoringTerminalName(byteArrToNullTrimmedStr(terminalName));
         byte[] model = new byte[MONITORING_TERMINAL_MODEL_LENGTH];
         buffer.get(model);
         message.setMonitoringTerminalModel(byteArrToStr(model));
@@ -38,10 +39,10 @@ public class DeviceInfoMsgParsingStrategy implements MessageParserStrategy {
                 .toString());
         byte[] manufacturer = new byte[MANUFACTURER_LENGTH];
         buffer.get(manufacturer);
-        message.setManufacturer(byteArrToStr(manufacturer));
+        message.setManufacturer(byteArrToNullTrimmedStr(manufacturer));
         byte[] date = new byte[SIMPLE_DATE_LENGTH];
         buffer.get(date);
-        message.setProductionDate(parseDateToStr(date));
+        message.setProductionDate(parseDateBytesToStr(date));
         byte[] serialNumber = new byte[FACTORY_SERIAL_NUMBER_LENGTH];
         buffer.get(serialNumber);
         message.setFactoryNumber(Long.toString(ByteBuffer.wrap(serialNumber).order(LITTLE_ENDIAN).getLong()));

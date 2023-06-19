@@ -1,6 +1,6 @@
 package com.hy.service.impl;
 
-import com.hy.biz.dataAnalysis.dto.FaultLocalizationAnalysisResult;
+import com.hy.biz.dataAnalysis.dto.FaultLocationAnalysisResult;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
 import com.hy.biz.dataAnalysis.faultLocationAlgorithm.FaultLocationAlgorithm;
 import com.hy.service.FaultLocationService;
@@ -31,10 +31,10 @@ public class FaultLocationServiceImpl implements FaultLocationService {
     public String locateFaultTower(long poleAId, long poleBId, double distanceBetweenTowers) {
         Set<FaultWave> faultWaves = getFaultWavesFromPole(poleAId, poleBId);
 
-        Optional<FaultLocalizationAnalysisResult> analysisResult = faultLocationAlgorithm.locate(faultWaves);
+        Optional<FaultLocationAnalysisResult> analysisResult = faultLocationAlgorithm.locate(faultWaves);
 
         if (analysisResult.isPresent()) {
-            FaultLocalizationAnalysisResult result = analysisResult.get();
+            FaultLocationAnalysisResult result = analysisResult.get();
             return String.format("%d号杆塔+%f米", result.getNearestPoleId(), result.getDistanceBetweenStations());
         } else
             throw new RuntimeException("无法定位故障杆塔");

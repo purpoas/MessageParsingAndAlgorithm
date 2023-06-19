@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.hy.biz.dataParsing.constants.MessageConstants.TIME_LENGTH;
-import static com.hy.biz.dataParsing.util.DateTimeUtil.parseDateTimeToStr;
+import static com.hy.biz.dataParsing.util.DateTimeUtil.parseWaveDateBytesToStr;
 import static com.hy.biz.dataParsing.util.TypeConverter.byteArrToStr;
 
 /**
@@ -38,7 +38,7 @@ public class WaveDataMsgParsingStrategy implements MessageParserStrategy {
 
         byte[] waveStartTime = new byte[TIME_LENGTH];
         contentBuffer.get(waveStartTime);
-        message.setWaveStartTime(parseDateTimeToStr(waveStartTime));
+        message.setWaveStartTime(parseWaveDateBytesToStr(waveStartTime));
 
         message.setWaveDataLength(contentBuffer.getShort());
         log.info("波形数据总长度： {}", message.getWaveDataLength());
@@ -58,7 +58,9 @@ public class WaveDataMsgParsingStrategy implements MessageParserStrategy {
         return message;
     }
 
+
     //====================private====================private====================private====================private=================
+
 
     private void setWaveData(byte[] segmentedWaveData, WaveDataMessage message) {
         String segmentedWaveDataStr = IntStream.range(0, segmentedWaveData.length)

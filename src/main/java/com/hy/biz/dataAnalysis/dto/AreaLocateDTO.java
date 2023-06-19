@@ -61,4 +61,6 @@ public class AreaLocateDTO {
     public String toString() {
         return GsonUtil.getInstance().toJson(this);
     }
+
+
 }

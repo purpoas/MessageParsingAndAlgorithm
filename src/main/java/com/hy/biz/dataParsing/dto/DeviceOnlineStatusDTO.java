@@ -58,8 +58,7 @@ public class DeviceOnlineStatusDTO {
 
         DeviceOnlineStatus deviceOnlineStatus = new DeviceOnlineStatus();
 
-        String[] msg = this.result.msg.split(" ");
-        deviceOnlineStatus.setDeviceId(dataPushService.findDeviceByCode(msg[0]).getDeviceId());
+        deviceOnlineStatus.setDeviceId(dataPushService.findDeviceByCode(this.header.deviceCode).getDeviceId());
         deviceOnlineStatus.setCollectionTime(Instant.ofEpochMilli(this.header.timeStamp));
         deviceOnlineStatus.setMessage("deviceCode: " + this.header.deviceCode + "  signal: " + this.senderInfo.signal);
         deviceOnlineStatus.setStatus(this.result.status);

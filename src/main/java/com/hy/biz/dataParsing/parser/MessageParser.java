@@ -54,7 +54,8 @@ public class MessageParser {
         MessageDTO messageDTO = parserHelper.createMessageDTO(data);  //生成报文DTO
 
         String commandData = messageDTO.getData().getCommand();       //拿到报文字节数组
-        long timeStamp = messageDTO.getTimeStamp();                   //拿到时间戳
+        long timeStamp = messageDTO.getTimeStamp(); //拿到时间戳
+        String deviceCode = messageDTO.getDeviceCode();
 
         ByteBuffer buffer = ByteBuffer.wrap(hexStringToByteArray(commandData)).order(BIG_ENDIAN);
 
@@ -65,7 +66,7 @@ public class MessageParser {
             byte frameType = parserHelper.parseFrameType(buffer);
             byte messageType = parserHelper.parseMessageType(buffer);
 
-            unoccupiedSpecificMsg = createUnoccupiedSpecificMsg(frameType, messageType);
+            unoccupiedSpecificMsg = createUnoccupiedSpecificMsg(frameType, messageType, deviceCode);
             specificMsg = parseMessageContent(unoccupiedSpecificMsg, buffer, timeStamp);
 
             parserHelper.checkSum(buffer);
@@ -82,7 +83,7 @@ public class MessageParser {
      * @return 具体报文实体类
      * @description 该方法通过报文签名key，在 MESSAGE_MAP 中找到对应的报文实体类，并进行创建初始化
      */
-    private BaseMessage createUnoccupiedSpecificMsg(byte frameType, byte messageType) {
+    private BaseMessage createUnoccupiedSpecificMsg(byte frameType, byte messageType, String deviceCode) {
 
         Class<? extends BaseMessage> messageClass = MESSAGE_MAP.get(String.format("%s:%s", frameType, messageType));
         BaseMessage specificMessage;
@@ -94,6 +95,7 @@ public class MessageParser {
 
         specificMessage.setFrameType(frameType);
         specificMessage.setMessageType(messageType);
+        specificMessage.setDeviceCode(deviceCode);
 
         return specificMessage;
     }
@@ -110,11 +112,11 @@ public class MessageParser {
 
         ByteBuffer contentBuffer = ByteBuffer.wrap(messageContent).order(BIG_ENDIAN);
 
-        MessageParserStrategy strategy =
+        MessageParserStrategy specificStrategy =
                 MESSAGE_STRATEGY_MAP.get(specificMessage.getFrameType() + ":" + specificMessage.getMessageType());
-        if (strategy != null)
+        if (specificStrategy != null)
             try {
-                return strategy.parse(contentBuffer, specificMessage, timeStamp);
+                return specificStrategy.parse(contentBuffer, specificMessage, timeStamp);
             } catch (Exception e) {
                 throw new MessageParsingException(UNABLE_TO_PARSE);
             }

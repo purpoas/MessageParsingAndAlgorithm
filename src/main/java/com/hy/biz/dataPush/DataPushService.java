@@ -37,9 +37,6 @@ public interface DataPushService {
 
     /**
      * 根据线路编号，从第三方平台获取该线路的详细信息
-     *
-     * @param lineId 线路编号
-     * @return
      */
     LineDTO findLineByLineId(String lineId);
 

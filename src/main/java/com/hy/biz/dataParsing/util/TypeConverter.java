@@ -28,5 +28,11 @@ public class TypeConverter {
         return new String(byteArray, StandardCharsets.UTF_8);
     }
 
+    public static String byteArrToNullTrimmedStr(byte[] byteArray) {
+        String result = new String(byteArray, StandardCharsets.UTF_8);
+        int nullIdx = result.indexOf('\0');
+        return nullIdx != -1 ? result.substring(0, nullIdx) : result;
+    }
+
 
 }
