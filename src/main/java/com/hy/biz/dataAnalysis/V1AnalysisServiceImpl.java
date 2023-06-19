@@ -133,7 +133,7 @@ public class V1AnalysisServiceImpl implements DataAnalysisService {
         result.setFaultWaveSets(faultWaveIds);
 
         // TODO 5.故障精确定位
-        FaultLocalizationAnalysisResult localizationResult = faultLocationAlgorithm.locate(faultWaves).orElse(null);
+        FaultLocationAnalysisResult localizationResult = faultLocationAlgorithm.locate(faultWaves).orElse(null);
         if (localizationResult != null) {
             result.setNearestPoleId(String.valueOf(localizationResult.getNearestPoleId()));
             result.setDistToFaultPole(localizationResult.getDistToNearestPole());
