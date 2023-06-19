@@ -5,6 +5,8 @@ import com.google.gson.JsonParser;
 import com.hy.biz.dataAnalysis.algorithmUtil.AnalysisConstants;
 import com.hy.biz.dataAnalysis.dto.*;
 import com.hy.biz.util.GsonUtil;
+import com.hy.config.HyConfigProperty;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -17,7 +19,7 @@ import java.util.Set;
  * 2.短路故障特性
  * 3.缺相故障特征
  */
-public class FaultFeatureUtil {
+public class FaultFeatureAlgorithm {
 
     public static final String FEATURE_GROUND = "Ground";
     public static final String FEATURE_SHORT = "Short";
@@ -25,7 +27,12 @@ public class FaultFeatureUtil {
     public static final String FEATURE_FLOW = "Flow";
     public static final String FEATURE_UNDULATE = "Undulate";
 
-
+    /**
+     * 根据故障特征计算结果 生成故障特征中文描述
+     *
+     * @param faultFeature
+     * @return
+     */
     public static String createFaultFeatureDescription(String faultFeature) {
 
         JsonObject faultFeatureObj = JsonParser.parseString(faultFeature).getAsJsonObject();
@@ -142,6 +149,14 @@ public class FaultFeatureUtil {
     }
 
 
+    /**
+     * 生成故障特征计算结果，json字符串
+     *
+     * @param faultType
+     * @param areaLocateDTO
+     * @param faultWaveSet
+     * @return
+     */
     public static String calculate(FaultIdentifyDTO faultType, AreaLocateDTO areaLocateDTO, Set<FaultWave> faultWaveSet) {
 
         List<FaultWave> faultWaveList = new ArrayList<>(faultWaveSet);
@@ -153,12 +168,12 @@ public class FaultFeatureUtil {
             case AnalysisConstants.FAULT_NATURE_GROUND_B:
             case AnalysisConstants.FAULT_NATURE_GROUND_C:
                 // 单向接地故障特征
-                int groundPhaseId = FeatureGroundCalculate.faultPhaseId(faultType.getFaultType());
-                Integer groundIsBreak = FeatureGroundCalculate.isBreak(areaLocateDTO, faultWaveList);
-                double groundZeroSeqCur = FeatureGroundCalculate.zeroSeqCur(faultType);
-                Integer groundFaultType = FeatureGroundCalculate.groundFaultType(faultWaveSet);
+                int groundPhaseId = FeatureGroundCalculateUtil.faultPhaseId(faultType.getFaultType());
+                Integer groundIsBreak = FeatureGroundCalculateUtil.isBreak(areaLocateDTO, faultWaveList);
+                double groundZeroSeqCur = FeatureGroundCalculateUtil.zeroSeqCur(faultType);
+                Integer groundFaultType = FeatureGroundCalculateUtil.groundFaultType(faultWaveSet);
 
-                FeatureGroundDTO groundDTO = new FeatureGroundDTO(groundPhaseId, groundIsBreak, groundZeroSeqCur);
+                FeatureGroundDTO groundDTO = new FeatureGroundDTO(groundPhaseId, groundFaultType, groundIsBreak, groundZeroSeqCur);
 
                 result = GsonUtil.getInstance().toJson(groundDTO);
 
@@ -168,10 +183,10 @@ public class FaultFeatureUtil {
             case AnalysisConstants.FAULT_NATURE_SHORT_BC:
             case AnalysisConstants.FAULT_NATURE_SHORT_ABC:
                 // 短路故障特性判断
-                int shortPhaseId = FeatureShortCalculate.faultPhaseId(faultType.getFaultType());
-                Double faultCur = FeatureShortCalculate.faultCur(faultType);
-                Integer protectType = FeatureShortCalculate.protectType(faultType, faultCur, null, null);
-                Integer areStat = FeatureShortCalculate.areStat(faultWaveList);
+                int shortPhaseId = FeatureShortCalculateUtil.faultPhaseId(faultType.getFaultType());
+                Double faultCur = FeatureShortCalculateUtil.faultCur(faultType);
+                Integer protectType = FeatureShortCalculateUtil.protectType(faultType, faultCur, null, null);
+                Integer areStat = FeatureShortCalculateUtil.areStat(faultWaveList);
 
                 FeatureShortDTO shortDTO = new FeatureShortDTO(shortPhaseId, protectType, areStat, faultCur);
 
@@ -185,11 +200,11 @@ public class FaultFeatureUtil {
             case AnalysisConstants.FAULT_NATURE_BREAK_B:
             case AnalysisConstants.FAULT_NATURE_BREAK_C:
                 // 缺相故障特征判断
-                int breakPhaseId = FeatureBreakCalculate.faultPhaseId(faultType.getFaultType());
-                int breakIsBreak = FeatureBreakCalculate.isBreak(faultType, areaLocateDTO, faultWaveList);
-                double breakZeroSeqCur = FeatureBreakCalculate.zeroSeqCur(faultType);
-                double negSeqCur = FeatureBreakCalculate.negSeq(faultType.getAPhaseCurrentData(), faultType.getBPhaseCurrentData(), faultType.getCPhaseCurrentData());
-                double negSeqVol = FeatureBreakCalculate.negSeq(faultType.getAPhaseVoltageData(), faultType.getBPhaseVoltageData(), faultType.getCPhaseVoltageData());
+                int breakPhaseId = FeatureBreakCalculateUtil.faultPhaseId(faultType.getFaultType());
+                int breakIsBreak = FeatureBreakCalculateUtil.isBreak(faultType, areaLocateDTO, faultWaveList);
+                double breakZeroSeqCur = FeatureBreakCalculateUtil.zeroSeqCur(faultType);
+                double negSeqCur = FeatureBreakCalculateUtil.negSeq(faultType.getAPhaseCurrentData(), faultType.getBPhaseCurrentData(), faultType.getCPhaseCurrentData());
+                double negSeqVol = FeatureBreakCalculateUtil.negSeq(faultType.getAPhaseVoltageData(), faultType.getBPhaseVoltageData(), faultType.getCPhaseVoltageData());
 
                 FeatureBreakDTO breakDTO = new FeatureBreakDTO(breakPhaseId, breakIsBreak, breakZeroSeqCur, negSeqCur, negSeqVol);
 

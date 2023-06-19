@@ -4,7 +4,7 @@ import com.google.gson.*;
 import com.hy.biz.cache.service.GroundFaultCacheManager;
 import com.hy.biz.dataAnalysis.algorithmUtil.AnalysisConstants;
 import com.hy.biz.dataAnalysis.dto.FaultAnalysisResultDTO;
-import com.hy.biz.dataAnalysis.featureAlgorithm.FaultFeatureUtil;
+import com.hy.biz.dataAnalysis.featureAlgorithm.FaultFeatureAlgorithm;
 import com.hy.biz.dataPush.dto.DeviceDTO;
 import com.hy.biz.dataPush.dto.LineDTO;
 import com.hy.biz.dataPush.dto.PoleDTO;
@@ -15,7 +15,6 @@ import com.hy.biz.dataParsing.parser.ParserHelper;
 import com.hy.domain.*;
 import com.hy.repository.*;
 import lombok.extern.slf4j.Slf4j;
-import org.aspectj.weaver.ast.Or;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -23,7 +22,6 @@ import org.springframework.util.StringUtils;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
 import java.util.Map;
 
 import java.util.List;
@@ -152,7 +150,7 @@ public class HyDataPushServiceImpl implements DataPushService {
 
         // 故障特征描述
         if (StringUtils.hasText(faultAnalysisResult.getFaultFeature())) {
-            String faultFeature = FaultFeatureUtil.createFaultFeatureDescription(faultAnalysisResult.getFaultFeature());
+            String faultFeature = FaultFeatureAlgorithm.createFaultFeatureDescription(faultAnalysisResult.getFaultFeature());
             faultAnalysisResult.setFaultFeature(faultFeature);
         }
 
@@ -206,26 +204,27 @@ public class HyDataPushServiceImpl implements DataPushService {
         if (pole == null) return null;
 
         // 线路隶属关系结构
-        List<Long> circuitPathList = circuitPathRepository.findByAllDescendantByLineId(Long.valueOf(lineId));
+        List<CircuitPath> circuitPathList = circuitPathRepository.findByAllCircuitPathByLineId(Long.valueOf(lineId));
 
         if (CollectionUtils.isEmpty(circuitPathList)) return null;
 
         // 找出depth最大的线路Id
-        String topMainLineId = String.valueOf(circuitPathList.get(circuitPathList.size() - 1));
+        String mainLineId = String.valueOf(circuitPathList.get(circuitPathList.size() - 1).getAncestor());
+        Integer lineDepth = circuitPathList.get(circuitPathList.size() - 1).getDepth();
 
         // 计算当前线路所属杆塔到起始杆塔的距离
         Double d1 = poleRepository.calculatePoleDistanceToHeadStation(Long.valueOf(lineId), pole.getOrderNum());
 
         // 查询线路Id和主线Id相同 直接返回杆塔到起始变电站距离
-        if (topMainLineId.equals(lineId)) {
-            return new PoleDTO(topMainLineId, lineId, poleId, pole.getOrderNum(), d1);
+        if (mainLineId.equals(lineId)) {
+            return new PoleDTO(mainLineId, lineId, lineDepth, poleId, pole.getOrderNum(), d1);
         }
 
         double distance = d1;
 
         // 最大层级的元素不进行计算距离
         for (int i = 0; i < circuitPathList.size() - 1; i++) {
-            Long item = circuitPathList.get(i);
+            Long item = circuitPathList.get(i).getAncestor();
             CircuitPath parentPath = circuitPathRepository.findByDescendantAndDepthFix1(item);
 
             if (parentPath == null) continue;
@@ -238,7 +237,7 @@ public class HyDataPushServiceImpl implements DataPushService {
             distance = distance + d;
         }
 
-        return new PoleDTO(topMainLineId, lineId, poleId, pole.getOrderNum(), distance);
+        return new PoleDTO(mainLineId, lineId, lineDepth, poleId, pole.getOrderNum(), distance);
     }
 
 

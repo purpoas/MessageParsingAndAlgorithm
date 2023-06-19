@@ -1,15 +1,18 @@
 package com.hy.biz.dataAnalysis.intervalAlgorithm;
 
+import com.hy.biz.dataAnalysis.algorithmUtil.AnalysisConstants;
 import com.hy.biz.dataAnalysis.dto.AreaLocateDTO;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class TravelWaveAlgorithmUtil {
+public class TravelWaveCalculateUtil {
 
     /**
      * 行波波形区间定位入口函数
@@ -20,11 +23,11 @@ public class TravelWaveAlgorithmUtil {
     public static AreaLocateDTO locateInterval(List<FaultWave> faultWaves) {
         // TODO 按照起始时间和相位进行分类
         // A相
-        List<FaultWave> aPhaseWaves = faultWaves.stream().filter(faultWave -> 1 == faultWave.getPhase()).sorted(Comparator.comparing(FaultWave::getHeadTime)).collect(Collectors.toList());
+        List<FaultWave> aPhaseWaves = faultWaves.stream().filter(faultWave -> AnalysisConstants.PHASE_A == faultWave.getPhase()).sorted(Comparator.comparing(FaultWave::getHeadTime)).collect(Collectors.toList());
         // B相
-        List<FaultWave> bPhaseWaves = faultWaves.stream().filter(faultWave -> 2 == faultWave.getPhase()).sorted(Comparator.comparing(FaultWave::getHeadTime)).collect(Collectors.toList());
+        List<FaultWave> bPhaseWaves = faultWaves.stream().filter(faultWave -> AnalysisConstants.PHASE_B == faultWave.getPhase()).sorted(Comparator.comparing(FaultWave::getHeadTime)).collect(Collectors.toList());
         // C相
-        List<FaultWave> cPhaseWaves = faultWaves.stream().filter(faultWave -> 3 == faultWave.getPhase()).sorted(Comparator.comparing(FaultWave::getHeadTime)).collect(Collectors.toList());
+        List<FaultWave> cPhaseWaves = faultWaves.stream().filter(faultWave -> AnalysisConstants.PHASE_C == faultWave.getPhase()).sorted(Comparator.comparing(FaultWave::getHeadTime)).collect(Collectors.toList());
 
         // A相区间定位结果
         AreaLocateDTO aInterval = lookIntervalByPhase(aPhaseWaves);
@@ -41,16 +44,18 @@ public class TravelWaveAlgorithmUtil {
         if (bInterval != null) intervalList.add(bInterval);
         if (cInterval != null) intervalList.add(cInterval);
 
-        long sameAbsoluteIntervalAmount = intervalList.stream().filter(areaLocateDTO -> areaLocateDTO.getIntervalDistance() == 0D).count();
+        long sameAbsoluteIntervalAmount = intervalList.stream().filter(areaLocateDTO -> StringUtils.isEmpty(areaLocateDTO.getFaultHeadTowerId()) || StringUtils.isEmpty(areaLocateDTO.getFaultEndTowerId())).count();
 
         // 如果极性相同故障区间数量 = 故障区间数量
         if (sameAbsoluteIntervalAmount == intervalList.size()) return null;
 
-        AreaLocateDTO left = intervalList.stream().max(Comparator.comparing(AreaLocateDTO::getFaultHeadTowerDistanceToHeadStation)).get();
-        AreaLocateDTO right = intervalList.stream().min(Comparator.comparing(AreaLocateDTO::getFaultEndTowerDistanceToHeadStation)).get();
+        // 起始杆塔距离起始变电站距离最远的为起始杆塔
+        AreaLocateDTO left = intervalList.stream().filter(areaLocateDTO -> areaLocateDTO.getFaultHeadTowerDistanceToHeadStation() != null).max(Comparator.comparing(AreaLocateDTO::getFaultHeadTowerDistanceToHeadStation)).orElse(null);
+        // 终止杆塔距离起始变电站距离最近的为终止杆塔
+        AreaLocateDTO right = intervalList.stream().filter(areaLocateDTO -> areaLocateDTO.getFaultEndTowerDistanceToHeadStation() != null).min(Comparator.comparing(AreaLocateDTO::getFaultEndTowerDistanceToHeadStation)).orElse(null);
 
         // 起始杆塔取离变电站距离最远的 结束杆塔取离变电站距离最近的
-        if (left != right && right.getFaultEndTowerDistanceToHeadStation() - left.getFaultHeadTowerDistanceToHeadStation() > 0) {
+        if (left != null && right != null && right.getFaultEndTowerDistanceToHeadStation() - left.getFaultHeadTowerDistanceToHeadStation() > 0) {
             return new AreaLocateDTO(left.getFaultHeadTowerId(), right.getFaultEndTowerId(), left.getFaultHeadTowerDistanceToHeadStation(), right.getFaultEndTowerDistanceToHeadStation());
         }
 
@@ -70,11 +75,19 @@ public class TravelWaveAlgorithmUtil {
         long count = phaseWaves.stream().map(FaultWave::getAbsolute).distinct().count();
 
         if (count == 1) {
-            // 故障波形极性都相同 返回起始时间最小故障波形
-
+            // 极性相同 比较故障时间最小波形和第二小波形的位置关系
             FaultWave firstFaultWave = phaseWaves.get(0);
+            FaultWave secondFaultWave = phaseWaves.get(1);
 
-            return new AreaLocateDTO(firstFaultWave.getPoleId(), firstFaultWave.getPoleId(), firstFaultWave.getDistanceToHeadStation(), firstFaultWave.getDistanceToHeadStation());
+            if (firstFaultWave.getDistanceToHeadStation() < secondFaultWave.getDistanceToHeadStation()) {
+                // 起始杆塔为 null
+                // 终止杆塔为 firstFaultWave
+                return new AreaLocateDTO(null, firstFaultWave.getPoleId(), null, firstFaultWave.getDistanceToHeadStation());
+            } else {
+                // 起始杆塔为 firstFaultWave
+                // 终止杆塔为 null
+                return new AreaLocateDTO(firstFaultWave.getPoleId(), null, firstFaultWave.getDistanceToHeadStation(), null);
+            }
         }
 
         boolean mutantAbsolute = phaseWaves.get(0).getAbsolute();
@@ -95,10 +108,7 @@ public class TravelWaveAlgorithmUtil {
             }
         }
 
-        // 对intervalWaves计算故障区间
-
         if (CollectionUtils.isEmpty(intervalWaves)) return null;
-
 
         AreaLocateDTO dto = null;
         if (intervalWaves.size() == 2) {
@@ -109,7 +119,6 @@ public class TravelWaveAlgorithmUtil {
             FaultWave endFaultWave = intervalWaves.get(1);
 
             dto = new AreaLocateDTO(firstFaultWave.getPoleId(), endFaultWave.getPoleId(), firstFaultWave.getDistanceToHeadStation(), endFaultWave.getDistanceToHeadStation());
-
 
         } else if (intervalWaves.size() == 3) {
             FaultWave f1 = intervalWaves.get(0);
@@ -130,7 +139,6 @@ public class TravelWaveAlgorithmUtil {
                 dto = new AreaLocateDTO(f3.getPoleId(), f1.getPoleId(), f3.getDistanceToHeadStation(), f1.getDistanceToHeadStation());
             }
         }
-
 
         return dto;
     }

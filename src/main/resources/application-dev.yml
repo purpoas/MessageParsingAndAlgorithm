@@ -64,4 +64,12 @@ hy:
     battery-file-path: "classpath:ElecQuantity.txt"    # 电池电量对应关联文件位置
     dnm-latest-device-status: hydnm:cache:status # 设备最新状态维护
   algorithm:
-    delay-execute-time: 10
+    delay-execute-time: 10    # 算法任务延迟执行时间 单位秒
+    Iset: 10                  # 过流定值
+    I0set: 10                 # 零序定值
+    IMAX: 600                 # 短路保护整定值
+    I0AM: 2                   # 零序电流阈值
+    IBPH_MAX: 0.9             # 三相不平衡度
+    IMIN: 2                   # 最小工作电流
+    UMIN: 600                 # 最小工电压
+    IH2: 0.15                 # 二次谐波含量

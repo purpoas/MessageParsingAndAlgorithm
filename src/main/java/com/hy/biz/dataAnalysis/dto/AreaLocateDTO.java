@@ -2,7 +2,6 @@ package com.hy.biz.dataAnalysis.dto;
 
 import com.hy.biz.util.GsonUtil;
 import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
 
 
 /**
@@ -23,14 +22,6 @@ public class AreaLocateDTO {
     // 结束杆塔到变电站距离
     private Double faultEndTowerDistanceToHeadStation;
 
-    // 起始杆塔到结束杆塔的距离
-    private Double intervalDistance;
-
-    // 起始杆塔所属故障波形
-//    private FaultWave headFaultWave;
-    // 结束杆塔所属故障波形
-//    private FaultWave endFaultWave;
-
     // 极性
     private Boolean headFaultWaveAbsolute;
     private Boolean endFaultWaveAbsolute;
@@ -44,7 +35,6 @@ public class AreaLocateDTO {
         this.faultEndTowerId = faultEndTowerId;
         this.faultHeadTowerDistanceToHeadStation = faultHeadTowerDistanceToHeadStation;
         this.faultEndTowerDistanceToHeadStation = faultEndTowerDistanceToHeadStation;
-        this.intervalDistance = faultEndTowerDistanceToHeadStation == null ? 0D : Math.abs(faultEndTowerDistanceToHeadStation - faultEndTowerDistanceToHeadStation);
     }
 
     public AreaLocateDTO(String faultHeadTowerId, String faultEndTowerId, Double faultHeadTowerDistanceToHeadStation, Double faultEndTowerDistanceToHeadStation, Boolean headFaultWaveAbsolute, Boolean endFaultWaveAbsolute, double[] headFaultWaveData, double[] endFaultWaveData) {
@@ -52,7 +42,6 @@ public class AreaLocateDTO {
         this.faultEndTowerId = faultEndTowerId;
         this.faultHeadTowerDistanceToHeadStation = faultHeadTowerDistanceToHeadStation;
         this.faultEndTowerDistanceToHeadStation = faultEndTowerDistanceToHeadStation;
-        this.intervalDistance = faultEndTowerDistanceToHeadStation == null ? 0D : Math.abs(faultEndTowerDistanceToHeadStation - faultEndTowerDistanceToHeadStation);
         this.headFaultWaveAbsolute = headFaultWaveAbsolute;
         this.endFaultWaveAbsolute = endFaultWaveAbsolute;
         this.headFaultWaveData = headFaultWaveData;
@@ -64,7 +53,6 @@ public class AreaLocateDTO {
         this.faultEndTowerId = faultEndTowerId;
         this.faultHeadTowerDistanceToHeadStation = faultHeadTowerDistanceToHeadStation;
         this.faultEndTowerDistanceToHeadStation = faultEndTowerDistanceToHeadStation;
-        this.intervalDistance = faultEndTowerDistanceToHeadStation == null ? 0D : Math.abs(faultEndTowerDistanceToHeadStation - faultEndTowerDistanceToHeadStation);
         this.headFaultWaveAbsolute = headFaultWaveAbsolute;
         this.endFaultWaveAbsolute = endFaultWaveAbsolute;
     }

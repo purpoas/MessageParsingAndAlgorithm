@@ -1,6 +1,6 @@
 package com.hy.biz.dataAnalysis.dto;
 
-import com.hy.biz.dataAnalysis.featureAlgorithm.FaultFeatureUtil;
+import com.hy.biz.dataAnalysis.featureAlgorithm.FaultFeatureAlgorithm;
 import lombok.Data;
 
 /**
@@ -15,10 +15,11 @@ public class FeatureGroundDTO {
     private Integer areStat;        //重合闸状态，0-重合闸失败，1-重合闸成功
     private Double zeroSeqCur;  //零序电流值，单位A
     private Integer duration;       //瞬时故障持续时间，单位s
-    private String type = FaultFeatureUtil.FEATURE_GROUND;        //特征类型 Break-断路 Short-短路 Ground-接地
+    private String type = FaultFeatureAlgorithm.FEATURE_GROUND;        //特征类型 Break-断路 Short-短路 Ground-接地
 
-    public FeatureGroundDTO(Integer faultPhaseId, Integer isBreak, Double zeroSeqCur) {
+    public FeatureGroundDTO(Integer faultPhaseId, Integer faultType, Integer isBreak, Double zeroSeqCur) {
         this.faultPhaseId = faultPhaseId;
+        this.faultType = faultType;
         this.isBreak = isBreak;
         this.zeroSeqCur = zeroSeqCur;
     }

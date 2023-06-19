@@ -10,7 +10,8 @@ public class FaultWave {
     private Integer phase;             //相位
 
     private String lineId;             // 线路Id(主线或支线)
-    private String topMainLineId;      // 最上层主线Id
+    private String mainLineId;         // 主线Id
+    private Integer lineDepth;         // 线路与主线代差
     private String poleId;             // 杆塔Id
     private Integer poleSerial;        // 杆塔序列号
     private Double distanceToHeadStation;   //距离起始变电站距离

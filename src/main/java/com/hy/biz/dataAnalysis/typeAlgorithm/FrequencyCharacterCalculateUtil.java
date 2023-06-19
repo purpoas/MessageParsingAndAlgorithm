@@ -1,5 +1,7 @@
 package com.hy.biz.dataAnalysis.typeAlgorithm;
 
+import com.hy.biz.dataAnalysis.algorithmUtil.AnalysisConstants;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -8,7 +10,7 @@ import java.util.List;
 /**
  * 工频量特征计算
  */
-public class FrequencyCharacterUtil {
+public class FrequencyCharacterCalculateUtil {
 
 
     /**
@@ -19,8 +21,8 @@ public class FrequencyCharacterUtil {
      * @return
      */
     public static double IJMP(double[] data) {
-        double i5 = TypeAlgorithmUtil.calculateCyclicWavePH(data, 5, 256);
-        double i6 = TypeAlgorithmUtil.calculateCyclicWavePH(data, 6, 256);
+        double i5 = TypeCalculateUtil.calculateCyclicWavePH(data, 5, AnalysisConstants.CYCLE_WAVE_LENGTH);
+        double i6 = TypeCalculateUtil.calculateCyclicWavePH(data, 6, AnalysisConstants.CYCLE_WAVE_LENGTH);
         double diff = i6 - i5;
         if (Math.abs(diff) < 5) return 0;
         return i6 - i5;
@@ -34,8 +36,8 @@ public class FrequencyCharacterUtil {
      * @return
      */
     public static double UJMP(double[] data) {
-        double u5 = TypeAlgorithmUtil.calculateCyclicWavePH(data, 5, 256);
-        double u6 = TypeAlgorithmUtil.calculateCyclicWavePH(data, 6, 256);
+        double u5 = TypeCalculateUtil.calculateCyclicWavePH(data, 5, AnalysisConstants.CYCLE_WAVE_LENGTH);
+        double u6 = TypeCalculateUtil.calculateCyclicWavePH(data, 6, AnalysisConstants.CYCLE_WAVE_LENGTH);
         double diff = u6 - u5;
         if (Math.abs(diff) < 200) return 0;
         return u6 - u5;
@@ -48,7 +50,7 @@ public class FrequencyCharacterUtil {
      * @return
      */
     public static double I10(double[] data) {
-        return TypeAlgorithmUtil.calculateCyclicWavePH(data, 10, 256);
+        return TypeCalculateUtil.calculateCyclicWavePH(data, 10, AnalysisConstants.CYCLE_WAVE_LENGTH);
     }
 
 
@@ -59,7 +61,7 @@ public class FrequencyCharacterUtil {
      * @return
      */
     public static double U10(double[] data) {
-        return TypeAlgorithmUtil.calculateCyclicWavePH(data, 10, 256);
+        return TypeCalculateUtil.calculateCyclicWavePH(data, 10, AnalysisConstants.CYCLE_WAVE_LENGTH);
     }
 
     /**
@@ -69,7 +71,7 @@ public class FrequencyCharacterUtil {
      * @return
      */
     public static double I1(double[] data) {
-        return TypeAlgorithmUtil.calculateCyclicWavePH(data, 1, 256);
+        return TypeCalculateUtil.calculateCyclicWavePH(data, 1, AnalysisConstants.CYCLE_WAVE_LENGTH);
     }
 
     /**
@@ -79,7 +81,7 @@ public class FrequencyCharacterUtil {
      * @return
      */
     public static double U1(double[] data) {
-        return TypeAlgorithmUtil.calculateCyclicWavePH(data, 1, 256);
+        return TypeCalculateUtil.calculateCyclicWavePH(data, 1, AnalysisConstants.CYCLE_WAVE_LENGTH);
     }
 
 
@@ -123,7 +125,7 @@ public class FrequencyCharacterUtil {
 
         for (int i = 0; i < 10; i++) {
             // 计算周波有效值
-            I0List.add(TypeAlgorithmUtil.calculateCyclicWavePH(data, i + 1, 256));
+            I0List.add(TypeCalculateUtil.calculateCyclicWavePH(data, i + 1, AnalysisConstants.CYCLE_WAVE_LENGTH));
         }
 
         // 取各波周有效值的最大值
@@ -141,7 +143,7 @@ public class FrequencyCharacterUtil {
 
         for (int i = 0; i < 10; i++) {
             // 计算周波有效值
-            I0List.add(TypeAlgorithmUtil.calculateCyclicWavePH(data, i + 1, 256));
+            I0List.add(TypeCalculateUtil.calculateCyclicWavePH(data, i + 1, AnalysisConstants.CYCLE_WAVE_LENGTH));
         }
 
         // 取各波周有效值的最小值

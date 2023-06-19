@@ -7,11 +7,9 @@ import com.hy.biz.dataAnalysis.dto.FaultIdentifyPoleDTO;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
 import com.hy.biz.dataAnalysis.dto.FeatureFlowDTO;
 import com.hy.biz.dataAnalysis.dto.FeatureUndulateDTO;
-import com.hy.biz.dataAnalysis.typeAlgorithm.FrequencyCharacterUtil;
-import com.hy.biz.dataParsing.constants.MessageType;
+import com.hy.biz.dataAnalysis.typeAlgorithm.FrequencyCharacterCalculateUtil;
 import com.hy.config.HyConfigProperty;
 import javafx.util.Pair;
-import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -104,7 +102,7 @@ public class ExtraAlgorithmUtil {
      * @return Pair<Boolean, Double> A pair indicating if a surge is detected (true/false) and the maximum second harmonic content across the phases
      */
     public static Pair<Boolean, Double> isSurge(Double[] freqWaveDataA, Double[] freqWaveDataB, Double[] freqWaveDataC, HyConfigProperty hyConfigProperty) {
-        long deviceSampleRate = hyConfigProperty.getConstant().getDeviceSampleRate();
+        long deviceSampleRate = hyConfigProperty.getConstant().getFrequencySampleRate();
 
         // Compute FFT and extract 50Hz and 100Hz component for each phase
         Double[] fftPhaseA = fftGetSpecificFrequencies(freqWaveDataA, deviceSampleRate);
@@ -149,14 +147,14 @@ public class ExtraAlgorithmUtil {
             Complex[] bComplex = CommonAlgorithmUtil.fft4096(bData);
             Complex[] cComplex = CommonAlgorithmUtil.fft4096(cData);
 
-            Double aH1hz = CommonAlgorithmUtil.getMaxHzNew(aComplex, 4096, hyConfigProperty.getConstant().getDeviceSampleRate().intValue(), 45, 55);
-            Double aH2hz = CommonAlgorithmUtil.getMaxHzNew(aComplex, 4096, hyConfigProperty.getConstant().getDeviceSampleRate().intValue(), 95, 105);
+            Double aH1hz = CommonAlgorithmUtil.getMaxHzNew(aComplex, 4096, hyConfigProperty.getConstant().getFrequencySampleRate().intValue(), 45, 55);
+            Double aH2hz = CommonAlgorithmUtil.getMaxHzNew(aComplex, 4096, hyConfigProperty.getConstant().getFrequencySampleRate().intValue(), 95, 105);
 
-            Double bH1hz = CommonAlgorithmUtil.getMaxHzNew(bComplex, 4096, hyConfigProperty.getConstant().getDeviceSampleRate().intValue(), 45, 55);
-            Double bH2hz = CommonAlgorithmUtil.getMaxHzNew(bComplex, 4096, hyConfigProperty.getConstant().getDeviceSampleRate().intValue(), 95, 105);
+            Double bH1hz = CommonAlgorithmUtil.getMaxHzNew(bComplex, 4096, hyConfigProperty.getConstant().getFrequencySampleRate().intValue(), 45, 55);
+            Double bH2hz = CommonAlgorithmUtil.getMaxHzNew(bComplex, 4096, hyConfigProperty.getConstant().getFrequencySampleRate().intValue(), 95, 105);
 
-            Double cH1hz = CommonAlgorithmUtil.getMaxHzNew(cComplex, 4096, hyConfigProperty.getConstant().getDeviceSampleRate().intValue(), 45, 55);
-            Double cH2hz = CommonAlgorithmUtil.getMaxHzNew(cComplex, 4096, hyConfigProperty.getConstant().getDeviceSampleRate().intValue(), 95, 105);
+            Double cH1hz = CommonAlgorithmUtil.getMaxHzNew(cComplex, 4096, hyConfigProperty.getConstant().getFrequencySampleRate().intValue(), 45, 55);
+            Double cH2hz = CommonAlgorithmUtil.getMaxHzNew(cComplex, 4096, hyConfigProperty.getConstant().getFrequencySampleRate().intValue(), 95, 105);
 
             if (aH2hz > 0.15 * aH1hz || bH2hz > 0.15 * bH1hz || cH2hz > 0.15 * cH1hz) {
                 double IA2X = aH1hz / aH2hz;
@@ -200,29 +198,29 @@ public class ExtraAlgorithmUtil {
                 CommonAlgorithmUtil.filterThreePhaseCurrentAndVoltagePole(poleIds, faultWaves);
 
         // TODO Define the minimum current required for load fluctuation
-        double IMIN = hyConfigProperty.getConstant().getDeviceSampleRate();
+        double IMIN = hyConfigProperty.getConstant().getFrequencySampleRate();
 
         // Detect load fluctuation by examining each pole
         return threePhaseCurrentsAndVoltages.stream().anyMatch(pole -> {
             // Calculate current and voltage jumps for each phase
-            double IAJMP = FrequencyCharacterUtil.IJMP(pole.getAPhaseCurrentData());
-            double IBJMP = FrequencyCharacterUtil.IJMP(pole.getBPhaseCurrentData());
-            double ICJMP = FrequencyCharacterUtil.IJMP(pole.getCPhaseCurrentData());
+            double IAJMP = FrequencyCharacterCalculateUtil.IJMP(pole.getAPhaseCurrentData());
+            double IBJMP = FrequencyCharacterCalculateUtil.IJMP(pole.getBPhaseCurrentData());
+            double ICJMP = FrequencyCharacterCalculateUtil.IJMP(pole.getCPhaseCurrentData());
 
             // Calculate the 10th harmonic for each phase
-            double IA10 = FrequencyCharacterUtil.I10(pole.getAPhaseCurrentData());
-            double IB10 = FrequencyCharacterUtil.I10(pole.getBPhaseCurrentData());
-            double IC10 = FrequencyCharacterUtil.I10(pole.getCPhaseCurrentData());
+            double IA10 = FrequencyCharacterCalculateUtil.I10(pole.getAPhaseCurrentData());
+            double IB10 = FrequencyCharacterCalculateUtil.I10(pole.getBPhaseCurrentData());
+            double IC10 = FrequencyCharacterCalculateUtil.I10(pole.getCPhaseCurrentData());
 
             // Calculate the voltage jumps for each phase
-            double UAJMP = FrequencyCharacterUtil.UJMP(pole.getAPhaseVoltageData());
-            double UBJMP = FrequencyCharacterUtil.UJMP(pole.getBPhaseVoltageData());
-            double UCJMP = FrequencyCharacterUtil.UJMP(pole.getCPhaseVoltageData());
+            double UAJMP = FrequencyCharacterCalculateUtil.UJMP(pole.getAPhaseVoltageData());
+            double UBJMP = FrequencyCharacterCalculateUtil.UJMP(pole.getBPhaseVoltageData());
+            double UCJMP = FrequencyCharacterCalculateUtil.UJMP(pole.getCPhaseVoltageData());
 
             // Calculate the 1st harmonic for each phase
-            double IA1 = FrequencyCharacterUtil.I1(pole.getAPhaseCurrentData());
-            double IB1 = FrequencyCharacterUtil.I1(pole.getBPhaseCurrentData());
-            double IC1 = FrequencyCharacterUtil.I1(pole.getCPhaseCurrentData());
+            double IA1 = FrequencyCharacterCalculateUtil.I1(pole.getAPhaseCurrentData());
+            double IB1 = FrequencyCharacterCalculateUtil.I1(pole.getBPhaseCurrentData());
+            double IC1 = FrequencyCharacterCalculateUtil.I1(pole.getCPhaseCurrentData());
 
             // Check the load fluctuation conditions
             return (((IAJMP < 0 && ICJMP < 0 && IBJMP < 0) && (IA10 > IMIN && IB10 > IMIN && IC10 > IMIN))
@@ -256,30 +254,30 @@ public class ExtraAlgorithmUtil {
                 CommonAlgorithmUtil.filterThreePhaseCurrentAndVoltagePole(poleIds, faultWaveList);
 
         // TODO Define the minimum current required for load fluctuation
-        double IMIN = hyConfigProperty.getConstant().getDeviceSampleRate();
+        double IMIN = hyConfigProperty.getConstant().getFrequencySampleRate();
 
         FeatureUndulateDTO result = null;
         for (FaultIdentifyPoleDTO pole : threePhaseCurrentsAndVoltages) {
 
             // Calculate current and voltage jumps for each phase
-            double IAJMP = FrequencyCharacterUtil.IJMP(pole.getAPhaseCurrentData());
-            double IBJMP = FrequencyCharacterUtil.IJMP(pole.getBPhaseCurrentData());
-            double ICJMP = FrequencyCharacterUtil.IJMP(pole.getCPhaseCurrentData());
+            double IAJMP = FrequencyCharacterCalculateUtil.IJMP(pole.getAPhaseCurrentData());
+            double IBJMP = FrequencyCharacterCalculateUtil.IJMP(pole.getBPhaseCurrentData());
+            double ICJMP = FrequencyCharacterCalculateUtil.IJMP(pole.getCPhaseCurrentData());
 
             // Calculate the 10th harmonic for each phase
-            double IA10 = FrequencyCharacterUtil.I10(pole.getAPhaseCurrentData());
-            double IB10 = FrequencyCharacterUtil.I10(pole.getBPhaseCurrentData());
-            double IC10 = FrequencyCharacterUtil.I10(pole.getCPhaseCurrentData());
+            double IA10 = FrequencyCharacterCalculateUtil.I10(pole.getAPhaseCurrentData());
+            double IB10 = FrequencyCharacterCalculateUtil.I10(pole.getBPhaseCurrentData());
+            double IC10 = FrequencyCharacterCalculateUtil.I10(pole.getCPhaseCurrentData());
 
             // Calculate the voltage jumps for each phase
-            double UAJMP = FrequencyCharacterUtil.UJMP(pole.getAPhaseVoltageData());
-            double UBJMP = FrequencyCharacterUtil.UJMP(pole.getBPhaseVoltageData());
-            double UCJMP = FrequencyCharacterUtil.UJMP(pole.getCPhaseVoltageData());
+            double UAJMP = FrequencyCharacterCalculateUtil.UJMP(pole.getAPhaseVoltageData());
+            double UBJMP = FrequencyCharacterCalculateUtil.UJMP(pole.getBPhaseVoltageData());
+            double UCJMP = FrequencyCharacterCalculateUtil.UJMP(pole.getCPhaseVoltageData());
 
             // Calculate the 1st harmonic for each phase
-            double IA1 = FrequencyCharacterUtil.I1(pole.getAPhaseCurrentData());
-            double IB1 = FrequencyCharacterUtil.I1(pole.getBPhaseCurrentData());
-            double IC1 = FrequencyCharacterUtil.I1(pole.getCPhaseCurrentData());
+            double IA1 = FrequencyCharacterCalculateUtil.I1(pole.getAPhaseCurrentData());
+            double IB1 = FrequencyCharacterCalculateUtil.I1(pole.getBPhaseCurrentData());
+            double IC1 = FrequencyCharacterCalculateUtil.I1(pole.getCPhaseCurrentData());
 
             if ((((IAJMP < 0 && ICJMP < 0 && IBJMP < 0) && (IA10 > IMIN && IB10 > IMIN && IC10 > IMIN))
                     || ((IAJMP > 0 && ICJMP > 0 && IBJMP > 0) && (IA10 > IA1 && IB10 > IB1 && IC10 > IC1)))
@@ -309,7 +307,7 @@ public class ExtraAlgorithmUtil {
      */
     private static boolean checkFundamentalFrequency(double[] signalData, HyConfigProperty hyConfigProperty) {
         double maxSignalThreshold = hyConfigProperty.getConstant().getFrequencyMaxThreshold();
-        long frequencySamplingRate = hyConfigProperty.getConstant().getDeviceSampleRate();
+        long frequencySamplingRate = hyConfigProperty.getConstant().getFrequencySampleRate();
 
         double maxSignalValue = Arrays.stream(signalData).map(Math::abs).max().orElse(0.0);
 
@@ -350,7 +348,7 @@ public class ExtraAlgorithmUtil {
      * @return 是否为故障波形
      */
     private static boolean checkPhaseCurrentAbruptChange(double[] data, HyConfigProperty hyConfigProperty) {
-        double sampleRate = hyConfigProperty.getConstant().getDeviceSampleRate();   // 设备采样率 12800
+        double sampleRate = hyConfigProperty.getConstant().getFrequencySampleRate();   // 设备采样率 12800
         double threshold = hyConfigProperty.getConstant().getFaultFrequencyCurrentThreshold(); // 工频电流故障触发阈值 5
 
         int N = (int) (sampleRate / 50); // N个点代表一个周波

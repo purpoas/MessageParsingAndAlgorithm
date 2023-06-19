@@ -6,9 +6,8 @@ import com.hy.biz.dataAnalysis.dto.AreaLocateDTO;
 import com.hy.biz.dataAnalysis.dto.FaultIdentifyDTO;
 import com.hy.biz.dataAnalysis.dto.FaultIdentifyPoleDTO;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
-import com.hy.biz.dataAnalysis.typeAlgorithm.FaultIdentifyAlgorithmUtil;
-import com.hy.biz.dataAnalysis.typeAlgorithm.FrequencyCharacterUtil;
-import com.hy.biz.dataAnalysis.typeAlgorithm.TypeAlgorithmUtil;
+import com.hy.biz.dataAnalysis.typeAlgorithm.FrequencyCharacterCalculateUtil;
+import com.hy.biz.dataAnalysis.typeAlgorithm.TypeCalculateUtil;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -17,7 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class FeatureBreakCalculate {
+public class FeatureBreakCalculateUtil {
 
     /**
      * 故障相位转换
@@ -61,17 +60,17 @@ public class FeatureBreakCalculate {
 
         for (FaultIdentifyPoleDTO faultIdentify : threePhaseVoltages) {
 
-            double UAJMP = FrequencyCharacterUtil.UJMP(faultIdentify.getAPhaseVoltageData());
-            double UBJMP = FrequencyCharacterUtil.UJMP(faultIdentify.getBPhaseVoltageData());
-            double UCJMP = FrequencyCharacterUtil.UJMP(faultIdentify.getCPhaseVoltageData());
+            double UAJMP = FrequencyCharacterCalculateUtil.UJMP(faultIdentify.getAPhaseVoltageData());
+            double UBJMP = FrequencyCharacterCalculateUtil.UJMP(faultIdentify.getBPhaseVoltageData());
+            double UCJMP = FrequencyCharacterCalculateUtil.UJMP(faultIdentify.getCPhaseVoltageData());
 
-            double UA10 = FrequencyCharacterUtil.U10(faultIdentify.getAPhaseVoltageData());
-            double UB10 = FrequencyCharacterUtil.U10(faultIdentify.getBPhaseVoltageData());
-            double UC10 = FrequencyCharacterUtil.U10(faultIdentify.getCPhaseVoltageData());
+            double UA10 = FrequencyCharacterCalculateUtil.U10(faultIdentify.getAPhaseVoltageData());
+            double UB10 = FrequencyCharacterCalculateUtil.U10(faultIdentify.getBPhaseVoltageData());
+            double UC10 = FrequencyCharacterCalculateUtil.U10(faultIdentify.getCPhaseVoltageData());
 
-            if ((UAJMP < 0 && UA10 < FaultIdentifyAlgorithmUtil.UMIN)
-                    || (UBJMP < 0 && UB10 < FaultIdentifyAlgorithmUtil.UMIN)
-                    || (UCJMP < 0 && UC10 < FaultIdentifyAlgorithmUtil.UMIN)
+            if ((UAJMP < 0 && UA10 < AnalysisConstants.UMIN)
+                    || (UBJMP < 0 && UB10 < AnalysisConstants.UMIN)
+                    || (UCJMP < 0 && UC10 < AnalysisConstants.UMIN)
             ) {
                 return 1;
             }
@@ -87,9 +86,9 @@ public class FeatureBreakCalculate {
      */
     public static double zeroSeqCur(FaultIdentifyDTO faultIdentifyDTO) {
 
-        double[] i0 = TypeAlgorithmUtil.synthesisZeroCurrent(faultIdentifyDTO.getAPhaseCurrentData(), faultIdentifyDTO.getBPhaseCurrentData(), faultIdentifyDTO.getCPhaseCurrentData());
+        double[] i0 = TypeCalculateUtil.synthesisZeroCurrent(faultIdentifyDTO.getAPhaseCurrentData(), faultIdentifyDTO.getBPhaseCurrentData(), faultIdentifyDTO.getCPhaseCurrentData());
 
-        double zero = TypeAlgorithmUtil.calculateCyclicWavePH(i0, 5, 256);
+        double zero = TypeCalculateUtil.calculateCyclicWavePH(i0, 5, AnalysisConstants.CYCLE_WAVE_LENGTH);
 
         return zero / 3;
     }
@@ -132,18 +131,18 @@ public class FeatureBreakCalculate {
             i0Length = cLength;
         }
 
-        double[] u2 = new double[i0Length - 256];
-        for (int i = 256; i < i0Length; i++) {
-            u2[i - 256] = (aData[i] + bNewData[i] - cNewData[i]) / 3;
+        double[] u2 = new double[i0Length - AnalysisConstants.CYCLE_WAVE_LENGTH];
+        for (int i = AnalysisConstants.CYCLE_WAVE_LENGTH; i < i0Length; i++) {
+            u2[i - AnalysisConstants.CYCLE_WAVE_LENGTH] = (aData[i] + bNewData[i] - cNewData[i]) / 3;
         }
 
-        int cyclicWaveIndexSum = u2.length / 256;
+        int cyclicWaveIndexSum = u2.length / AnalysisConstants.CYCLE_WAVE_LENGTH;
 
         List<Double> I0List = new ArrayList<>();
 
         for (int i = 0; i < cyclicWaveIndexSum; i++) {
             // 计算周波有效值
-            I0List.add(TypeAlgorithmUtil.calculateCyclicWavePH(u2, i + 1, 256));
+            I0List.add(TypeCalculateUtil.calculateCyclicWavePH(u2, i + 1, AnalysisConstants.CYCLE_WAVE_LENGTH));
         }
 
         // 取各波周有效值的最大值

@@ -1,81 +1,52 @@
 package com.hy.biz.dataAnalysis.typeAlgorithm;
 
+import com.hy.biz.dataAnalysis.algorithmUtil.AnalysisConstants;
 import com.hy.biz.dataAnalysis.commonAlgorithm.CommonAlgorithmUtil;
+import com.hy.biz.dataAnalysis.dto.FaultIdentifyPoleDTO;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
 import com.hy.biz.dataAnalysis.extraAlgorithm.ExtraAlgorithmUtil;
-import com.hy.biz.util.ListUtil;
-import com.hy.config.HyConfigProperty;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
  * 故障类型算法 eg : 接地故障 、 过流故障
  */
-public class TypeAlgorithmUtil {
-
-    private HyConfigProperty hyConfigProperty;
+public class TypeCalculateUtil {
 
     /**
-     * 行波波形预处理
-     *
-     * @param data
-     * @return
-     */
-    public Double[] preProcessTravelWave(Double[] data) {
-
-
-        return null;
-    }
-
-    /**
-     * 工频电流计算接地故障、过流故障
+     * 工频电流计算接地故障、过流故障 TODO 预判断
      *
      * @param faultWaves 故障波形
      * @return 0-未知  1-过流  2-接地
      */
     public static int judgeFrequencyCurrentWaveFaultType(List<FaultWave> faultWaves) {
 
+        double Iset = AnalysisConstants.Iset;
+        double I0set = AnalysisConstants.I0set;
+
         List<double[]> doubles = faultWaves.stream().map(FaultWave::getData).map(CommonAlgorithmUtil::shiftWave).collect(Collectors.toList());
 
-        // 判断方法是否大于
-
-        List<Double> I5s = doubles.stream().map(d -> calculateCyclicWavePH(d, 5, 256)).collect(Collectors.toList());
-
-        Double Iset = 1D;
+        List<Double> I5s = doubles.stream().map(d -> calculateCyclicWavePH(d, 5, AnalysisConstants.CYCLE_WAVE_LENGTH)).collect(Collectors.toList());
 
         Double overValue = I5s.stream().filter(aDouble -> aDouble >= Iset).findAny().orElse(null);
 
         // 过流故障
         if (overValue != null) return 1;
 
-        Map<String, List<FaultWave>> map = ListUtil.convertListToMapList(faultWaves, FaultWave::getPoleId);
+        // 满足该杆塔有三相故障电流
+        List<FaultIdentifyPoleDTO> faultIdentifyPoles = CommonAlgorithmUtil.filterThreePhaseCurrentPole(faultWaves);
 
         List<Double> I0List = new ArrayList<>();
-        for (String poleId : map.keySet()) {
-            List<FaultWave> f = map.get(poleId);
-
-            long phaseAmount = f.stream().map(FaultWave::getPhase).count();
-
-            // 计算各杆塔（如果满足该杆塔有三相故障电流） 如果杆塔没有三相电流退出计算
-            if (phaseAmount < 3) continue;
-
-            String aDataStr = f.stream().filter(faultWave -> 1 == faultWave.getPhase()).findFirst().get().getData();
-            String bDataStr = f.stream().filter(faultWave -> 2 == faultWave.getPhase()).findFirst().get().getData();
-            String cDataStr = f.stream().filter(faultWave -> 3 == faultWave.getPhase()).findFirst().get().getData();
-
-            double[] aData = CommonAlgorithmUtil.shiftWave(aDataStr);
-            double[] bData = CommonAlgorithmUtil.shiftWave(bDataStr);
-            double[] cData = CommonAlgorithmUtil.shiftWave(cDataStr);
-
-            I0List.add(calculateZeroCurrent(aData, bData, cData));
+        for (FaultIdentifyPoleDTO pole : faultIdentifyPoles) {
+            // 计算其合成零序电流
+            I0List.add(calculateZeroCurrent(pole.getAPhaseCurrentData(), pole.getBPhaseCurrentData(), pole.getCPhaseCurrentData()));
         }
 
-        Double zeroValue = I0List.stream().filter(aDouble -> aDouble >= Iset).findAny().orElse(null);
+        Double zeroValue = I0List.stream().filter(aDouble -> aDouble >= I0set).findAny().orElse(null);
 
         // 接地故障
         if (zeroValue != null) return 2;
@@ -132,55 +103,6 @@ public class TypeAlgorithmUtil {
         return ph;
     }
 
-    /**
-     * 计算周波有效值是否达标 需输出参考值
-     *
-     * @param data             波形内容
-     * @param cyclicWaveSerial 周波序号
-     * @param cyclicWaveLength 周波长度 默认256
-     * @return 周波对应有效值
-     */
-    public static boolean judgeCyclicWavePH(Double[] data, int cyclicWaveSerial, int cyclicWaveLength) {
-
-        // 工频波形长度不满足大于10倍周波长度 不参与判断
-        if (data.length < 10 * cyclicWaveLength) return false;
-
-        Double[] in = new Double[cyclicWaveLength];
-
-        int cyclicWaveIndexSum = data.length / cyclicWaveLength;
-
-        // 计算的周波超出波形长度 异常返回
-        if (cyclicWaveSerial > cyclicWaveIndexSum) return false;
-
-        // 截取波形内容中对应的周波
-        System.arraycopy(data, (cyclicWaveSerial - 1) * cyclicWaveLength, in, 0, in.length);
-
-        int n = 1;
-
-        double xrn = 0.0;
-        double xin = 0.0;
-        for (int i = 0; i < in.length; i++) {
-            xrn += (2 * in[i] * Math.cos(2 * Math.PI * n * i / cyclicWaveLength)) / cyclicWaveLength;
-            xin += -(2 * in[i] * Math.cos(2 * Math.PI * n * i / cyclicWaveLength)) / cyclicWaveLength;
-        }
-
-        double φn = Math.sqrt(xin * xin + xrn * xrn);
-        double xn = Math.atan(xin / xrn);
-        if (xrn == 0) {
-            φn = 1.5 * Math.PI;
-        } else if (xrn > 0) {
-            φn = φn;
-        } else {
-            φn = φn + Math.PI;
-        }
-
-        double ph = xn / φn;
-
-        if (ph > 20) return true;
-
-        return false;
-    }
-
 
     /**
      * 零序电压电流计算  3.7.3 零序电压电流计算
@@ -194,13 +116,13 @@ public class TypeAlgorithmUtil {
 
         double[] i0 = synthesisZeroCurrent(aData, bData, cData);
 
-        int cyclicWaveIndexSum = i0.length / 256;
+        int cyclicWaveIndexSum = i0.length / AnalysisConstants.CYCLE_WAVE_LENGTH;
 
         List<Double> I0List = new ArrayList<>();
 
         for (int i = 0; i < cyclicWaveIndexSum; i++) {
             // 计算周波有效值
-            I0List.add(calculateCyclicWavePH(i0, i + 1, 256));
+            I0List.add(calculateCyclicWavePH(i0, i + 1, AnalysisConstants.CYCLE_WAVE_LENGTH));
         }
 
         // 取各波周有效值的最大值
@@ -252,7 +174,7 @@ public class TypeAlgorithmUtil {
      * @return 零序电流极性
      */
     public static boolean calculateZeroCurrentAbsolute(double[] data) {
-        int N = 256;        //一个周波对应点位
+        int N = AnalysisConstants.CYCLE_WAVE_LENGTH;        //一个周波对应点位
         int pos = calculateZeroCurrentPosLocation(data);    //触发位置
 
         int prePoint = N / 4;
@@ -303,7 +225,7 @@ public class TypeAlgorithmUtil {
 
         if (ArrayUtils.isEmpty(data)) return 0.0;
 
-        int N = 256;        //一个周波对应点位
+        int N = AnalysisConstants.CYCLE_WAVE_LENGTH;        //一个周波对应点位
         int pos = calculateZeroCurrentPosLocation(data);    //触发位置
 
         int startIndex = Math.max(pos - N, 0);
@@ -350,7 +272,7 @@ public class TypeAlgorithmUtil {
     private static int calculateZeroCurrentPosLocation(double[] data) {
         int fpower = 12800; //设备采样率
         int threshold = 5;  //电流阈值
-        int N = 256;        //一个周波对应点位
+        int N = AnalysisConstants.CYCLE_WAVE_LENGTH;        //一个周波对应点位
 
         // 从2N+1点开始计算pos
         List<Double> deltaI = new ArrayList<>();

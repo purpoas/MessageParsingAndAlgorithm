@@ -1,6 +1,6 @@
 package com.hy.biz.dataAnalysis.dto;
 
-import com.hy.biz.dataAnalysis.featureAlgorithm.FaultFeatureUtil;
+import com.hy.biz.dataAnalysis.featureAlgorithm.FaultFeatureAlgorithm;
 import lombok.Data;
 
 /**
@@ -14,7 +14,7 @@ public class FeatureFlowDTO {
     private Double H1;              //基波电流，单位A
     private Double H2;              //二次谐波电流，单位A
     private Double Th2;             //二次谐波含量
-    private String type = FaultFeatureUtil.FEATURE_FLOW;   //特征类型 Break-断路 Short-短路 Ground-接地 Flow-合闸涌流 Undulate-负荷波动
+    private String type = FaultFeatureAlgorithm.FEATURE_FLOW;   //特征类型 Break-断路 Short-短路 Ground-接地 Flow-合闸涌流 Undulate-负荷波动
 
 
     public FeatureFlowDTO(String inrushTime, Double h1, Double h2, Double th2) {

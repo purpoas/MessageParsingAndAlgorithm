@@ -26,6 +26,8 @@ public interface CircuitPathRepository extends JpaRepository<CircuitPath, Long> 
     @Query("select c.ancestor from circuit_path c where c.descendant = :lineId order by c.depth")
     List<Long> findByAllDescendantByLineId(@Param("lineId") Long lineId);
 
+    @Query("select c from circuit_path c where c.descendant = :lineId order by c.depth")
+    List<CircuitPath> findByAllCircuitPathByLineId(@Param("lineId") Long lineId);
 
     @Query("select c from circuit_path c where c.descendant = :lineId and c.depth = 1")
     CircuitPath findByDescendantAndDepthFix1(@Param("lineId") Long lineId);

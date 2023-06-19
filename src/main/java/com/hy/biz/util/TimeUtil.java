@@ -7,10 +7,6 @@ import java.time.format.DateTimeFormatter;
 
 public class TimeUtil {
 
-    public Instant test() {
-        return null;
-    }
-
     /**
      * 20200403093000123321234 ----> 1585877400123
      * <p>

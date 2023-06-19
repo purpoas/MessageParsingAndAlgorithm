@@ -6,9 +6,8 @@ import com.hy.biz.dataAnalysis.commonAlgorithm.CommonAlgorithmUtil;
 import com.hy.biz.dataAnalysis.dto.FaultIdentifyDTO;
 import com.hy.biz.dataAnalysis.dto.FaultIdentifyPoleDTO;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
-import com.hy.biz.dataAnalysis.typeAlgorithm.FaultIdentifyAlgorithmUtil;
-import com.hy.biz.dataAnalysis.typeAlgorithm.FrequencyCharacterUtil;
-import com.hy.biz.dataAnalysis.typeAlgorithm.TypeAlgorithmUtil;
+import com.hy.biz.dataAnalysis.typeAlgorithm.FrequencyCharacterCalculateUtil;
+import com.hy.biz.dataAnalysis.typeAlgorithm.TypeCalculateUtil;
 import com.hy.biz.dataParsing.constants.MessageType;
 import org.springframework.util.CollectionUtils;
 
@@ -17,7 +16,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class FeatureShortCalculate {
+public class FeatureShortCalculateUtil {
 
     public static final int CUR_MAX = 800;
 
@@ -39,6 +38,7 @@ public class FeatureShortCalculate {
         }
     }
 
+
     /**
      * @param faultType
      * @return
@@ -55,7 +55,7 @@ public class FeatureShortCalculate {
 
         List<Double> faultCurList = new ArrayList<>();
         for (double[] data : list) {
-            double IXJMP = TypeAlgorithmUtil.calculateCyclicWavePH(data, 5, 256);
+            double IXJMP = TypeCalculateUtil.calculateCyclicWavePH(data, 5, AnalysisConstants.CYCLE_WAVE_LENGTH);
 
             if (IXJMP >= 0) {
 
@@ -87,11 +87,10 @@ public class FeatureShortCalculate {
         return Collections.max(faultCurList);
     }
 
-
     public static Integer protectType(FaultIdentifyDTO faultType, Double faultCur, Double faultCurFixI, Double faultCurFixII) {
         if (!faultType.isUpstream() || faultCur == null) return null;
 
-        if (faultCurFixI != null && faultCurFixII != null && faultCur != null) {
+        if (faultCurFixI != null && faultCurFixII != null) {
             if (faultCur > faultCurFixI) {
                 return 1;
             } else if (faultCur > faultCurFixII && faultCur < faultCurFixI) {
@@ -107,12 +106,12 @@ public class FeatureShortCalculate {
         list.add(faultType.getCPhaseCurrentData());
 
         for (double[] data : list) {
-            double IXJMP = TypeAlgorithmUtil.calculateCyclicWavePH(data, 5, 256);
+            double IXJMP = TypeCalculateUtil.calculateCyclicWavePH(data, 5, AnalysisConstants.CYCLE_WAVE_LENGTH);
             if (IXJMP >= 0) {
-                int length = data.length / 256;
+                int length = data.length / AnalysisConstants.CYCLE_WAVE_LENGTH;
                 for (int i = 0; i < length; i++) {
-                    double IK = TypeAlgorithmUtil.calculateCyclicWavePH(data, i, 256);
-                    if (IK < FaultIdentifyAlgorithmUtil.IMIN && Math.abs(i - 5) < 2) {
+                    double IK = TypeCalculateUtil.calculateCyclicWavePH(data, i, AnalysisConstants.CYCLE_WAVE_LENGTH);
+                    if (IK < AnalysisConstants.IMIN && Math.abs(i - 5) < 2) {
                         return 1;
                     }
                 }
@@ -147,28 +146,28 @@ public class FeatureShortCalculate {
 
         for (FaultIdentifyPoleDTO faultIdentify : threePhaseVoltages) {
 
-            double IAJMP = FrequencyCharacterUtil.IJMP(faultIdentify.getAPhaseCurrentData());
-            double IBJMP = FrequencyCharacterUtil.IJMP(faultIdentify.getBPhaseCurrentData());
-            double ICJMP = FrequencyCharacterUtil.IJMP(faultIdentify.getCPhaseCurrentData());
+            double IAJMP = FrequencyCharacterCalculateUtil.IJMP(faultIdentify.getAPhaseCurrentData());
+            double IBJMP = FrequencyCharacterCalculateUtil.IJMP(faultIdentify.getBPhaseCurrentData());
+            double ICJMP = FrequencyCharacterCalculateUtil.IJMP(faultIdentify.getCPhaseCurrentData());
 
-            double UAJMP = FrequencyCharacterUtil.UJMP(faultIdentify.getAPhaseVoltageData());
-            double UBJMP = FrequencyCharacterUtil.UJMP(faultIdentify.getBPhaseVoltageData());
-            double UCJMP = FrequencyCharacterUtil.UJMP(faultIdentify.getCPhaseVoltageData());
+            double UAJMP = FrequencyCharacterCalculateUtil.UJMP(faultIdentify.getAPhaseVoltageData());
+            double UBJMP = FrequencyCharacterCalculateUtil.UJMP(faultIdentify.getBPhaseVoltageData());
+            double UCJMP = FrequencyCharacterCalculateUtil.UJMP(faultIdentify.getCPhaseVoltageData());
 
-            double IA1 = FrequencyCharacterUtil.I1(faultIdentify.getAPhaseCurrentData());
-            double IB1 = FrequencyCharacterUtil.I1(faultIdentify.getBPhaseCurrentData());
-            double IC1 = FrequencyCharacterUtil.I1(faultIdentify.getCPhaseCurrentData());
+            double IA1 = FrequencyCharacterCalculateUtil.I1(faultIdentify.getAPhaseCurrentData());
+            double IB1 = FrequencyCharacterCalculateUtil.I1(faultIdentify.getBPhaseCurrentData());
+            double IC1 = FrequencyCharacterCalculateUtil.I1(faultIdentify.getCPhaseCurrentData());
 
-            double UA1 = FrequencyCharacterUtil.U1(faultIdentify.getAPhaseVoltageData());
-            double UB1 = FrequencyCharacterUtil.U1(faultIdentify.getBPhaseVoltageData());
-            double UC1 = FrequencyCharacterUtil.U1(faultIdentify.getCPhaseVoltageData());
+            double UA1 = FrequencyCharacterCalculateUtil.U1(faultIdentify.getAPhaseVoltageData());
+            double UB1 = FrequencyCharacterCalculateUtil.U1(faultIdentify.getBPhaseVoltageData());
+            double UC1 = FrequencyCharacterCalculateUtil.U1(faultIdentify.getCPhaseVoltageData());
 
-            if ((UAJMP > 0 && UA1 < FaultIdentifyAlgorithmUtil.UMIN)
-                    || (UBJMP > 0 && UB1 < FaultIdentifyAlgorithmUtil.UMIN)
-                    || (UCJMP > 0 && UC1 < FaultIdentifyAlgorithmUtil.UMIN)
-                    || (IAJMP > 0 && IA1 < FaultIdentifyAlgorithmUtil.IMIN)
-                    || (IBJMP > 0 && IB1 < FaultIdentifyAlgorithmUtil.IMIN)
-                    || (ICJMP > 0 && IC1 < FaultIdentifyAlgorithmUtil.IMIN)
+            if ((UAJMP > 0 && UA1 < AnalysisConstants.UMIN)
+                    || (UBJMP > 0 && UB1 < AnalysisConstants.UMIN)
+                    || (UCJMP > 0 && UC1 < AnalysisConstants.UMIN)
+                    || (IAJMP > 0 && IA1 < AnalysisConstants.IMIN)
+                    || (IBJMP > 0 && IB1 < AnalysisConstants.IMIN)
+                    || (ICJMP > 0 && IC1 < AnalysisConstants.IMIN)
             ) {
                 isAre = true;
                 break;
@@ -179,28 +178,28 @@ public class FeatureShortCalculate {
 
         for (FaultIdentifyPoleDTO faultIdentify : threePhaseVoltages) {
 
-            double IAJMP = FrequencyCharacterUtil.IJMP(faultIdentify.getAPhaseCurrentData());
-            double IBJMP = FrequencyCharacterUtil.IJMP(faultIdentify.getBPhaseCurrentData());
-            double ICJMP = FrequencyCharacterUtil.IJMP(faultIdentify.getCPhaseCurrentData());
+            double IAJMP = FrequencyCharacterCalculateUtil.IJMP(faultIdentify.getAPhaseCurrentData());
+            double IBJMP = FrequencyCharacterCalculateUtil.IJMP(faultIdentify.getBPhaseCurrentData());
+            double ICJMP = FrequencyCharacterCalculateUtil.IJMP(faultIdentify.getCPhaseCurrentData());
 
-            double UAJMP = FrequencyCharacterUtil.UJMP(faultIdentify.getAPhaseVoltageData());
-            double UBJMP = FrequencyCharacterUtil.UJMP(faultIdentify.getBPhaseVoltageData());
-            double UCJMP = FrequencyCharacterUtil.UJMP(faultIdentify.getCPhaseVoltageData());
+            double UAJMP = FrequencyCharacterCalculateUtil.UJMP(faultIdentify.getAPhaseVoltageData());
+            double UBJMP = FrequencyCharacterCalculateUtil.UJMP(faultIdentify.getBPhaseVoltageData());
+            double UCJMP = FrequencyCharacterCalculateUtil.UJMP(faultIdentify.getCPhaseVoltageData());
 
-            double IA10 = FrequencyCharacterUtil.I10(faultIdentify.getAPhaseCurrentData());
-            double IB10 = FrequencyCharacterUtil.I10(faultIdentify.getBPhaseCurrentData());
-            double IC10 = FrequencyCharacterUtil.I10(faultIdentify.getCPhaseCurrentData());
+            double IA10 = FrequencyCharacterCalculateUtil.I10(faultIdentify.getAPhaseCurrentData());
+            double IB10 = FrequencyCharacterCalculateUtil.I10(faultIdentify.getBPhaseCurrentData());
+            double IC10 = FrequencyCharacterCalculateUtil.I10(faultIdentify.getCPhaseCurrentData());
 
-            double UA10 = FrequencyCharacterUtil.U10(faultIdentify.getAPhaseCurrentData());
-            double UB10 = FrequencyCharacterUtil.U10(faultIdentify.getBPhaseCurrentData());
-            double UC10 = FrequencyCharacterUtil.U10(faultIdentify.getCPhaseCurrentData());
+            double UA10 = FrequencyCharacterCalculateUtil.U10(faultIdentify.getAPhaseCurrentData());
+            double UB10 = FrequencyCharacterCalculateUtil.U10(faultIdentify.getBPhaseCurrentData());
+            double UC10 = FrequencyCharacterCalculateUtil.U10(faultIdentify.getCPhaseCurrentData());
 
-            if ((UAJMP > 0 && UA10 < FaultIdentifyAlgorithmUtil.UMIN)
-                    || (UBJMP > 0 && UB10 < FaultIdentifyAlgorithmUtil.UMIN)
-                    || (UCJMP > 0 && UC10 < FaultIdentifyAlgorithmUtil.UMIN)
-                    || (IAJMP > 0 && IA10 < FaultIdentifyAlgorithmUtil.IMIN)
-                    || (IBJMP > 0 && IB10 < FaultIdentifyAlgorithmUtil.IMIN)
-                    || (ICJMP > 0 && IC10 < FaultIdentifyAlgorithmUtil.IMIN)
+            if ((UAJMP > 0 && UA10 < AnalysisConstants.UMIN)
+                    || (UBJMP > 0 && UB10 < AnalysisConstants.UMIN)
+                    || (UCJMP > 0 && UC10 < AnalysisConstants.UMIN)
+                    || (IAJMP > 0 && IA10 < AnalysisConstants.IMIN)
+                    || (IBJMP > 0 && IB10 < AnalysisConstants.IMIN)
+                    || (ICJMP > 0 && IC10 < AnalysisConstants.IMIN)
             ) {
                 isAre = false;
                 break;
@@ -212,28 +211,28 @@ public class FeatureShortCalculate {
 
         for (FaultIdentifyPoleDTO faultIdentify : threePhaseVoltages) {
 
-            double IAJMP = FrequencyCharacterUtil.IJMP(faultIdentify.getAPhaseCurrentData());
-            double IBJMP = FrequencyCharacterUtil.IJMP(faultIdentify.getBPhaseCurrentData());
-            double ICJMP = FrequencyCharacterUtil.IJMP(faultIdentify.getCPhaseCurrentData());
+            double IAJMP = FrequencyCharacterCalculateUtil.IJMP(faultIdentify.getAPhaseCurrentData());
+            double IBJMP = FrequencyCharacterCalculateUtil.IJMP(faultIdentify.getBPhaseCurrentData());
+            double ICJMP = FrequencyCharacterCalculateUtil.IJMP(faultIdentify.getCPhaseCurrentData());
 
-            double UAJMP = FrequencyCharacterUtil.UJMP(faultIdentify.getAPhaseVoltageData());
-            double UBJMP = FrequencyCharacterUtil.UJMP(faultIdentify.getBPhaseVoltageData());
-            double UCJMP = FrequencyCharacterUtil.UJMP(faultIdentify.getCPhaseVoltageData());
+            double UAJMP = FrequencyCharacterCalculateUtil.UJMP(faultIdentify.getAPhaseVoltageData());
+            double UBJMP = FrequencyCharacterCalculateUtil.UJMP(faultIdentify.getBPhaseVoltageData());
+            double UCJMP = FrequencyCharacterCalculateUtil.UJMP(faultIdentify.getCPhaseVoltageData());
 
-            double IA10 = FrequencyCharacterUtil.I10(faultIdentify.getAPhaseCurrentData());
-            double IB10 = FrequencyCharacterUtil.I10(faultIdentify.getBPhaseCurrentData());
-            double IC10 = FrequencyCharacterUtil.I10(faultIdentify.getCPhaseCurrentData());
+            double IA10 = FrequencyCharacterCalculateUtil.I10(faultIdentify.getAPhaseCurrentData());
+            double IB10 = FrequencyCharacterCalculateUtil.I10(faultIdentify.getBPhaseCurrentData());
+            double IC10 = FrequencyCharacterCalculateUtil.I10(faultIdentify.getCPhaseCurrentData());
 
-            double UA10 = FrequencyCharacterUtil.U10(faultIdentify.getAPhaseCurrentData());
-            double UB10 = FrequencyCharacterUtil.U10(faultIdentify.getBPhaseCurrentData());
-            double UC10 = FrequencyCharacterUtil.U10(faultIdentify.getCPhaseCurrentData());
+            double UA10 = FrequencyCharacterCalculateUtil.U10(faultIdentify.getAPhaseCurrentData());
+            double UB10 = FrequencyCharacterCalculateUtil.U10(faultIdentify.getBPhaseCurrentData());
+            double UC10 = FrequencyCharacterCalculateUtil.U10(faultIdentify.getCPhaseCurrentData());
 
-            if ((UAJMP < 0 && UA10 < FaultIdentifyAlgorithmUtil.UMIN)
-                    || (UBJMP < 0 && UB10 < FaultIdentifyAlgorithmUtil.UMIN)
-                    || (UCJMP < 0 && UC10 < FaultIdentifyAlgorithmUtil.UMIN)
-                    || (IAJMP < 0 && IA10 < FaultIdentifyAlgorithmUtil.IMIN)
-                    || (IBJMP < 0 && IB10 < FaultIdentifyAlgorithmUtil.IMIN)
-                    || (ICJMP < 0 && IC10 < FaultIdentifyAlgorithmUtil.IMIN)
+            if ((UAJMP < 0 && UA10 < AnalysisConstants.UMIN)
+                    || (UBJMP < 0 && UB10 < AnalysisConstants.UMIN)
+                    || (UCJMP < 0 && UC10 < AnalysisConstants.UMIN)
+                    || (IAJMP < 0 && IA10 < AnalysisConstants.IMIN)
+                    || (IBJMP < 0 && IB10 < AnalysisConstants.IMIN)
+                    || (ICJMP < 0 && IC10 < AnalysisConstants.IMIN)
             ) {
                 isAre = false;
                 break;
@@ -255,10 +254,10 @@ public class FeatureShortCalculate {
     private static double[] filterFaultCur(double[] data) {
         double[] cur = new double[20];
 
-        double[] i6 = new double[256];
+        double[] i6 = new double[AnalysisConstants.CYCLE_WAVE_LENGTH];
 
         // 取第六个周波的数据
-        System.arraycopy(data, 5 * 256, i6, 0, i6.length);
+        System.arraycopy(data, 5 * AnalysisConstants.CYCLE_WAVE_LENGTH, i6, 0, i6.length);
 
         // 取20个点 过零点I1到In
         Integer zeroIndex = null;

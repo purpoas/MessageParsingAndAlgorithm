@@ -107,7 +107,7 @@ public class WaveDataMessage extends BaseMessage {
         faultWave.setPhase(deviceDTO.getPhase());
 
         faultWave.setLineId(poleDTO.getLineId());
-        faultWave.setTopMainLineId(poleDTO.getTopMainLineId());
+        faultWave.setMainLineId(poleDTO.getMainLineId());
         faultWave.setPoleId(poleDTO.getPoleId());
         faultWave.setPoleSerial(poleDTO.getPoleSerial());
         faultWave.setDistanceToHeadStation(poleDTO.getDistanceToHeadStation());
