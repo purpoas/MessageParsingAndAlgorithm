@@ -5,14 +5,13 @@ import com.hy.biz.dataAnalysis.dto.AreaLocateDTO;
 import com.hy.biz.dataAnalysis.dto.FaultIdentifyDTO;
 import com.hy.biz.dataAnalysis.dto.FaultIdentifyPoleDTO;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
-import com.hy.biz.dataAnalysis.algorithmUtil.AnalysisConstants;
-import org.springframework.stereotype.Component;
+import com.hy.config.AnalysisConstants;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.hy.biz.dataAnalysis.algorithmUtil.AnalysisConstants.*;
+import static com.hy.config.AnalysisConstants.*;
 
 /**
  * 故障类型识别：
@@ -22,7 +21,7 @@ import static com.hy.biz.dataAnalysis.algorithmUtil.AnalysisConstants.*;
  * 正常运行状态 、增负荷 、
  * A相接地 、B相接地 、C相接地
  */
-public class FaultIdentifyAlgorithm {
+public class FaultTypeAlgorithm {
 
     public static FaultIdentifyDTO judge(Set<FaultWave> faultWaves, AreaLocateDTO areaLocateDTO) {
 
@@ -128,7 +127,7 @@ public class FaultIdentifyAlgorithm {
             }
 
             // 计算零序电流I0
-            double I0 = TypeCalculateUtil.calculateZeroCurrent(faultIdentify.getAPhaseCurrentData(), faultIdentify.getBPhaseCurrentData(), faultIdentify.getCPhaseCurrentData());
+            double I0 = FrequencyCharacterCalculateUtil.calculateZeroCurrent(faultIdentify.getAPhaseCurrentData(), faultIdentify.getBPhaseCurrentData(), faultIdentify.getCPhaseCurrentData());
 
             double IA1 = FrequencyCharacterCalculateUtil.I1(faultIdentify.getAPhaseCurrentData());
             double IB1 = FrequencyCharacterCalculateUtil.I1(faultIdentify.getBPhaseCurrentData());
@@ -162,7 +161,7 @@ public class FaultIdentifyAlgorithm {
 
             if (IAJMP <= 0 && IBJMP <= 0 && ICJMP <= 0) {
 
-                double I0 = TypeCalculateUtil.calculateZeroCurrent(faultIdentify.getAPhaseCurrentData(), faultIdentify.getBPhaseCurrentData(), faultIdentify.getCPhaseCurrentData());
+                double I0 = FrequencyCharacterCalculateUtil.calculateZeroCurrent(faultIdentify.getAPhaseCurrentData(), faultIdentify.getBPhaseCurrentData(), faultIdentify.getCPhaseCurrentData());
 
                 double IA1 = FrequencyCharacterCalculateUtil.I1(faultIdentify.getAPhaseCurrentData());
                 double IB1 = FrequencyCharacterCalculateUtil.I1(faultIdentify.getBPhaseCurrentData());
@@ -289,7 +288,7 @@ public class FaultIdentifyAlgorithm {
             double ICJMP = FrequencyCharacterCalculateUtil.IJMP(faultIdentify.getCPhaseCurrentData());
 
 
-            double I0 = TypeCalculateUtil.calculateZeroCurrent(faultIdentify.getAPhaseCurrentData(), faultIdentify.getBPhaseCurrentData(), faultIdentify.getCPhaseCurrentData());
+            double I0 = FrequencyCharacterCalculateUtil.calculateZeroCurrent(faultIdentify.getAPhaseCurrentData(), faultIdentify.getBPhaseCurrentData(), faultIdentify.getCPhaseCurrentData());
 
             double UAJMP = FrequencyCharacterCalculateUtil.UJMP(faultIdentify.getAPhaseVoltageData());
             double UBJMP = FrequencyCharacterCalculateUtil.UJMP(faultIdentify.getBPhaseVoltageData());

@@ -1,6 +1,6 @@
 package com.hy.biz.dataAnalysis.intervalAlgorithm;
 
-import com.hy.biz.dataAnalysis.algorithmUtil.AnalysisConstants;
+import com.hy.config.AnalysisConstants;
 import com.hy.biz.dataAnalysis.dto.AreaLocateDTO;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
 import org.apache.commons.lang3.StringUtils;
@@ -9,7 +9,6 @@ import org.springframework.util.CollectionUtils;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class TravelWaveCalculateUtil {

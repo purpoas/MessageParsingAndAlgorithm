@@ -1,10 +1,10 @@
 package com.hy.biz.dataAnalysis.intervalAlgorithm;
 
-import com.hy.biz.dataAnalysis.algorithmUtil.AnalysisConstants;
+import com.hy.config.AnalysisConstants;
 import com.hy.biz.dataAnalysis.commonAlgorithm.CommonAlgorithmUtil;
 import com.hy.biz.dataAnalysis.dto.AreaLocateDTO;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
-import com.hy.biz.dataAnalysis.typeAlgorithm.TypeCalculateUtil;
+import com.hy.biz.dataAnalysis.typeAlgorithm.FrequencyCharacterCalculateUtil;
 import com.hy.biz.util.ListUtil;
 import org.springframework.util.CollectionUtils;
 
@@ -33,7 +33,7 @@ public class OverCurrentCalculateUtil {
         mainLineWave.forEach(faultWave -> {
             double[] in = CommonAlgorithmUtil.shiftWave(faultWave.getData());
 
-            double I5 = TypeCalculateUtil.calculateCyclicWavePH(in, 5, AnalysisConstants.CYCLE_WAVE_LENGTH);
+            double I5 = FrequencyCharacterCalculateUtil.calculateCyclicWavePH(in, 5, AnalysisConstants.CYCLE_WAVE_LENGTH);
 
             // I_5i≥Iset的杆塔标志为“+”极性，否则为“-”极性
             if (I5 >= AnalysisConstants.Iset) {
@@ -67,7 +67,7 @@ public class OverCurrentCalculateUtil {
             lineBranchLineWave.forEach(faultWave -> {
                 double[] in = CommonAlgorithmUtil.shiftWave(faultWave.getData());
 
-                double I5 = TypeCalculateUtil.calculateCyclicWavePH(in, 5, AnalysisConstants.CYCLE_WAVE_LENGTH);
+                double I5 = FrequencyCharacterCalculateUtil.calculateCyclicWavePH(in, 5, AnalysisConstants.CYCLE_WAVE_LENGTH);
 
                 // I_5i≥Iset的杆塔标志为“+”极性，否则为“-”极性
                 if (I5 >= AnalysisConstants.Iset) {

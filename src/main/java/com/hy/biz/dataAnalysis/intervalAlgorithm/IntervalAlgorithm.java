@@ -1,10 +1,9 @@
 package com.hy.biz.dataAnalysis.intervalAlgorithm;
 
+import com.hy.biz.dataAnalysis.commonAlgorithm.CommonAlgorithmUtil;
 import com.hy.biz.dataAnalysis.dto.AreaLocateDTO;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
-import com.hy.biz.dataAnalysis.typeAlgorithm.TypeCalculateUtil;
 import com.hy.biz.dataParsing.constants.MessageType;
-import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
@@ -44,7 +43,7 @@ public class IntervalAlgorithm {
                 if (CollectionUtils.isEmpty(frequencyWaveList)) return areaLocateDTO;
 
                 // 故障类型判断
-                int faultType = TypeCalculateUtil.judgeFrequencyCurrentWaveFaultType(frequencyWaveList);
+                int faultType = CommonAlgorithmUtil.judgeFrequencyCurrentWaveFaultType(frequencyWaveList);
 
                 if (faultType == 0) return areaLocateDTO;
 

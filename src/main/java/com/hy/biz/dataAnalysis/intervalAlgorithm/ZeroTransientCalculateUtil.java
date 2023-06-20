@@ -5,7 +5,7 @@ import com.hy.biz.dataAnalysis.dto.AreaLocateDTO;
 import com.hy.biz.dataAnalysis.dto.FaultIdentifyPoleDTO;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
 import com.hy.biz.dataAnalysis.dto.IntervalPoleAbsoluteDTO;
-import com.hy.biz.dataAnalysis.typeAlgorithm.TypeCalculateUtil;
+import com.hy.biz.dataAnalysis.typeAlgorithm.FrequencyCharacterCalculateUtil;
 import com.hy.biz.util.ListUtil;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.util.CollectionUtils;
@@ -38,10 +38,10 @@ public class ZeroTransientCalculateUtil {
         List<IntervalPoleAbsoluteDTO> mainLineIntervalList = new ArrayList<>();
         for (FaultIdentifyPoleDTO pole : mainPoleList) {
             // 合成零序电流
-            double[] synthesisDatas = TypeCalculateUtil.synthesisZeroCurrent(pole.getAPhaseCurrentData(), pole.getBPhaseCurrentData(), pole.getCPhaseCurrentData());
+            double[] synthesisDatas = FrequencyCharacterCalculateUtil.synthesisZeroCurrent(pole.getAPhaseCurrentData(), pole.getBPhaseCurrentData(), pole.getCPhaseCurrentData());
 
             // 计算零序电流极性
-            boolean absolute = TypeCalculateUtil.calculateZeroCurrentAbsolute(synthesisDatas);
+            boolean absolute = CommonAlgorithmUtil.calculateZeroCurrentAbsolute(synthesisDatas);
 
             IntervalPoleAbsoluteDTO dto = new IntervalPoleAbsoluteDTO(pole.getLineId(), pole.getPoleId(), pole.getDistanceToHeadStation(), absolute);
             mainLineIntervalList.add(dto);
@@ -56,8 +56,8 @@ public class ZeroTransientCalculateUtil {
         double[] leftDatas = mainAreaLocateDTO.getHeadFaultWaveData();
         double[] rightDatas = mainAreaLocateDTO.getEndFaultWaveData();
 
-        double leftParam = TypeCalculateUtil.calculateZeroCurrentCoefficient(leftDatas);
-        double rightParam = TypeCalculateUtil.calculateZeroCurrentCoefficient(rightDatas);
+        double leftParam = CommonAlgorithmUtil.calculateZeroCurrentCoefficient(leftDatas);
+        double rightParam = CommonAlgorithmUtil.calculateZeroCurrentCoefficient(rightDatas);
 
         // 两侧相关系数 >= 0.9 ||如果主线不存在突变区间 故障在支线上
         if (leftParam >= 0.9 || rightParam >= 0.9 || ArrayUtils.isEmpty(mainAreaLocateDTO.getEndFaultWaveData())) {
@@ -79,10 +79,10 @@ public class ZeroTransientCalculateUtil {
                 List<IntervalPoleAbsoluteDTO> branchLineIntervalList = new ArrayList<>();
                 for (FaultIdentifyPoleDTO pole : branchPoleList) {
                     // 合成零序电流
-                    double[] synthesisDatas = TypeCalculateUtil.synthesisZeroCurrent(pole.getAPhaseCurrentData(), pole.getBPhaseCurrentData(), pole.getCPhaseCurrentData());
+                    double[] synthesisDatas = FrequencyCharacterCalculateUtil.synthesisZeroCurrent(pole.getAPhaseCurrentData(), pole.getBPhaseCurrentData(), pole.getCPhaseCurrentData());
 
                     // 计算零序电流极性
-                    boolean absolute = TypeCalculateUtil.calculateZeroCurrentAbsolute(synthesisDatas);
+                    boolean absolute = CommonAlgorithmUtil.calculateZeroCurrentAbsolute(synthesisDatas);
 
                     IntervalPoleAbsoluteDTO dto = new IntervalPoleAbsoluteDTO(pole.getLineId(), pole.getPoleId(), pole.getDistanceToHeadStation(), absolute);
                     branchLineIntervalList.add(dto);

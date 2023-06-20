@@ -1,6 +1,5 @@
-package com.hy.biz.dataAnalysis.algorithmUtil;
+package com.hy.config;
 
-import com.hy.config.HyConfigProperty;
 import org.springframework.stereotype.Component;
 
 @Component

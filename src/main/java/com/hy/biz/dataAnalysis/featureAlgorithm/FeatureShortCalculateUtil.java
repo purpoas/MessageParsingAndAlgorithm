@@ -1,13 +1,12 @@
 package com.hy.biz.dataAnalysis.featureAlgorithm;
 
-import com.hy.biz.dataAnalysis.algorithmUtil.AnalysisConstants;
+import com.hy.config.AnalysisConstants;
 import com.hy.biz.dataAnalysis.algorithmUtil.EjmlUtil;
 import com.hy.biz.dataAnalysis.commonAlgorithm.CommonAlgorithmUtil;
 import com.hy.biz.dataAnalysis.dto.FaultIdentifyDTO;
 import com.hy.biz.dataAnalysis.dto.FaultIdentifyPoleDTO;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
 import com.hy.biz.dataAnalysis.typeAlgorithm.FrequencyCharacterCalculateUtil;
-import com.hy.biz.dataAnalysis.typeAlgorithm.TypeCalculateUtil;
 import com.hy.biz.dataParsing.constants.MessageType;
 import org.springframework.util.CollectionUtils;
 
@@ -55,7 +54,7 @@ public class FeatureShortCalculateUtil {
 
         List<Double> faultCurList = new ArrayList<>();
         for (double[] data : list) {
-            double IXJMP = TypeCalculateUtil.calculateCyclicWavePH(data, 5, AnalysisConstants.CYCLE_WAVE_LENGTH);
+            double IXJMP = FrequencyCharacterCalculateUtil.calculateCyclicWavePH(data, 5, AnalysisConstants.CYCLE_WAVE_LENGTH);
 
             if (IXJMP >= 0) {
 
@@ -106,11 +105,11 @@ public class FeatureShortCalculateUtil {
         list.add(faultType.getCPhaseCurrentData());
 
         for (double[] data : list) {
-            double IXJMP = TypeCalculateUtil.calculateCyclicWavePH(data, 5, AnalysisConstants.CYCLE_WAVE_LENGTH);
+            double IXJMP = FrequencyCharacterCalculateUtil.calculateCyclicWavePH(data, 5, AnalysisConstants.CYCLE_WAVE_LENGTH);
             if (IXJMP >= 0) {
                 int length = data.length / AnalysisConstants.CYCLE_WAVE_LENGTH;
                 for (int i = 0; i < length; i++) {
-                    double IK = TypeCalculateUtil.calculateCyclicWavePH(data, i, AnalysisConstants.CYCLE_WAVE_LENGTH);
+                    double IK = FrequencyCharacterCalculateUtil.calculateCyclicWavePH(data, i, AnalysisConstants.CYCLE_WAVE_LENGTH);
                     if (IK < AnalysisConstants.IMIN && Math.abs(i - 5) < 2) {
                         return 1;
                     }

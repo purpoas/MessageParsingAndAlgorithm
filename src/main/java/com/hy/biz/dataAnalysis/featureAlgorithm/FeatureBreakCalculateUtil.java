@@ -1,13 +1,12 @@
 package com.hy.biz.dataAnalysis.featureAlgorithm;
 
-import com.hy.biz.dataAnalysis.algorithmUtil.AnalysisConstants;
+import com.hy.config.AnalysisConstants;
 import com.hy.biz.dataAnalysis.commonAlgorithm.CommonAlgorithmUtil;
 import com.hy.biz.dataAnalysis.dto.AreaLocateDTO;
 import com.hy.biz.dataAnalysis.dto.FaultIdentifyDTO;
 import com.hy.biz.dataAnalysis.dto.FaultIdentifyPoleDTO;
 import com.hy.biz.dataAnalysis.dto.FaultWave;
 import com.hy.biz.dataAnalysis.typeAlgorithm.FrequencyCharacterCalculateUtil;
-import com.hy.biz.dataAnalysis.typeAlgorithm.TypeCalculateUtil;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -86,9 +85,9 @@ public class FeatureBreakCalculateUtil {
      */
     public static double zeroSeqCur(FaultIdentifyDTO faultIdentifyDTO) {
 
-        double[] i0 = TypeCalculateUtil.synthesisZeroCurrent(faultIdentifyDTO.getAPhaseCurrentData(), faultIdentifyDTO.getBPhaseCurrentData(), faultIdentifyDTO.getCPhaseCurrentData());
+        double[] i0 = FrequencyCharacterCalculateUtil.synthesisZeroCurrent(faultIdentifyDTO.getAPhaseCurrentData(), faultIdentifyDTO.getBPhaseCurrentData(), faultIdentifyDTO.getCPhaseCurrentData());
 
-        double zero = TypeCalculateUtil.calculateCyclicWavePH(i0, 5, AnalysisConstants.CYCLE_WAVE_LENGTH);
+        double zero = FrequencyCharacterCalculateUtil.calculateCyclicWavePH(i0, 5, AnalysisConstants.CYCLE_WAVE_LENGTH);
 
         return zero / 3;
     }
@@ -142,7 +141,7 @@ public class FeatureBreakCalculateUtil {
 
         for (int i = 0; i < cyclicWaveIndexSum; i++) {
             // 计算周波有效值
-            I0List.add(TypeCalculateUtil.calculateCyclicWavePH(u2, i + 1, AnalysisConstants.CYCLE_WAVE_LENGTH));
+            I0List.add(FrequencyCharacterCalculateUtil.calculateCyclicWavePH(u2, i + 1, AnalysisConstants.CYCLE_WAVE_LENGTH));
         }
 
         // 取各波周有效值的最大值

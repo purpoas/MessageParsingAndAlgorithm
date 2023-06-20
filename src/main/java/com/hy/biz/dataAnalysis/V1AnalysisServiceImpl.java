@@ -2,14 +2,14 @@ package com.hy.biz.dataAnalysis;
 
 import com.hy.biz.cache.service.AlgorithmCacheManager;
 import com.hy.biz.cache.service.GroundFaultCacheManager;
-import com.hy.biz.dataAnalysis.algorithmUtil.AnalysisConstants;
+import com.hy.config.AnalysisConstants;
 import com.hy.biz.dataAnalysis.delay.DelayTaskQueue;
 import com.hy.biz.dataAnalysis.dto.*;
 import com.hy.biz.dataAnalysis.extraAlgorithm.ExtraAlgorithmUtil;
 import com.hy.biz.dataAnalysis.featureAlgorithm.FaultFeatureAlgorithm;
 import com.hy.biz.dataAnalysis.intervalAlgorithm.IntervalAlgorithm;
 import com.hy.biz.dataAnalysis.faultLocationAlgorithm.FaultLocationAlgorithm;
-import com.hy.biz.dataAnalysis.typeAlgorithm.FaultIdentifyAlgorithm;
+import com.hy.biz.dataAnalysis.typeAlgorithm.FaultTypeAlgorithm;
 import com.hy.biz.dataParsing.constants.MessageType;
 import com.hy.biz.dataPush.DataPushService;
 import com.hy.biz.dataPush.dto.DeviceDTO;
@@ -118,7 +118,7 @@ public class V1AnalysisServiceImpl implements DataAnalysisService {
 
         // TODO 3.故障类型判断
 
-        FaultIdentifyDTO faultType = FaultIdentifyAlgorithm.judge(faultWaves, areaLocateDTO);
+        FaultIdentifyDTO faultType = FaultTypeAlgorithm.judge(faultWaves, areaLocateDTO);
 
         // TODO 4.故障特性计算
         String faultFeature = FaultFeatureAlgorithm.calculate(faultType, areaLocateDTO, faultWaves);

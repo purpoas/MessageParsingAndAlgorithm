@@ -3,8 +3,7 @@ package com.hy.biz.dataAnalysis.featureAlgorithm;
 import com.hy.biz.dataAnalysis.commonAlgorithm.CommonAlgorithmUtil;
 import com.hy.biz.dataAnalysis.dto.*;
 import com.hy.biz.dataAnalysis.typeAlgorithm.FrequencyCharacterCalculateUtil;
-import com.hy.biz.dataAnalysis.typeAlgorithm.TypeCalculateUtil;
-import com.hy.biz.dataAnalysis.algorithmUtil.AnalysisConstants;
+import com.hy.config.AnalysisConstants;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -61,7 +60,7 @@ public class FeatureGroundCalculateUtil {
             double UBJMP = FrequencyCharacterCalculateUtil.UJMP(faultIdentify.getBPhaseVoltageData());
             double UCJMP = FrequencyCharacterCalculateUtil.UJMP(faultIdentify.getCPhaseVoltageData());
 
-            double[] U0 = TypeCalculateUtil.synthesisZeroCurrent(faultIdentify.getAPhaseVoltageData(), faultIdentify.getBPhaseVoltageData(), faultIdentify.getCPhaseVoltageData());
+            double[] U0 = FrequencyCharacterCalculateUtil.synthesisZeroCurrent(faultIdentify.getAPhaseVoltageData(), faultIdentify.getBPhaseVoltageData(), faultIdentify.getCPhaseVoltageData());
             double U0JMP = FrequencyCharacterCalculateUtil.UJMP(U0);
 
             if (UAJMP > 0 && UBJMP < 0 && UCJMP < 0 && U0JMP < 0) {
@@ -83,9 +82,9 @@ public class FeatureGroundCalculateUtil {
      */
     public static double zeroSeqCur(FaultIdentifyDTO faultIdentifyDTO) {
 
-        double[] i0 = TypeCalculateUtil.synthesisZeroCurrent(faultIdentifyDTO.getAPhaseCurrentData(), faultIdentifyDTO.getBPhaseCurrentData(), faultIdentifyDTO.getCPhaseCurrentData());
+        double[] i0 = FrequencyCharacterCalculateUtil.synthesisZeroCurrent(faultIdentifyDTO.getAPhaseCurrentData(), faultIdentifyDTO.getBPhaseCurrentData(), faultIdentifyDTO.getCPhaseCurrentData());
 
-        double zero = TypeCalculateUtil.calculateCyclicWavePH(i0, 5, AnalysisConstants.CYCLE_WAVE_LENGTH);
+        double zero = FrequencyCharacterCalculateUtil.calculateCyclicWavePH(i0, 5, AnalysisConstants.CYCLE_WAVE_LENGTH);
 
         return zero / 3;
     }

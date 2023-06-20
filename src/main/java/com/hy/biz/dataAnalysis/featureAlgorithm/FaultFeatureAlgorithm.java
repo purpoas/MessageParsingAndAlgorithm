@@ -2,11 +2,9 @@ package com.hy.biz.dataAnalysis.featureAlgorithm;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.hy.biz.dataAnalysis.algorithmUtil.AnalysisConstants;
+import com.hy.config.AnalysisConstants;
 import com.hy.biz.dataAnalysis.dto.*;
 import com.hy.biz.util.GsonUtil;
-import com.hy.config.HyConfigProperty;
-import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
