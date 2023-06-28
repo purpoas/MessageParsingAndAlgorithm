@@ -1,7 +1,7 @@
 package com.hy.biz.dataRead.consumer;
 
 import com.hy.biz.dataPush.task.Task;
-import com.hy.biz.dataPush.task.TaskFactory;
+import com.hy.biz.dataPush.task.impl.MsgParsingTaskFactory;
 import com.hy.biz.dataPush.task.TaskQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -23,24 +23,29 @@ import java.util.concurrent.TimeUnit;
 public abstract class RedisConsumer {
 
     private final TaskQueue taskQueue;
-    private final TaskFactory taskFactory;
+    private final MsgParsingTaskFactory msgParsingTaskFactory;
     private final String dataQueue;
     private final String dataBakQueue;
-    private final long queueCapacity;
+    private final int queueCapacity;
     private final RedisTemplate<String, String> redisTemplate;
 
     private volatile boolean threadStopped = false;
     private ExecutorService executorService;
 
-    protected RedisConsumer(TaskQueue taskQueue, TaskFactory taskFactory, String dataQueue, String dataBakQueue, int queueCapacity, RedisTemplate<String, String> redisTemplate) {
+    protected RedisConsumer(TaskQueue taskQueue, MsgParsingTaskFactory msgParsingTaskFactory, String dataQueue, String dataBakQueue, int queueCapacity, RedisTemplate<String, String> redisTemplate) {
         this.taskQueue = taskQueue;
-        this.taskFactory = taskFactory;
+        this.msgParsingTaskFactory = msgParsingTaskFactory;
         this.dataQueue = dataQueue;
         this.dataBakQueue = dataBakQueue;
         this.queueCapacity = queueCapacity;
         this.redisTemplate = redisTemplate;
     }
 
+    /**
+     * 执行消费线程逻辑
+     *
+     * @param threadFactory 线程工厂
+     */
     protected void executeCommand(ThreadFactory threadFactory) {
         executorService = Executors.newSingleThreadExecutor(threadFactory);
         executorService.execute(this::process);
@@ -98,12 +103,13 @@ public abstract class RedisConsumer {
         try {
             String message = redisTemplate.opsForList().rightPopAndLeftPush(dataQueue, dataBakQueue, Duration.ofSeconds(10));
             if (!StringUtils.isBlank(message)) {
-                Task task = taskFactory.createTask(message, dataBakQueue);
+                Task task = msgParsingTaskFactory.createTask(message, dataBakQueue);
                 if (task != null)
                     taskQueue.putTask(task);
             }
         } catch (IllegalStateException e) {
-            if (e.getMessage().contains("LettuceConnectionFactory was destroyed")) stop();
+            if (e.getMessage().contains("LettuceConnectionFactory was destroyed"))
+                stop();
             else throw e;
         }
     }

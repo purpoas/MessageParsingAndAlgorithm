@@ -33,4 +33,6 @@ public class DelayAlgorithmTask implements Runnable {
         // 执行算法任务
         dataAnalysisService.executeAlgorithmAnalysis(algorithmTask.getFaultWaveSet());
     }
+
+
 }

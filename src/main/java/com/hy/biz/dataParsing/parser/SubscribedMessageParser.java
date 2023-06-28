@@ -48,8 +48,7 @@ public class SubscribedMessageParser {
     }
 
     /**
-     *
-     * 解析控制报文
+     * @description 解析控制报文
      *
      * @param commandData 报文 byte 数组
      * @param deviceCode 设备编号
@@ -67,8 +66,7 @@ public class SubscribedMessageParser {
     }
 
     /**
-     *
-     * 解析设备上下线状态报文
+     * @description 解析设备上下线状态报文
      *
      * @param deviceOnlineStatusDTO 设备上下线状态实体类
      * @return 将发布到订阅频道的 json 数据
@@ -89,10 +87,7 @@ public class SubscribedMessageParser {
         String messageSignature = String.format("0x%02X:0x%02X", frameType, messageType);
 
         CtrlMsgParserStrategy strategy = strategies.get(messageSignature);
-        if (strategy == null) {
-            log.error("未知报文签名: {}，无法识别具体控制数据报文类型", messageSignature);
-            throw new MessageParsingException(ILLEGAL_MESSAGE_SIGNATURE_ERROR);
-        }
+        if (strategy == null) throw new MessageParsingException(ILLEGAL_MESSAGE_SIGNATURE_ERROR);
 
         return strategy.parse(buffer, parserHelper, messageSignature, deviceCode, timeStamp);
     }

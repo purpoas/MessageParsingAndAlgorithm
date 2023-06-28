@@ -1,7 +1,7 @@
 package com.hy.biz.dataRead.consumer.impl;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.hy.biz.dataPush.task.TaskFactory;
+import com.hy.biz.dataPush.task.impl.MsgParsingTaskFactory;
 import com.hy.biz.dataPush.task.TaskQueue;
 import com.hy.biz.dataRead.consumer.RedisConsumer;
 import lombok.extern.slf4j.Slf4j;
@@ -19,8 +19,8 @@ import java.util.concurrent.ThreadFactory;
 @Slf4j
 public class RedisConsumerImpl extends RedisConsumer {
 
-    public RedisConsumerImpl(TaskQueue taskQueue, TaskFactory taskFactory, String workingQueue, String backupQueue, int queueCapacity, RedisTemplate<String, String> redisTemplate) {
-        super(taskQueue, taskFactory, workingQueue, backupQueue, queueCapacity, redisTemplate);
+    public RedisConsumerImpl(TaskQueue taskQueue, MsgParsingTaskFactory msgParsingTaskFactory, String workingQueue, String backupQueue, int queueCapacity, RedisTemplate<String, String> redisTemplate) {
+        super(taskQueue, msgParsingTaskFactory, workingQueue, backupQueue, queueCapacity, redisTemplate);
     }
 
     public void executeCommand() {

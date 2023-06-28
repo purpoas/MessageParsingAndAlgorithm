@@ -54,7 +54,7 @@ public class MessageParser {
         MessageDTO messageDTO = parserHelper.createMessageDTO(data);  //生成报文DTO
 
         String commandData = messageDTO.getData().getCommand();       //拿到报文字节数组
-        long timeStamp = messageDTO.getTimeStamp(); //拿到时间戳
+        long timeStamp = messageDTO.getTimeStamp();                   //拿到时间戳
         String deviceCode = messageDTO.getDeviceCode();
 
         ByteBuffer buffer = ByteBuffer.wrap(hexStringToByteArray(commandData)).order(BIG_ENDIAN);
@@ -78,13 +78,11 @@ public class MessageParser {
 
     //===========================private=================================private=========================================private================================
 
+
     /**
-     * @param messageType 报文类型
-     * @return 具体报文实体类
-     * @description 该方法通过报文签名key，在 MESSAGE_MAP 中找到对应的报文实体类，并进行创建初始化
+     * 该方法通过报文签名key，在 MESSAGE_MAP 中找到对应的报文实体类，并进行创建初始化
      */
     private BaseMessage createUnoccupiedSpecificMsg(byte frameType, byte messageType, String deviceCode) {
-
         Class<? extends BaseMessage> messageClass = MESSAGE_MAP.get(String.format("%s:%s", frameType, messageType));
         BaseMessage specificMessage;
         try {
@@ -100,14 +98,10 @@ public class MessageParser {
         return specificMessage;
     }
 
-
     /**
-     * @param specificMessage 具体报文类型
-     * @return 被持久化的报文实体类
-     * @description 该方法根据收到的报文类型，调用负责解析该类型的解析方法
+     * 该方法根据收到的报文类型，调用负责解析该类型的解析方法
      */
     private BaseMessage parseMessageContent(BaseMessage specificMessage, ByteBuffer buffer, long timeStamp) {
-
         byte[] messageContent = parserHelper.parseMessageContent(buffer);
 
         ByteBuffer contentBuffer = ByteBuffer.wrap(messageContent).order(BIG_ENDIAN);

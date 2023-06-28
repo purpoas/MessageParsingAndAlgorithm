@@ -38,9 +38,9 @@ public class LettuceConfig {
         LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
                 .clientOptions(
                         ClientOptions.builder()
-                                .autoReconnect(true)
-                                .disconnectedBehavior(ClientOptions.DisconnectedBehavior.REJECT_COMMANDS)
-                                .socketOptions(SocketOptions.builder().connectTimeout(Duration.ofSeconds(30)).build())
+                                .autoReconnect(true)  // 自动重连
+                                .disconnectedBehavior(ClientOptions.DisconnectedBehavior.REJECT_COMMANDS)  // 连接断开时不接收Task
+                                .socketOptions(SocketOptions.builder().connectTimeout(Duration.ofSeconds(30)).build())  // 连接timeout时限：30秒
                                 .build())
                 .commandTimeout(Duration.ofSeconds(300)) // 命令timeout时限：5分钟
                 .clientResources(clientResources)

@@ -64,6 +64,7 @@ hy:
     fault-file-path: "D:\\C365\\analysisResult\\"      # 存储故障波形推送失败的文件夹
     battery-file-path: "classpath:ElecQuantity.txt"    # 电池电量对应关联文件位置
     dnm-latest-device-status: hydnm:cache:status # 设备最新状态维护
+    cycle-wave-length: 256
   algorithm:
     delay-execute-time: 10    # 算法任务延迟执行时间 单位秒
     Iset: 10                  # 过流定值

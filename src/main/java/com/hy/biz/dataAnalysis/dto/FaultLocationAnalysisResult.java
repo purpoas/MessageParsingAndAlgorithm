@@ -15,9 +15,9 @@ import lombok.Data;
 public class FaultLocationAnalysisResult {
 
     /**
-     * 起始与终点变电站的距离
+     * 故障点与终点变电站的距离
      */
-    private double distanceBetweenStations;
+    private double distToHeadStation;
 
     /**
      * 距离和故障最近的杆塔号

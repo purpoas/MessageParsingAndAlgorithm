@@ -15,6 +15,7 @@ import java.util.concurrent.ArrayBlockingQueue;
  **/
 @Component
 public class TaskQueue {
+
     private final ArrayBlockingQueue<Task> blockingQueue;
 
     public TaskQueue(HyConfigProperty configProperty) {

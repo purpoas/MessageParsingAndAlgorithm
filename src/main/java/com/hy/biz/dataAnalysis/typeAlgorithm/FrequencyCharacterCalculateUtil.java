@@ -26,7 +26,7 @@ public class FrequencyCharacterCalculateUtil {
         // 工频波形长度不满足大于10倍周波长度 不参与判断
         if (data.length < 10 * cyclicWaveLength) return 0.0;
 
-        Double[] in = new Double[cyclicWaveLength];
+        double[] in = new double[cyclicWaveLength];
 
         int cyclicWaveIndexSum = data.length / cyclicWaveLength;
 
@@ -71,6 +71,7 @@ public class FrequencyCharacterCalculateUtil {
      * @return 零序电流值
      */
     public static double calculateZeroCurrent(double[] aData, double[] bData, double[] cData) {
+        if (aData.length < 2560) throw new RuntimeException("波形数据过短，无法进行计算");
 
         double[] i0 = synthesisZeroCurrent(aData, bData, cData);
 
@@ -99,7 +100,7 @@ public class FrequencyCharacterCalculateUtil {
         int aLength = aData.length;
         int bLength = bData.length;
         int cLength = cData.length;
-        int i0Length = 0;
+        int i0Length;
 
         // 找出三相波形中长度最短的
         if (aLength < bLength && aLength < cLength) {
@@ -108,6 +109,8 @@ public class FrequencyCharacterCalculateUtil {
             i0Length = bLength;
         } else if (cLength < aLength && cLength < bLength) {
             i0Length = cLength;
+        } else {
+            i0Length = aLength;
         }
 
         // 波形预处理
@@ -237,6 +240,36 @@ public class FrequencyCharacterCalculateUtil {
         List<Double> I0List = new ArrayList<>();
 
         for (int i = 0; i < 10; i++) {
+            // 计算周波有效值
+            I0List.add(calculateCyclicWavePH(data, i + 1, AnalysisConstants.CYCLE_WAVE_LENGTH));
+        }
+
+        // 取各波周有效值的最大值
+        return Collections.max(I0List);
+    }
+
+    /**
+     * 8周波电流中每周波有效值的最大值
+     */
+    public static double IMAX8(double[] data) {
+        List<Double> I0List = new ArrayList<>();
+
+        for (int i = 0; i < 8; i++) {
+            // 计算周波有效值
+            I0List.add(calculateCyclicWavePH(data, i + 1, AnalysisConstants.CYCLE_WAVE_LENGTH));
+        }
+
+        // 取各波周有效值的最大值
+        return Collections.max(I0List);
+    }
+
+    /**
+     * 8周波电压中每周波有效值的最大值
+     */
+    public static double UMAX8(double[] data) {
+        List<Double> I0List = new ArrayList<>();
+
+        for (int i = 0; i < 8; i++) {
             // 计算周波有效值
             I0List.add(calculateCyclicWavePH(data, i + 1, AnalysisConstants.CYCLE_WAVE_LENGTH));
         }

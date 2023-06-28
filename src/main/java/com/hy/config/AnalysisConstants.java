@@ -53,4 +53,6 @@ public class AnalysisConstants {
 
         CYCLE_WAVE_LENGTH = hyConfigProperty.getConstant().getCycleWaveLength();
     }
+
+
 }
