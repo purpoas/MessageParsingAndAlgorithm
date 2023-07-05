@@ -11,6 +11,7 @@ import com.hy.config.HyConfigProperty;
 import com.hy.domain.DeviceInfo;
 import com.hy.domain.DeviceStatus;
 import com.hy.domain.WaveData;
+import com.hy.domain.WorkStatus;
 import com.hy.repository.DeviceRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -117,6 +118,16 @@ public class ParserHelper {
 
         Map<String, String> map = new HashMap<>();
         map.put("lastTime", String.valueOf(deviceInfo.getCollectionTime().getEpochSecond()));
+        map.put("updateTime", String.valueOf(Instant.now().getEpochSecond()));
+
+        redisTemplate.opsForHash().putAll(dnmLatestDeviceStatus + ":" + deviceCode, map);
+    }
+
+    public void maintainDeviceStatusInRedis(WorkStatus workStatus, String deviceCode) {
+        String dnmLatestDeviceStatus = hyConfigProperty.getConstant().getDnmLatestDeviceStatus();
+
+        Map<String, String> map = new HashMap<>();
+        map.put("workCurrent", String.valueOf(workStatus.getLineCurrent()));
         map.put("updateTime", String.valueOf(Instant.now().getEpochSecond()));
 
         redisTemplate.opsForHash().putAll(dnmLatestDeviceStatus + ":" + deviceCode, map);

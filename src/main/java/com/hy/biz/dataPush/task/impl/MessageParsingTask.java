@@ -58,7 +58,7 @@ public class MessageParsingTask extends Task {
 
         messageTypeMap.forEach((messageClass, pushType) -> {
             if (messageClass.isInstance(baseMessage)) {
-                boolean flag = dataPushService.push(message, baseMessage, pushType);
+                boolean flag = dataPushService. push(message, baseMessage, pushType);
 
                 if (pushType == WAVE) {
                     WaveDataMessage wave = (WaveDataMessage) baseMessage;

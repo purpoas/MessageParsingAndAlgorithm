@@ -42,7 +42,7 @@ public class FaultLocationAlgorithm {
 
         List<FaultWave> validWaves = getValidWaves(faultWaves);  // 校验波形
 
-        List<FaultWave> sortedWaves = sortByLinePhaseAndHeadTime(validWaves);  // 按照线路id、波形相位、起始时间排序
+        List<FaultWave> sortedWaves = sortByPhaseAndHeadTime(validWaves);  // 按照线路id、波形相位、起始时间排序
 
         Map<Integer, List<FaultWave>> phaseSortedWaveMap = groupByPhase(sortedWaves);  // 将同一线路下不同相位的波形数据分组
 
@@ -75,14 +75,14 @@ public class FaultLocationAlgorithm {
                         default:
                             throw new FaultLocationException(UNKNOWN_WAVEFORM_TYPE_ERROR);
                     }
-                }).collect(Collectors.toList());
+                })
+                .collect(Collectors.toList());
     }
 
-    private List<FaultWave> sortByLinePhaseAndHeadTime(List<FaultWave> validWaves) {
+    private List<FaultWave> sortByPhaseAndHeadTime(List<FaultWave> validWaves) {
         if (validWaves.isEmpty()) throw new FaultLocationException(NONE_VALIDATED_FAULT_WAVE_ERROR);
         return validWaves.stream()
-                .sorted(Comparator.comparing(FaultWave::getLineId)
-                        .thenComparing(FaultWave::getPhase)
+                .sorted(Comparator.comparing(FaultWave::getPhase)
                         .thenComparing(FaultWave::getHeadTime))
                 .collect(Collectors.toList());
     }
@@ -113,10 +113,12 @@ public class FaultLocationAlgorithm {
                 .orElseThrow(() -> new FaultLocationException(FAIL_TO_LOCATE_REFERENCE_POINT_ERROR));
 
         double averageSpeed = calculateAvgSpeed(phaseSortedWaves, basePointAbsolute); // Calculate wave speed in m/ns
+
         // 计算L2与L3
         double L = Math.abs(basePointWave.getDistanceToHeadStation() - referencePointWave.getDistanceToHeadStation());
         double L2 = computeLength(basePointWave, referencePointWave, averageSpeed, L, false); // Length in m
         double L3 = computeLength(basePointWave, referencePointWave, averageSpeed, L, true); // Length in m
+
         // 校验L2与L3
         if (L2 > L || L3 < 0) return Optional.empty();
 

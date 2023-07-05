@@ -79,8 +79,7 @@ public class WaveDataMessage extends BaseMessage {
         boolean flag = false;
         double[] data = CommonAlgorithmUtil.shiftWave(getWaveData());
         switch (waveType) {
-            case MessageType
-                    .TRAVELLING_WAVE_CURRENT:
+            case MessageType.TRAVELLING_WAVE_CURRENT:
                 // 波形预处理
                 double[] preTravelWaveData = ExtraAlgorithmUtil.preProcessTravellingWave(data);
                 // 故障波形判断

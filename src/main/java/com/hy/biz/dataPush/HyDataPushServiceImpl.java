@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -234,6 +235,9 @@ public class HyDataPushServiceImpl implements DataPushService {
     }
 
 
+    //================private================private================private================private================private================
+
+
     private boolean saveDeviceFault(DeviceFaultMessage message, String deviceCode) {
 
         DeviceFault deviceFault;
@@ -259,6 +263,11 @@ public class HyDataPushServiceImpl implements DataPushService {
 
         parserHelper.maintainDeviceStatusInRedis(deviceInfo, deviceCode);
 
+        JsonObject params = new JsonObject();
+        params.addProperty("lastTime", deviceInfo.getCollectionTime().getEpochSecond());
+
+        parserHelper.publishToRedis((byte) 8,(byte) 8, Instant.now().getEpochSecond(), deviceCode, params);
+
         return true;
     }
 
@@ -270,9 +279,12 @@ public class HyDataPushServiceImpl implements DataPushService {
         } catch (Exception e) {
             throw new MessageParsingException(MESSAGE_TO_ENTITY_ERROR, e);
         }
+
         deviceStatusRepository.save(deviceStatus);
 
         parserHelper.maintainDeviceStatusInRedis(deviceStatus, deviceCode);
+
+        parserHelper.publishToRedis((byte) 8,(byte) 8, Instant.now().getEpochSecond(), deviceCode, createParamForDeviceStatus(deviceStatus));
 
         return true;
     }
@@ -285,7 +297,12 @@ public class HyDataPushServiceImpl implements DataPushService {
         } catch (Exception e) {
             throw new MessageParsingException(MESSAGE_TO_ENTITY_ERROR, e);
         }
+
         workStatusRepository.save(workStatus);
+
+        parserHelper.maintainDeviceStatusInRedis(workStatus,deviceCode);
+
+        parserHelper.publishToRedis((byte) 8,(byte) 8, Instant.now().getEpochSecond(), deviceCode, createParamForDeviceStatus(workStatus));
 
         return true;
     }
@@ -304,6 +321,18 @@ public class HyDataPushServiceImpl implements DataPushService {
         parserHelper.publishWaveData(waveData, message, timeStamp, deviceCode);
 
         return true;
+    }
+
+    private JsonObject createParamForDeviceStatus(DeviceStatus deviceStatus) {
+        JsonObject params = new JsonObject();
+        params.addProperty("Voltage", deviceStatus.getBatteryVoltage());
+        return params;
+    }
+
+    private JsonObject createParamForDeviceStatus(WorkStatus workStatus) {
+        JsonObject params = new JsonObject();
+        params.addProperty("workCurrent", workStatus.getLineCurrent());
+        return params;
     }
 
 

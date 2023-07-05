@@ -182,7 +182,34 @@ public class FFT {
         return convolution;
     }
 
+    /**
+     * 计算卷积
+     *
+     * @param data 波形数据
+     * @param lowPassFilter 低通滤波器
+     * @return 处理后的数据
+     */
+    public static double[] computeConvolution(double[] data, double[] lowPassFilter) {
+        int inLength = data.length;
+        int paramsLength = lowPassFilter.length;
+        int resultLength = inLength + paramsLength - 1;
 
+        double[] copyArray = Arrays.copyOf(data, resultLength);
+        Arrays.fill(copyArray, inLength, resultLength, 0D);
+
+        double[] result = new double[resultLength];
+        for (int i = 0; i < resultLength; i++) {
+            double sum = 0D;
+            for (int j = 0; j < paramsLength; j++) {
+                if (i >= j) {
+                    sum += lowPassFilter[j] * copyArray[i - j];
+                }
+            }
+            result[i] = sum;
+        }
+
+        return result;
+    }
 
     /**
      * Display an array of Complex numbers to standard output

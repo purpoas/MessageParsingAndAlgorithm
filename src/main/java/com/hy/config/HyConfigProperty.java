@@ -77,7 +77,7 @@ public class HyConfigProperty {
         private Integer travelMaxThreshold;                   //行波最大阈值
         private Integer frequencyMaxThreshold;                //工频最大阈值
         private Long travelSampleRate;                        //行波采样率
-        private Long frequencySampleRate;                     //工频采样率
+        private Long deviceSampleRate;                     //工频采样率
         private Long faultFrequencyCurrentThreshold;          //工频电流故障触发阈值
         private Integer cycleWaveLength;                      //周波长度
         private Double speed;                                 //波形传播速度 默认单位 290 m/us

@@ -89,7 +89,7 @@ public class ExtraAlgorithmUtil {
      * @return 工频电流是否有效
      */
     public static boolean isValidPowerFreqCurrentOrVoltage(double[] data, HyConfigProperty hyConfigProperty) {
-        return checkFundamentalFrequency(data, hyConfigProperty) && checkPhaseCurrentAbruptChange(data, hyConfigProperty);
+        return checkFundamentalFrequency(data, hyConfigProperty);
     }
 
     /**
@@ -102,7 +102,7 @@ public class ExtraAlgorithmUtil {
      * @return Pair<Boolean, Double> A pair indicating if a surge is detected (true/false) and the maximum second harmonic content across the phases
      */
     public static Pair<Boolean, Double> isSurge(Double[] freqWaveDataA, Double[] freqWaveDataB, Double[] freqWaveDataC, HyConfigProperty hyConfigProperty) {
-        long deviceSampleRate = hyConfigProperty.getConstant().getFrequencySampleRate();
+        long deviceSampleRate = hyConfigProperty.getConstant().getDeviceSampleRate();
 
         // Compute FFT and extract 50Hz and 100Hz component for each phase
         Double[] fftPhaseA = fftGetSpecificFrequencies(freqWaveDataA, deviceSampleRate);
@@ -147,14 +147,14 @@ public class ExtraAlgorithmUtil {
             Complex[] bComplex = CommonAlgorithmUtil.fft4096(bData);
             Complex[] cComplex = CommonAlgorithmUtil.fft4096(cData);
 
-            Double aH1hz = CommonAlgorithmUtil.getMaxHzNew(aComplex, 4096, hyConfigProperty.getConstant().getFrequencySampleRate().intValue(), 45, 55);
-            Double aH2hz = CommonAlgorithmUtil.getMaxHzNew(aComplex, 4096, hyConfigProperty.getConstant().getFrequencySampleRate().intValue(), 95, 105);
+            Double aH1hz = CommonAlgorithmUtil.getMaxHzNew(aComplex, 4096, hyConfigProperty.getConstant().getDeviceSampleRate().intValue(), 45, 55);
+            Double aH2hz = CommonAlgorithmUtil.getMaxHzNew(aComplex, 4096, hyConfigProperty.getConstant().getDeviceSampleRate().intValue(), 95, 105);
 
-            Double bH1hz = CommonAlgorithmUtil.getMaxHzNew(bComplex, 4096, hyConfigProperty.getConstant().getFrequencySampleRate().intValue(), 45, 55);
-            Double bH2hz = CommonAlgorithmUtil.getMaxHzNew(bComplex, 4096, hyConfigProperty.getConstant().getFrequencySampleRate().intValue(), 95, 105);
+            Double bH1hz = CommonAlgorithmUtil.getMaxHzNew(bComplex, 4096, hyConfigProperty.getConstant().getDeviceSampleRate().intValue(), 45, 55);
+            Double bH2hz = CommonAlgorithmUtil.getMaxHzNew(bComplex, 4096, hyConfigProperty.getConstant().getDeviceSampleRate().intValue(), 95, 105);
 
-            Double cH1hz = CommonAlgorithmUtil.getMaxHzNew(cComplex, 4096, hyConfigProperty.getConstant().getFrequencySampleRate().intValue(), 45, 55);
-            Double cH2hz = CommonAlgorithmUtil.getMaxHzNew(cComplex, 4096, hyConfigProperty.getConstant().getFrequencySampleRate().intValue(), 95, 105);
+            Double cH1hz = CommonAlgorithmUtil.getMaxHzNew(cComplex, 4096, hyConfigProperty.getConstant().getDeviceSampleRate().intValue(), 45, 55);
+            Double cH2hz = CommonAlgorithmUtil.getMaxHzNew(cComplex, 4096, hyConfigProperty.getConstant().getDeviceSampleRate().intValue(), 95, 105);
 
             if (aH2hz > 0.15 * aH1hz || bH2hz > 0.15 * bH1hz || cH2hz > 0.15 * cH1hz) {
                 double IA2X = aH1hz / aH2hz;
@@ -198,7 +198,7 @@ public class ExtraAlgorithmUtil {
                 CommonAlgorithmUtil.filterThreePhaseCurrentAndVoltagePole(poleIds, faultWaves);
 
         // TODO Define the minimum current required for load fluctuation
-        double IMIN = hyConfigProperty.getConstant().getFrequencySampleRate();
+        double IMIN = hyConfigProperty.getConstant().getDeviceSampleRate();
 
         // Detect load fluctuation by examining each pole
         return threePhaseCurrentsAndVoltages.stream().anyMatch(pole -> {
@@ -254,7 +254,7 @@ public class ExtraAlgorithmUtil {
                 CommonAlgorithmUtil.filterThreePhaseCurrentAndVoltagePole(poleIds, faultWaveList);
 
         // TODO Define the minimum current required for load fluctuation
-        double IMIN = hyConfigProperty.getConstant().getFrequencySampleRate();
+        double IMIN = hyConfigProperty.getConstant().getDeviceSampleRate();
 
         FeatureUndulateDTO result = null;
         for (FaultIdentifyPoleDTO pole : threePhaseCurrentsAndVoltages) {
@@ -305,15 +305,15 @@ public class ExtraAlgorithmUtil {
      *
      * @return 是否为故障波形
      */
-    private static boolean checkFundamentalFrequency(double[] signalData, HyConfigProperty hyConfigProperty) {
+    // fixme
+    public static boolean checkFundamentalFrequency(double[] signalData, HyConfigProperty hyConfigProperty) {
         double maxSignalThreshold = hyConfigProperty.getConstant().getFrequencyMaxThreshold();
-        long frequencySamplingRate = hyConfigProperty.getConstant().getFrequencySampleRate();
+        long frequencySamplingRate = hyConfigProperty.getConstant().getDeviceSampleRate();
 
         double maxSignalValue = Arrays.stream(signalData).map(Math::abs).max().orElse(0.0);
-
         if (maxSignalValue > maxSignalThreshold) return false;
 
-        // 低通滤波器
+        // Get a low-pass filter with a cutoff frequency of 1K.
         double[] lowPassFilter = {0.00149176912699628, 0.00113338606406803, 0.000286402296623436, -0.00169769035032670,
                 -0.00517520815333871, -0.00964292315834651, -0.0134164361793712, -0.0137898593712167, -0.00773459964570550,
                 0.00703454548213997, 0.0309850620686805, 0.0621043298912804, 0.0959667403435662, 0.126609163946671,
@@ -321,25 +321,32 @@ public class ExtraAlgorithmUtil {
                 0.0309850620686805, 0.00703454548213997, -0.00773459964570550, -0.0137898593712167, -0.0134164361793712,
                 -0.00964292315834651, -0.00517520815333871, -0.00169769035032670, 0.000286402296623436, 0.00113338606406803,
                 0.00149176912699628};
+        double[] filteredSignal = FFT.computeConvolution(signalData, lowPassFilter);
 
-        Double[] filteredSignal = FFT.linearConvolve(signalData, lowPassFilter);
+        double mean = Arrays.stream(filteredSignal).average().orElse(0.0);
+        double stdDev = Math.sqrt(Arrays.stream(filteredSignal).map(i -> i - mean).map(i -> i * i).average().orElse(0.0));
+        double transientThreshold = 3 * stdDev;
+
+        double[] transientRemovedSignal = Arrays.stream(filteredSignal).filter(i -> Math.abs(i - mean) < transientThreshold).toArray();
+
         Complex[] complexSignalForFFT = new Complex[4096];
-        int complexSignalLength = Math.min(filteredSignal.length - 40, 4096);
+        int complexSignalLength = Math.min(transientRemovedSignal.length - 40, 4096);
 
-        IntStream.range(0, complexSignalLength).forEach(i -> complexSignalForFFT[i] = new Complex(filteredSignal[i + 20], 0));
+        IntStream.range(0, complexSignalLength).forEach(i -> complexSignalForFFT[i] = new Complex(transientRemovedSignal[i + 20], 0));
         IntStream.range(complexSignalLength, 4096).forEach(i -> complexSignalForFFT[i] = new Complex(0, 0));
 
         Complex[] fftResult = fft(complexSignalForFFT);
-        double normalizationFactor = 2.0 / (filteredSignal.length - 40);
+        double normalizationFactor = 2.0 / (transientRemovedSignal.length - 40);
 
         int peakFrequencyIndex = IntStream.range(1, fftResult.length / 2 + 1)
                 .reduce(0, (currentMaxIndex, i)
                         -> fftResult[i].abs() * normalizationFactor > fftResult[currentMaxIndex].abs() * normalizationFactor ? i : currentMaxIndex);
 
-        double peakFrequencyHz = (double) frequencySamplingRate / 4096 * peakFrequencyIndex;
+        double maxFrequencyHz = (double) frequencySamplingRate / 4096 * peakFrequencyIndex;
 
-        return peakFrequencyHz < 52 && 48 < peakFrequencyHz;
+        return maxFrequencyHz < 52 && 48 < maxFrequencyHz;
     }
+
 
 
     /**
@@ -348,7 +355,7 @@ public class ExtraAlgorithmUtil {
      * @return 是否为故障波形
      */
     private static boolean checkPhaseCurrentAbruptChange(double[] data, HyConfigProperty hyConfigProperty) {
-        double sampleRate = hyConfigProperty.getConstant().getFrequencySampleRate();   // 设备采样率 12800
+        double sampleRate = hyConfigProperty.getConstant().getDeviceSampleRate();   // 设备采样率 12800
         double threshold = hyConfigProperty.getConstant().getFaultFrequencyCurrentThreshold(); // 工频电流故障触发阈值 5
 
         int N = (int) (sampleRate / 50); // N个点代表一个周波
